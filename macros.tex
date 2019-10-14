@@ -1,0 +1,138 @@
+\newcommand\nc\newcommand
+\nc\rnc\renewcommand
+
+\usepackage{amsmath}
+\usepackage{latexsym}
+\usepackage{amssymb}
+\usepackage{color}
+
+\usepackage{setspace}
+%% \usepackage{mathabx}
+%% \usepackage{enumerate}
+%% \usepackage{tikzsymbols}
+%% \usepackage{fancybox}
+%% \usepackage[many]{tcolorbox}
+
+\usepackage{epsfig}
+\usepackage{latexsym}
+
+%% %% lhs2tex messes with verbatim, and I lose spacing.
+%% \usepackage{fancyvrb}
+
+\nc\out[1]{}
+
+%% To redefine for a non-draft
+\nc\indraft[1]{#1}
+
+%% \nc\mynoteOut[2]{\mynote{#1}\out{#2}}
+
+% While working, use these defs
+% \nc\mynote[1]{{\em [#1]}}
+\nc\mynote[1]{\indraft{\textcolor{red}{[#1]}}}
+
+\nc\notefoot[1]{\indraft{\footnote{\mynote{#1}}}}
+
+\nc\todo{\mynote{To do.}}
+
+%% Provides its own initial space.
+\nc\needcite{\indraft{ \mynote{ref}}}
+
+\nc\seclabel[1]{\label{sec:#1}}
+\nc\secref[1]{Section \ref{sec:#1}}
+\nc\secreftwo[2]{Sections \ref{sec:#1} and \ref{sec:#2}}
+
+\nc\appref[1]{Appendix \ref{sec:#1}}
+
+\nc\sectionl[1]{\section{#1}\seclabel{#1}}
+\nc\subsectionl[1]{\subsection{#1}\seclabel{#1}}
+
+%%%% Figures
+
+\usepackage{subcaption}
+
+\nc\figlabel[1]{\label{fig:#1}}
+\nc\figref[1]{Figure \ref{fig:#1}}
+\nc\figreftwo[2]{Figures \ref{fig:#1} and \ref{fig:#2}}
+\nc\figrefthree[3]{Figures \ref{fig:#1}, \ref{fig:#2}, and \ref{fig:#3}}
+
+\nc\incpic[1]{\includegraphics[width=\linewidth]{Figures/#1}}
+
+\nc\figp[2]{\begin{figure}\centering #1 \hspace{-2ex} #2\end{figure}}
+
+%% \figone{fraction}{label}{caption}{content}
+\nc\figoneW[3]{
+{% \fbox
+\begin{minipage}{#1\linewidth}
+  \centering
+  \setlength\mathindent{0ex}
+  \incpic{#2}
+  \vspace*{-4ex}
+  \captionof{figure}{#3}
+  \figlabel{#2}
+\end{minipage}
+}
+}
+\nc\figone{\figoneW{0.48}}
+
+\nc\workingHere{
+\vspace{1ex}
+\begin{center}
+\setlength{\fboxsep}{3ex}
+\setlength{\fboxrule}{4pt}
+\huge\textcolor{red}{\framebox{Working here}}
+\end{center}
+\vspace{1ex}
+}
+
+%% \usepackage[multiple]{footmisc}  %% Incompatible with hyperref
+
+\nc\notefootsep{\indraft{\textsuperscript{,}}}
+
+%% https://tex.stackexchange.com/questions/40072/incompatibility-between-footmisc-option-multiple-and-hyperref/62091#62091
+\let\oldFootnote\footnote
+\nc\nextToken\relax
+\rnc\footnote[1]{\oldFootnote{#1}\futurelet\nextToken\isFootnote}
+\nc\isFootnote{\ifx\footnote\nextToken\notefootsep{}\fi}
+
+% \nc\qed{\ensuremath{\blacksquare}}
+\nc\qed{\ensuremath{\square}}
+
+\usepackage{amsthm}
+%% Roman font, and drop vertical spacing before & after.
+\theoremstyle{remark}
+
+\newtheorem{theorem}{Theorem}%[section]
+\nc\thmLabel[1]{\label{theorem:#1}}
+\nc\thmRef[1]{Theorem \ref{theorem:#1}}
+\nc\thmRefTwo[2]{Theorems \ref{theorem:#1} and \ref{theorem:#2}}
+\nc\thmRefs[2]{Theorems \ref{theorem:#1} through \ref{theorem:#2}}
+
+\newtheorem{corollary}{Corollary}[theorem]
+\nc\corLabel[1]{\label{corollary:#1}}
+\nc\corRef[1]{Corollary \ref{corollary:#1}}
+\nc\corRefTwo[2]{Corollaries \ref{corollary:#1} and \ref{corollary:#2}}
+\nc\corRefs[2]{Corollaries \ref{corollary:#1} through \ref{corollary:#2}}
+
+\newtheorem{lemma}[theorem]{Lemma}
+\nc\lemLabel[1]{\label{lemma:#1}}
+\nc\lemRef[1]{Lemma \ref{lemma:#1}}
+\nc\lemRefTwo[2]{Lemma \ref{lemma:#1} and \ref{lemma:#2}}
+\nc\lemRefs[2]{Lemma \ref{lemma:#1} through \ref{lemma:#2}}
+
+\definecolor{codesep}{gray}{0.85}
+\nc\codesep[1]{
+\begin{minipage}[b]{0ex}
+\color{codesep}{\rule[1ex]{0.8pt}{#1}}
+\end{minipage}}
+
+\usepackage{xcolor}
+%% Load late. See http://texblog.net/hyperref/
+\usepackage{hyperref}
+
+\definecolor{mylinkcolor}{rgb}{0,0,0.7}
+\hypersetup{
+  linkcolor  = mylinkcolor,
+  citecolor  = mylinkcolor,
+  urlcolor   = mylinkcolor,
+  colorlinks = true,
+}

@@ -1,0 +1,121 @@
+name:                paper
+version:             0.1.0.0
+github:              "conal/convolution-paper"
+license:             BSD3
+author:              "Conal Elliott"
+maintainer:          "conal@conal.net"
+copyright:           "2018 Conal Elliott"
+
+synopsis:            Language recognition in the spirit of Brzowski's derivatives
+category:            language, math
+
+description:         Please see the README on GitHub at <https://github.com/conal/convolution-paper#readme>
+
+default-extensions:
+  - AllowAmbiguousTypes
+  - CPP
+  - ConstraintKinds
+  - DefaultSignatures
+  - DeriveFoldable
+  - DeriveFunctor
+  - FlexibleContexts
+  - FlexibleInstances
+  - FunctionalDependencies
+  - GADTs
+  - GeneralizedNewtypeDeriving
+  - LambdaCase
+  - MultiParamTypeClasses
+  - OverloadedStrings  # for Poly, since dante doesn't pick up
+  - PatternSynonyms
+  - QuantifiedConstraints
+  - RankNTypes
+  - StandaloneDeriving
+  - TupleSections
+  - TypeApplications
+  - TypeFamilies
+  - TypeOperators
+  - UndecidableInstances
+  - ViewPatterns
+  - ScopedTypeVariables
+
+ghc-options:
+  -Wall
+  # -O2  # Use when benchmarking
+
+cpp-options: -DEXAMPLES
+
+library:
+  dependencies:
+    - base >= 4.7 && < 5
+    - ghc-prim
+    - deepseq
+    - data-inttrie
+    - MemoTrie
+    - containers
+    - multiset
+    - finite-typelits
+    - vector-sized
+  other-modules: []
+  include-dirs: src
+  install-includes: GenInstances.inc
+  source-dirs: src
+  exposed-modules:
+    - Misc
+    - Constrained
+    - Semi
+    - RegExp
+    - Cofree
+    - MMap
+    - ShareMap
+    - Poly
+    - Examples
+
+tests:
+  test:
+    source-dirs:         test
+    main:                GoldTests.hs
+    other-modules: []
+    dependencies:
+    - base
+    - Cabal >= 1.24.0.0
+    - containers
+    - bytestring
+    - tasty
+    - tasty-golden
+    - paper
+
+benchmarks:
+  bench:
+    ghc-options:
+      -O2
+    source-dirs:         test
+    main:                Benchmark.hs
+    other-modules: []
+    dependencies:
+    - base
+    - Cabal >= 1.24.0.0
+    - containers
+    - criterion
+    - directory
+    - deepseq
+    - MemoTrie
+    - paper
+
+# stack bench
+
+executables:
+  image-test:
+    ghc-options:
+      -O2
+    source-dirs:         test
+    main:                ImageTest.hs
+    other-modules: []
+    dependencies:
+    - base
+    - Cabal >= 1.24.0.0
+    - JuicyPixels
+    - vector
+    - paper
+
+# In the test directory:
+# stack build :image-test && stack exec image-test

@@ -1,0 +1,34 @@
+% -*- text -*-
+%% Misc lhs2TeX directives
+
+%format NOP = "{}"
+
+%% hack: add missing space, e.g., before "{" in data type decl
+%format SPC = "\:{}"
+%format SPACE = "\ {}"
+%format NOP = "{}"
+
+%format :* = " \times "
+%format :+ = " + "
+
+%format *** = "\times"
+%format &&& = "\mathbin{\vartriangle}"
+%format +++ = "+"
+%format ||| = "\mathbin{\triangledown}"
+
+%% Because ||| between inline-code "|" delimiters confuses lhs2tex
+%format ### = "\mathbin{\triangledown}"
+
+% Got from Andres L:
+\newcommand{\calculationcomments}{%
+  \let\onelinecomment=\onelinecommentchars
+  \def\commentbegin{\ \{ }%
+  \def\commentend{\}}%
+}
+\calculationcomments
+
+%format == = =
+
+%format ==> = "\Longrightarrow"
+%format <== = "\Longleftarrow"
+%format <==> = "\Longleftrightarrow"
