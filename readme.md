@@ -1,4 +1,4 @@
-## Calculating compilers categorically
+## Higher-order automatic differentiation
 
-A paper draft.
-[PDF available](http://conal.net/papers/calculating-compilers-categorically/).
+An early paper draft.
+[PDF (not yet) available](http://conal.net/papers/hoad/).
