@@ -1,1 +1,6 @@
 resolver: lts-14.9 # ghc-8.6.5
+
+extra-deps:
+  - git: https://github.com/conal/concat
+    commit: d3f07ae5c1ca04b13e175dbd2ca6423a1193b312 # master branch
+    subdirs: [inline,known,satisfy,classes]

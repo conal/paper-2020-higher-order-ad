@@ -53,11 +53,11 @@ Conal Elliott
 
 \maketitle
 
-\begin{abstract}
+%% \begin{abstract}
+%% ...
+%% \end{abstract}
 
-...
 
-\end{abstract}
 
 %% \bibliography{bib}
 

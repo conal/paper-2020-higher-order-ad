@@ -14,17 +14,17 @@ description:         Please see the README on GitHub at <https://github.com/cona
 default-extensions:
   # - AllowAmbiguousTypes
   - CPP
-  # - ConstraintKinds
+  - ConstraintKinds
   # - DefaultSignatures
   # - DeriveFoldable
   # - DeriveFunctor
-  # - FlexibleContexts
-  # - FlexibleInstances
+  - FlexibleContexts
+  - FlexibleInstances
   # - FunctionalDependencies
   # - GADTs
   # - GeneralizedNewtypeDeriving
   # - LambdaCase
-  # - MultiParamTypeClasses
+  - MultiParamTypeClasses
   # - OverloadedStrings  # for Poly, since dante doesn't pick up
   # - PatternSynonyms
   # - QuantifiedConstraints
@@ -32,9 +32,8 @@ default-extensions:
   # - StandaloneDeriving
   # - TupleSections
   # - TypeApplications
-  # - TypeFamilies
-  # - TypeOperators
-  # - UndecidableInstances
+  - TypeFamilies
+  - TypeOperators
   # - ViewPatterns
   # - ScopedTypeVariables
 
@@ -47,7 +46,14 @@ ghc-options:
 library:
   dependencies:
     - base >= 4.7 && < 5
+    - ghc-prim
+    - constraints
+    - free
+    - adjunctions
+    - newtype-generics
+    - concat-classes
   other-modules: []
   include-dirs: src
   source-dirs: src
-  exposed-modules: []
+  exposed-modules:
+    - AD
