@@ -128,18 +128,18 @@ onV2 = onV <~ toV
 
 -- Can I replace my HasRep class with Newtype?
 
--- -- Replace by special cases as needed
--- instance HasV s s where
---   type V s s = Par1
---   toV = Par1
---   unV = unPar1
-
 -- type IsScalar s = (HasV s s, V s s ~ Par1)
 
 instance HasV s () where
   type V s () = U1
   toV () = U1
   unV U1 = ()
+
+-- -- Replace by special cases as needed
+-- instance HasV s s where
+--   type V s s = Par1
+--   toV = Par1
+--   unV = unPar1
 
 instance HasV Float Float where
   type V Float Float = Par1
