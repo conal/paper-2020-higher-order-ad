@@ -42,10 +42,13 @@ newtype D s a b = D ((Obj s a :-> Obj s b) s)
 
 type Tower f g = Cofree f :.: g
 
-pattern (:<|) :: Functor f => g s -> f (Tower f g s) -> Tower f g s
-pattern v :<| ts <- Comp1 (v :< (fmap Comp1 -> ts))
+pattern Uncomps :: Functor h => h ((g :.: f) a) -> h (g (f a))
+pattern Uncomps w <- (fmap Comp1 -> w)
  where
-   v :<| ts = Comp1 (v :< fmap unComp1 ts)
+   Uncomps w = fmap unComp1 w
+
+pattern (:<|) :: Functor f => g s -> f (Tower f g s) -> Tower f g s
+pattern v :<| ts = Comp1 (v :< Uncomps ts)
 
 type (f :-> g) s = f s -> Tower f g s
 
