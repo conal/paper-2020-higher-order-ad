@@ -57,5 +57,5 @@ library:
   include-dirs: src
   source-dirs: src
   exposed-modules:
-    - HasV
+    - Vector
     - AD

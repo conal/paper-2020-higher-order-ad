@@ -3,7 +3,7 @@
 
 {-# LANGUAGE UndecidableInstances #-}  -- see below
 
--- | 
+-- | Higher-order AD
 
 module AD where
 
@@ -18,7 +18,8 @@ import Data.Functor.Rep (Representable(..),pureRep)
 
 import ConCat.Misc ((:*),R,inNew,inNew2)
 import ConCat.Category
--- import ConCat.Additive (Additive(..))
+
+import Vector
 
 -- | Representable functor for @a@ as container of @s@
 type family Obj s a :: Type -> Type

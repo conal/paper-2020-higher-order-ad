@@ -1,35 +1,21 @@
 {-# OPTIONS_GHC -Wall #-}
--- {-# OPTIONS_GHC -Wno-unused-imports #-} -- TEMP
 
 {-# LANGUAGE UndecidableInstances #-}  -- see below
 
 -- | Free vector space as representable functors
+module Vector where
 
-module HasV where
-
--- import Prelude hiding (zipWith)
 import Data.Monoid (Sum(..),Product(..))
--- import Data.Semigroup (Semigroup(..))
--- import GHC.Exts (Coercible,coerce)
 import GHC.Generics (U1(..),Par1(..),(:*:)(..),(:.:)(..))
 #ifdef VectorSized
 import GHC.TypeLits (KnownNat)
 import Data.Vector.Sized (Vector)
 #endif
-
--- import Data.Foldable (fold)
--- import Data.Pointed
--- import Data.Key (Zip(..))
 import Data.Constraint ((:-)(..),Dict(..))
-
--- import Control.Newtype
-
 import Data.Functor.Rep (Representable(..),pureRep,liftR2)
 
--- import ConCat.Orphans ()
-import ConCat.Misc ((:*),(:+),(<~),sqr)
+import ConCat.Misc ((:*),(<~),sqr)
 import qualified ConCat.Rep as CR
--- -- import ConCat.Category (UT(..),Constrained(..),FunctorC(..))
 import ConCat.AltCat (OpCon(..),Sat,type (|-)(..),fmapC)
 
 {--------------------------------------------------------------------
