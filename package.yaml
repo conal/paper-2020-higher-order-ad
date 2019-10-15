@@ -26,7 +26,7 @@ default-extensions:
   # - LambdaCase
   - MultiParamTypeClasses
   # - OverloadedStrings  # for Poly, since dante doesn't pick up
-  # - PatternSynonyms
+  - PatternSynonyms
   # - QuantifiedConstraints
   # - RankNTypes
   # - StandaloneDeriving
@@ -34,7 +34,7 @@ default-extensions:
   # - TypeApplications
   - TypeFamilies
   - TypeOperators
-  # - ViewPatterns
+  - ViewPatterns
   # - ScopedTypeVariables
 
 ghc-options:

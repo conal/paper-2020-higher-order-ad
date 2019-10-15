@@ -15,6 +15,7 @@ import Control.Newtype.Generics
 import Data.Constraint hiding ((&&&),(***),(:=>))
 import Control.Comonad.Cofree (Cofree (..))
 import Data.Functor.Rep (Representable(..),pureRep)
+-- import Control.Applicative (liftA2)
 
 import ConCat.Misc ((:*),R,inNew,inNew2)
 import ConCat.Category
@@ -39,7 +40,14 @@ type instance Obj s (a -> b) = Obj s a :=> Obj s b
 -- partial derivatives.
 newtype D s a b = D ((Obj s a :-> Obj s b) s)
 
-type (f :-> g) s = f s -> Cofree f (g s)
+type Tower f g = Cofree f :.: g
+
+pattern (:<|) :: Functor f => g s -> f (Tower f g s) -> Tower f g s
+pattern v :<| ts <- Comp1 (v :< (fmap Comp1 -> ts))
+ where
+   v :<| ts = Comp1 (v :< fmap unComp1 ts)
+
+type (f :-> g) s = f s -> Tower f g s
 
 -- | Functor version of ':->'.
 newtype (f :=> g) s = Exp ((f :-> g) s)
@@ -51,11 +59,12 @@ newtype (f :=> g) s = Exp ((f :-> g) s)
 -- TODO: Do these derivative tries form a cartesian category? If so, maybe I can
 -- get higher-order AD as a special case of generalized first-order AD.
 
-zeroT :: (Representable f, Representable g, Num s) => Cofree f (g s)
-zeroT = pureRep zeroV  -- tabulate (const zeroV)
+zeroT :: (Representable f, Representable g, Num s) => Tower f g s
+zeroT = pureRep 0
+-- zeroT = Comp1 (pureRep zeroV)
 
-constT :: (Representable f, Representable g, Num s) => g s -> Cofree f (g s)
-constT a = a :< pureRep zeroT
+constT :: (Representable f, Representable g, Num s) => g s -> Tower f g s
+constT a = a :<| pureRep zeroT
 
 infixr 2 :-*
 type (f :-* g) s = f (g s)
@@ -91,13 +100,21 @@ instance (OkF (Obj s a), Num s) => OkObj s a
 -- Illegal nested constraint ‘OkF (Obj s a)’
 -- (Use UndecidableInstances to permit this)
 
--- instance Category (D s) where
---   type Ok (D s) = OkObj s
---   id = D (\ a -> a :< fmap constT idL)
---   D g . D f = D (\ a -> let { b :< f' = f a ; c :< g' = g b } in c :< undefined)
+instance Category (D s) where
+  type Ok (D s) = OkObj s
+  id = D (\ a -> a :<| fmap constT idL)
+  D g . D f = D (\ a -> let { b :<| f' = f a ; c :<| g' = g b } in c :<| _)
 
-#if 0
+-- data Cofree f a = a :< f (Cofree f a)
 
-data Cofree f a = a :< f (Cofree f a)
+-- Specification
 
-#endif
+deriv :: (f s -> g s) -> (f s -> (f :-* g) s)
+deriv = error "deriv: for specification only"
+
+derivs :: (Functor f) => (f s -> g s) -> (f s -> Tower f g s)
+derivs h = h &&&& deriv (derivs h)
+
+(&&&&) :: Functor f => (f s -> g s) -> (f s -> f (Tower f g s)) -> (f :-> g) s
+h &&&& h' = \ u -> h u :<| h' u
+-- (&&&&) = liftA2 (:<|)
