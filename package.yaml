@@ -15,7 +15,7 @@ default-extensions:
   # - AllowAmbiguousTypes
   - CPP
   - ConstraintKinds
-  # - DefaultSignatures
+  - DefaultSignatures
   # - DeriveFoldable
   # - DeriveFunctor
   - FlexibleContexts
@@ -41,7 +41,7 @@ ghc-options:
   -Wall
   # -O2  # Use when benchmarking
 
-# cpp-options: -DEXAMPLES
+cpp-options:      -DVectorSized
 
 library:
   dependencies:
@@ -51,9 +51,11 @@ library:
     - free
     - adjunctions
     - newtype-generics
+    - vector-sized
     - concat-classes
   other-modules: []
   include-dirs: src
   source-dirs: src
   exposed-modules:
+    - HasV
     - AD

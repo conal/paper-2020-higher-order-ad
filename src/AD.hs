@@ -50,10 +50,6 @@ newtype (f :=> g) s = Exp ((f :-> g) s)
 -- TODO: Do these derivative tries form a cartesian category? If so, maybe I can
 -- get higher-order AD as a special case of generalized first-order AD.
 
--- | Zero vector
-zeroV :: (Representable g, Num a) => g a
-zeroV = pureRep 0
-
 zeroT :: (Representable f, Representable g, Num s) => Cofree f (g s)
 zeroT = pureRep zeroV  -- tabulate (const zeroV)
 
@@ -94,10 +90,10 @@ instance (OkF (Obj s a), Num s) => OkObj s a
 -- Illegal nested constraint ‘OkF (Obj s a)’
 -- (Use UndecidableInstances to permit this)
 
-instance Category (D s) where
-  type Ok (D s) = OkObj s
-  id = D (\ a -> a :< fmap constT idL)
-  D g . D f = D (\ a -> let { b :< f' = f a ; c :< g' = g b } in c :< undefined)
+-- instance Category (D s) where
+--   type Ok (D s) = OkObj s
+--   id = D (\ a -> a :< fmap constT idL)
+--   D g . D f = D (\ a -> let { b :< f' = f a ; c :< g' = g b } in c :< undefined)
 
 #if 0
 
