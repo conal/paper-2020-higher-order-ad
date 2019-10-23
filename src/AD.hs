@@ -32,9 +32,11 @@ type instance Obj Double Double = Par1
 type instance Obj s (a :* b) = Obj s a :*: Obj s b
 type instance Obj s (a -> b) = Obj s a :=> Obj s b
 
--- TODO: move Obj into a type class containing the value/"vector" isomorphism.
--- May as well use 'HasV' from the paper. This time, however, do as much as
--- possible with Representable.
+-- TODO: Replace Obj by V from Vector. Oops! I can't define toV for a -> b. I
+-- guess I have to move V outside of the IsoV class and then rename IsoV. Then
+-- define a derivative operation that works with regular types and requires
+-- IsoV. If V is a free-floating type family, can I define a generic-based
+-- default?
 
 -- | Infinitely differentiable functions. Maps a domain vector to a trie of
 -- partial derivatives.
@@ -80,7 +82,7 @@ kronecker :: (Eq i, Num a) => i -> i -> a
 kronecker i j | i == j    = 1
               | otherwise = 0
 
-tabulate2 :: (Representable f, Representable g) => (Rep f -> Rep g -> a) -> (f :-* g) a
+tabulate2 :: (Representable f, Representable g) => (Rep f -> Rep g -> a) -> f (g a)
 tabulate2 h = tabulate (\ i -> tabulate (\ j -> h i j))
 
 -- Equivalently,
@@ -103,10 +105,10 @@ instance (OkF (Obj s a), Num s) => OkObj s a
 -- Illegal nested constraint ‘OkF (Obj s a)’
 -- (Use UndecidableInstances to permit this)
 
-instance Category (D s) where
-  type Ok (D s) = OkObj s
-  id = D (\ a -> a :<| fmap constT idL)
-  D g . D f = D (\ a -> let { b :<| f' = f a ; c :<| g' = g b } in c :<| _)
+-- instance Category (D s) where
+--   type Ok (D s) = OkObj s
+--   id = D (\ a -> a :<| fmap constT idL)
+--   D g . D f = D (\ a -> let { b :<| f' = f a ; c :<| g' = g b } in c :<| _)
 
 -- data Cofree f a = a :< f (Cofree f a)
 
@@ -116,7 +118,8 @@ deriv :: (f s -> g s) -> (f s -> (f :-* g) s)
 deriv = error "deriv: for specification only"
 
 derivs :: (Functor f) => (f s -> g s) -> (f s -> Tower f g s)
-derivs h = h &&&& deriv (derivs h)
+derivs h = ds where ds = h &&&& deriv ds
+-- derivs h = h &&&& deriv (derivs h)
 
 (&&&&) :: Functor f => (f s -> g s) -> (f s -> f (Tower f g s)) -> (f :-> g) s
 h &&&& h' = \ u -> h u :<| h' u

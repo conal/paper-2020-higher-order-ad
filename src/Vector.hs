@@ -59,7 +59,7 @@ subV = (^-^)
 {-# INLINE (^-^) #-}
 {-# INLINE subV #-}
 
--- | Inner product
+-- | Inner product. TODO: complex
 dotV, (<.>) :: (RF f, Foldable f, Num s) => f s -> f s -> s
 x <.> y = sum (liftR2 (*) x y)
 dotV = (<.>)
@@ -100,16 +100,16 @@ normalizeV xs = (/ sum xs) <$> xs
     Conversion
 --------------------------------------------------------------------}
 
-type RepHasV s a = (CR.HasRep a, HasV s (CR.Rep a), V s a ~ V s (CR.Rep a))
+type RepIsoV s a = (CR.HasRep a, IsoV s (CR.Rep a), V s a ~ V s (CR.Rep a))
 
-class Representable (V s a) => HasV s a where
+class Representable (V s a) => IsoV s a where
   type V s a :: * -> *
   toV :: a -> V s a s
   unV :: V s a s -> a
   -- Default via Rep.
   type V s a = V s (CR.Rep a)
-  default toV :: RepHasV s a => a -> V s a s
-  default unV :: RepHasV s a => V s a s -> a
+  default toV :: RepIsoV s a => a -> V s a s
+  default unV :: RepIsoV s a => V s a s -> a
   toV = toV . CR.repr
   unV = CR.abst . unV
   {-# INLINE toV #-} ; {-# INLINE unV #-}
@@ -117,92 +117,92 @@ class Representable (V s a) => HasV s a where
 -- Illegal nested type family application ‘V s (CR.Rep a)’
 -- (Use UndecidableInstances to permit this)
 
-inV :: (HasV s a, HasV s b) => (a -> b) -> (V s a s -> V s b s)
+inV :: (IsoV s a, IsoV s b) => (a -> b) -> (V s a s -> V s b s)
 inV = toV <~ unV
 
-onV :: (HasV s a, HasV s b) => (V s a s -> V s b s) -> (a -> b)
+onV :: (IsoV s a, IsoV s b) => (V s a s -> V s b s) -> (a -> b)
 onV = unV <~ toV
 
-onV2 :: (HasV s a, HasV s b, HasV s c) => (V s a s -> V s b s -> V s c s) -> (a -> b -> c)
+onV2 :: (IsoV s a, IsoV s b, IsoV s c) => (V s a s -> V s b s -> V s c s) -> (a -> b -> c)
 onV2 = onV <~ toV
 
 -- Can I replace my HasRep class with Newtype?
 
--- type IsScalar s = (HasV s s, V s s ~ Par1)
+-- type IsScalar s = (IsoV s s, V s s ~ Par1)
 
-instance HasV s () where
+instance IsoV s () where
   type V s () = U1
   toV () = U1
   unV U1 = ()
 
 -- -- Replace by special cases as needed
--- instance HasV s s where
+-- instance IsoV s s where
 --   type V s s = Par1
 --   toV = Par1
 --   unV = unPar1
 
-instance HasV Float Float where
+instance IsoV Float Float where
   type V Float Float = Par1
   toV = Par1
   unV = unPar1
 
-instance HasV Double Double where
+instance IsoV Double Double where
   type V Double Double = Par1
   toV = Par1
   unV = unPar1
 
 -- etc
 
-instance (HasV s a, HasV s b) => HasV s (a :* b) where
+instance (IsoV s a, IsoV s b) => IsoV s (a :* b) where
   type V s (a :* b) = V s a :*: V s b
   toV (a,b) = toV a :*: toV b
   unV (f :*: g) = (unV f,unV g)
   {-# INLINE toV #-} ; {-# INLINE unV #-}
 
-instance OpCon (:*) (Sat (HasV s)) where
+instance OpCon (:*) (Sat (IsoV s)) where
   inOp = Entail (Sub Dict)
   {-# INLINE inOp #-}
 
-instance (HasV s a, HasV s b, HasV s c) => HasV s (a,b,c)
-instance (HasV s a, HasV s b, HasV s c, HasV s d) => HasV s (a,b,c,d)
+instance (IsoV s a, IsoV s b, IsoV s c) => IsoV s (a,b,c)
+instance (IsoV s a, IsoV s b, IsoV s c, IsoV s d) => IsoV s (a,b,c,d)
 
 -- Sometimes it's better not to use the default. I think the following gives more reuse:
 
--- instance HasV s a => HasV s (Pair a) where
+-- instance IsoV s a => IsoV s (Pair a) where
 --   type V s (Pair a) = Pair :.: V s a
 --   toV = Comp1 . fmap toV
 --   unV = fmap unV . unComp1
 
 -- Similarly for other functors
 
-instance HasV s (U1 a)
-instance HasV s a => HasV s (Par1 a)
-instance (HasV s (f a), HasV s (g a)) => HasV s ((f :*: g) a)
-instance (HasV s (g (f a))) => HasV s ((g :.: f) a)
+instance IsoV s (U1 a)
+instance IsoV s a => IsoV s (Par1 a)
+instance (IsoV s (f a), IsoV s (g a)) => IsoV s ((f :*: g) a)
+instance (IsoV s (g (f a))) => IsoV s ((g :.: f) a)
 
--- instance HasV s (f a) => HasV s (SumV f a)
+-- instance IsoV s (f a) => IsoV s (SumV f a)
 
-instance HasV s a => HasV s (Sum a)
-instance HasV s a => HasV s (Product a)
+instance IsoV s a => IsoV s (Sum a)
+instance IsoV s a => IsoV s (Product a)
 -- TODO: More newtypes
 
 -- Sometimes it's better not to use the default. I think the following gives more reuse:
 
--- instance HasV s a => HasV s (Pair a) where
+-- instance IsoV s a => IsoV s (Pair a) where
 --   type V s (Pair a) = Pair :.: V s a
 --   toV = Comp1 . fmap toV
 --   unV = fmap unV . unComp1
 
 -- Similarly for other functors
 
-instance HasV s b => HasV s (a -> b) where
+instance IsoV s b => IsoV s (a -> b) where
   type V s (a -> b) = (->) a :.: V s b
   toV = Comp1 . fmap toV
   unV = fmap unV . unComp1
   {-# INLINE toV #-} ; {-# INLINE unV #-}
 
 #ifdef VectorSized
-instance (HasV s b, KnownNat n) => HasV s (Vector n b) where
+instance (IsoV s b, KnownNat n) => IsoV s (Vector n b) where
   type V s (Vector n b) = Vector n :.: V s b
   toV = Comp1 . fmapC toV
   unV = fmapC unV . unComp1
