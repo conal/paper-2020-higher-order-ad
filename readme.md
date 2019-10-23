@@ -6,8 +6,10 @@ An early paper draft.
 ### Misc notes
 
 I mean the title to convey both higher-order derivatives and higher-order functions.
-I'll want something more specific, however, to differentiate from other work on higher-order differentiation.
+I'll want something more specific, however, to differentiate from other work on each meaning.
 Ideas:
 
 *   Higher-Order, Higher-Order Automatic Differentiation
 *   ...
+
+See also [the outline](outline.md).
