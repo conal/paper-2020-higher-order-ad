@@ -74,3 +74,9 @@ newtype (u :->: v) s = Fun (u s -> v s)
 ```
 
 **Oops.** I don't think `:->` takes RFs to RFs.
+It's not the right thing anyway, since `a -> b` is a vector space on `s` whenever `b` is, regardless of `a`:
+``` haskell
+V s (a -> b) = (a ->) . V s b
+```
+
+Maybe I should stick with types as objects in the category after all.
