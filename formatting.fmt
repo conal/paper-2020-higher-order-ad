@@ -32,3 +32,26 @@
 %format ==> = "\Longrightarrow"
 %format <== = "\Longleftarrow"
 %format <==> = "\Longleftrightarrow"
+
+
+%% Specific to this paper
+
+%% With the article (non-ACM) font, I sometimes need a small negative space
+%% before sub- or super-scripts.
+%if icfp
+%format QQ = "{}"
+%else
+%format QQ = "\!"
+%endif
+
+%format :-* = "\multimap"
+%format der = "\mathcal{D}"
+%format ad = der QQ "^+\!"
+%format ad0 = der QQ"_{\scriptscriptstyle 0}\!\!^+\!"
+
+%format (hat(x)) = "\hat{"x"}"
+
+%% Why doesn't the following definition work?
+%format adf = hat(der)
+
+%format adf = "\hat{"der"}"
