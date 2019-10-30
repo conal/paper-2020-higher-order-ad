@@ -123,11 +123,11 @@ These operations support higher-order programming and arise during translation f
 
 Similarly, monoidal and cartesian categories have category-associated categorical \emph{products}:
 \begin{code}
-class Category k => MonoidalPCat k where
+class Category k => MonoidalP k where
+  type ProdOp k :: Type -> Type -> Type
   (***) :: (a `k` c) -> (b `k` d) -> ((Prod k a b) `k` (Prod k c d))
 
 class Monoidal k => Cartesian k where
-  type ProdOp k :: Type -> Type -> Type
   exl  :: (Prod k a b) `k` a
   exr  :: (Prod k a b) `k` b
   dup  :: a `k` (Prod k a a)
@@ -136,6 +136,58 @@ A particularly important related operation:
 \begin{code}
 (&&&) :: Cartesian k => (a `k` c) -> (a `k` d) -> (a `k` (Prod k c d))
 f &&& g = (f *** g) . dup
+\end{code}
+For functions and linear maps, the categorical product is the usual cartesian product and
+\begin{code}
+(f *** g) (a,b) = (f a, g b)
+exl (a,b) = a
+exr (a,b) = b
+dup a = (a,a)
+\end{code}
+Hence
+\begin{code}
+    (f &&& g) a
+==  (f *** g) (dup a)
+==  (f *** g) (a,a)
+==  (f a, g a)
+\end{code}
+
+Dually, we have monoidal and cocartesian categories with associated categories ``coproducts'':
+\begin{code}
+class Category k => MonoidalC k where
+  type CoprodOp k :: Type -> Type -> Type
+  (***) :: (a `k` c) -> (b `k` d) -> ((Coprod k a b) `k` (Coprod k c d))
+
+class Cocartesian k where
+  inl :: a `k` (Coprod k a b)
+  inr :: b `k` (Coprod k a b)
+  jam :: (Coprod k a a) `k` a
+
+(|||) :: (c `k` a) -> (d `k` a) -> ((Coprod k c d) `k` a)
+f ||| g = jam . (f +++ g)
+\end{code}
+In this paper we will be working in the setting of \emph{biproducts}, where products and coproducts coincide, hence
+\begin{code}
+class Cocartesian k where
+  inl :: a `k` (Prod k a b)
+  inr :: b `k` (Prod k a b)
+  jam :: (Prod k a a) `k` a
+
+(|||) :: (c `k` a) -> (d `k` a) -> ((Prod k c d) `k` a)
+f ||| g = jam . (f *** g)
+\end{code}
+For functions over additive monoids (including vector spaces and semimodules) and linear maps,
+\begin{code}
+inl a = (a,0)
+inr b = (0,b)
+jam (a,a') = a + a'
+\end{code}
+from which it follows that
+\begin{code}
+    (f ||| g) (c,d)
+==  jam ((f *** g) (c,d))
+==  jam (f c, c d)
+==  f c + g d
 \end{code}
 
 The choice of category-associated products and exponentials is a degree of freedom not exercised in the development of AD in \cite{Elliott-2018-ad-icfp} and one that is tied closely to another such choice available in the general notion of \emph{functor} in category theory.
@@ -188,16 +240,40 @@ Then\footnote{There is a temporary abuse of notation here in that lambda express
 ==  der f (a,b) . inl ||| der f (a,b) . inr
 ==  derl f (a,b) ||| derr f (a,b)
 \end{code}
-where by convenient definition, |derl| and |derr| denote ``partial derivatives'' in which one half of a pair-valued argument is allowed to vary while the other half is held constant, i.e.,
+where by convenient definition, |derl| and |derr| denote ``partial derivatives'' in which one half of a pair-valued argument is allowed to vary while the other half is held constant, i.e.,\footnote{The Haskell notation ``|(a,)|'' and ``|(b,)|'' refers to right and left ``sections'' of pairing:
+\begin{code}
+(,b) a = (a,b)
+(a,) b = (a,b)
+\end{code}
+}
 \begin{code}
 derl :: (a :* b -> c) -> a :* b -> (a :-* c)
-derl f p = der f p . inl
+derl f (a,b) = der (f . (,b)) a
 
 derr :: (a :* b -> c) -> a :* b -> (b :-* c)
-derr f p = der f p . inr
+derr f (a,b) = der (f . (a,)) b
 \end{code}
 
-\mynote{Define |inl| and |inr|.}
+\mynote{Which pair of definitions for |derl| and |derr| should I give; and can I prove that the other pair is equivalent?}
+
+Apply the technique of partial derivatives to |apply|||.
+%format ## = "\mathbin{\$}"
+%if False
+First, define reverse function application:
+\begin{code}
+applyTo :: a -> (a -> b) -> b
+applyTo a f = f a
+\end{code}
+%else
+Using ``|(##)|'' for infix function application,
+%endif
+\begin{code}
+    der apply (f,x)
+==  derl apply (f,x) ||| derr apply (f,x)  -- method of partial derivatives
+==  der (## NOP x) f ||| der (f NOP ##) x
+==  der (## NOP x) f ||| der f x           -- |(f NOP ##) == f|
+==  (## NOP x) ||| der f x                 -- |(## NOP x) is linear|
+\end{code}
 
 \sectionl{Related Work}
 
