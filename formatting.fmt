@@ -72,7 +72,12 @@
 %format CoprodOp k = "(\mathbin{" :+ "_{"k"}})"
 %format ExpOp  k = "(\mathbin{" :=> "_{"k"}})"
 
-%format Prod k a b = a "\mathbin{" :* "_{\!"k"}}" b
-%format Coprod k a b = a "\mathbin{" :+ "_{\!"k"}}" b
-%format Exp  k a b = a "\mathbin{" :=> "_{\!"k"}}" b
+%format Prod   k (a) (b) = a "\mathbin{" :*  "_{\!"k"}}" b
+%format Coprod k (a) (b) = a "\mathbin{" :+  "_{\!"k"}}" b
+%format Exp    k (a) (b) = a "\mathbin{" :=> "_{\!"k"}}" b
 
+%% TODO: refactor, probably via LaTeX
+
+%format (nopar (x)) = x
+
+%% %format eval = apply

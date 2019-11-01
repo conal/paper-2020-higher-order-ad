@@ -104,13 +104,11 @@ In addition to these three theorems, we need a collection of facts about the der
 
 \sectionl{Cartesian closed?}
 
-%format apply = eval
-
 While |D| is a category and a \emph{cartesian} category at that, as specified by |adf| being a cartesian functor, another question naturally arises.
 Can |adf| also a \emph{closed} cartesian functor?
-In other words, are there definitions of |apply|, |curry|, and |uncurry| on |D| such that
+In other words, are there definitions of |eval|, |curry|, and |uncurry| on |D| such that
 \begin{code}
-apply = adf apply
+eval = adf eval
 curry (adf f) = adf (curry f)
 uncurry (adf g) = adf (uncurry f)
 \end{code}
@@ -118,11 +116,11 @@ These three operations come from the following interface:
 \begin{code}
 class Cartesian k => CartesianClosed k where
   type ExpOp k :: Type -> Type -> Type
-  apply :: Exp k ((a :=> b) :* a) b
-  curry :: ((a :* b) `k` c) -> (a `k` (Exp k b c))
-  uncurry :: (a `k` (Exp k b c)) -> ((a :* b) `k` c)
+  eval :: (Prod k ((Exp k a b)) a) `k` b
+  curry :: ((Prod k a b) `k` c) -> (a `k` (Exp k b c))
+  uncurry :: (a `k` (Exp k b c)) -> ((Prod k a b) `k` c)
 \end{code}
-where |Exp k a b| is a type of ``first class functions/arrows'' from |a| to |b| for the category |k|, also known as ``exponential objects''.
+where |Exp k a b| is a type of ``exponential objects'' (first class functions/arrows) from |a| to |b| for the category |k|.
 These operations support higher-order programming and arise during translation from a typed lambda calculus (e.g., Haskell) to categorical vocabulary \citep{Elliott-2017-compiling-to-categories}.
 
 Similarly, monoidal and cartesian categories have category-associated categorical \emph{products}:
@@ -160,7 +158,7 @@ Dually, we have monoidal and cocartesian categories with associated categories `
 \begin{code}
 class Category k => MonoidalC k where
   type CoprodOp k :: Type -> Type -> Type
-  (***) :: (a `k` c) -> (b `k` d) -> ((Coprod k a b) `k` (Coprod k c d))
+  (+++) :: (a `k` c) -> (b `k` d) -> ((Coprod k a b) `k` (Coprod k c d))
 
 class Cocartesian k where
   inl :: a `k` (Coprod k a b)
@@ -194,36 +192,28 @@ from which it follows that
 ==  f c + g d
 \end{code}
 
-The choice of category-associated products and exponentials is a degree of freedom not exercised in the development of AD in \cite{Elliott-2018-ad-icfp} and one that is tied closely to another such choice available in the general notion of \emph{functor} in category theory.
-In general, a functor has two aspects:
-\begin{itemize}
-\item a mapping from arrows to arrows, and
-\item a mapping from objects to objects.
-\end{itemize}
-The functor |adf| defined (noncomputably) above implicitly chooses an \emph{identity object mapping}, as evident in its type |(a -> b) -> D a b|.
-
 Just as the |Category| and |Cartesian| instances for |D| arose from solving corresponding homomorphism equations about |adf|, let's now try the same with |CartesianClosed|.
-First note that we do not really have to define all three methods, since |apply| and |uncurry| can each be defined in terms of the other:\footnote{The pattern |g *** id| is also called ``|first g|'', because it applies |g| to the first element of a pair while leaving the second element unchanged.}
+First note that we do not really have to define all three methods, since |eval| and |uncurry| can each be defined in terms of the other:\footnote{The pattern |g *** id| is also called ``|first g|'', because it applies |g| to the first element of a pair while leaving the second element unchanged.}
 \begin{code}
-apply = uncurry id
-uncurry g = apply . (g *** id)
+eval = uncurry id
+uncurry g = eval . (g *** id)
 \end{code}
-Since |apply| looks simpler, start there.
+Since |eval| looks simpler, start there.
 The corresponding homomorphism equation has a particularly simple form:
 \begin{code}
-apply = adf apply
+eval = adf eval
 \end{code}
-It might appear that we are done already at the start, taking the equation to be a definition for |apply|.
+It might appear that we are done at the start, taking the equation to be a definition for |eval|.
 Recall, however, that |adf| is noncomputable, being defined via |der| (differentiation itself).
 Let us press forward undeterred, opening up the definition of |adf| to see if we can transform away the (noncomputable) |der|:
 \begin{code}
-    adf apply
-==  D (apply &&& der apply)                       -- definition of |adf|
-==  D (\ (f,a) -> (apply (f,a), der apply (f,a))  -- |(&&&) on functions|
-==  D (\ (f,a) -> (f a, der apply (f,a))          -- |apply| on functions
+    adf eval
+==  D (eval &&& der eval)                        -- definition of |adf|
+==  D (\ (f,a) -> (eval (f,a), der eval (f,a))   -- |(&&&) on functions|
+==  D (\ (f,a) -> (f a, der eval (f,a))          -- |eval| on functions
 \end{code}
-Now we do not need the general |der|, but rather the specific |der apply|.
-If |apply| were linear, we could apply \thmRef{linear}, but alas it is not.
+Now we do not need the general |der|, but rather the specific |der eval|.
+If |eval| were linear, we could apply \thmRef{linear}, but alas it is not.
 No matter, as we can instead use the technique of partial derivatives, which is useful for functions of nonscalar domains.
 Suppose we have a function |f :: a :* b -> c|, and we want to compute its derivative at a point in its (pair-valued) domain.
 Then\footnote{There is a temporary abuse of notation here in that lambda expressions do not necessarily denote \emph{linear} functions, although the they do in this calculation, since derivative values are linear maps.}
@@ -242,7 +232,7 @@ Then\footnote{There is a temporary abuse of notation here in that lambda express
 ==  \ (da,db) -> (der f (a,b) . inl) da + (der f (a,b) . inr) db
 ==  \ (da,db) -> (der f (a,b) . inl ||| der f (a,b) . inr) (da,db)
 ==  der f (a,b) . inl ||| der f (a,b) . inr
-==  der (f . (,b)) a ||| der (f . (a,)) b  -- TODO: justify
+==  der (f . (,b)) a ||| der (f . (a,)) b  -- \mynote{To do: justify}
 ==  derl f (a,b) ||| derr f (a,b)
 \end{code}
 where by convenient definition, |derl| and |derr| denote ``partial derivatives'' in which one half of a pair-valued argument is allowed to vary while the other half is held constant, i.e.,\footnote{The Haskell notation ``|(a,)|'' and ``|(b,)|'' refers to right and left ``sections'' of pairing: |(,b) a == (a,) b == (a,b)|.}
@@ -253,7 +243,7 @@ derl f (a,b) = der (f . (,b)) a
 derr :: (a :* b -> c) -> a :* b -> (b :-* c)
 derr f (a,b) = der (f . (a,)) b
 \end{code}
-Apply the technique of partial derivatives to |apply|.
+Apply the technique of partial derivatives to |eval|.
 %format ## = "\mathbin{\$}"
 %if False
 First, define reverse function application:
@@ -265,31 +255,40 @@ applyTo a f = f a
 Using ``|(##)|'' for infix function application,
 %endif
 \begin{code}
-    der apply (f,a)
-==  derl apply (f,a) ||| derr apply (f,a)  -- method of partial derivatives
+    der eval (f,a)
+==  derl eval (f,a) ||| derr eval (f,a)    -- method of partial derivatives
 ==  der (## NOP a) f ||| der (f NOP ##) a  -- |derl| and |derr| definitions; |eval| on functions
 ==  der (## NOP a) f ||| der f a           -- |(f NOP ##) == f|
 ==  (## NOP a) ||| der f a                 -- \thmRef{linear}, since |(## NOP a) is linear|
 ==  \ (df,dx) -> df a + der f a dx         -- |(###) on linear maps|
 \end{code}
 
-Now we can complete the calculation of |apply| for |D|:
+Now we can complete the calculation of |eval| for |D|:
 \begin{code}
-    apply
-==  adf apply
-==  D (apply &&& der apply)                       -- definition of |adf|
-==  D (\ (f,a) -> (apply (f,a), der apply (f,a))  -- |(&&&) on functions|
-==  D (\ (f,a) -> (f a, der apply (f,a))          -- |apply| on functions
-==  D (\ (f,a) -> (f a, (## NOP a) ||| der f a)   -- above
+    eval
+==  adf eval
+==  D (eval &&& der eval)                        -- definition of |adf|
+==  D (\ (f,a) -> (eval (f,a), der eval (f,a))   -- |(&&&) on functions|
+==  D (\ (f,a) -> (f a, der eval (f,a))          -- |eval| on functions
+==  D (\ (f,a) -> (f a, (## NOP a) ||| der f a)  -- above
 \end{code}
-Although this final form is well-defined, it is not a computable recipe, since |der| is not computable.
-The current problem specification (inherited from \cite{Elliott-2018-ad-icfp}) leaves us in a pickle, so let's look for some wiggle room.
+Although this final form is well-defined, it is not a computable recipe, since |der| is not computable, which leaves us in a pickle.
+The problem specification inherited from \cite{Elliott-2018-ad-icfp} leaves us in a pickle.
+Let's look for some wiggle room.
 
-Recall the types of |apply| and |adf|:
+\sectionl{Object mapping}
+
+The choice of category-associated products and exponentials is a degree of freedom not exercised in the development of AD in \cite{Elliott-2018-ad-icfp} and one that is tied closely to another such choice available in the general notion of \emph{functor} in category theory.
+In general, a functor has two aspects:
+\begin{itemize}
+\item a mapping from arrows to arrows, and
+\item a mapping from objects to objects.
+\end{itemize}
+The functor |adf| defined (noncomputably) above implicitly chooses an \emph{identity object mapping}, as evident in its type |(a -> b) -> D a b|.
+
+Recall the types of |eval| and |adf|:
 \begin{code}
-apply :: CartesianClosed k => ((Exp k a b) :* a) `k` b
-
-adf :: (a -> b) -> D a b
+eval :: CartesianClosed k => ((Exp k a b) :* a) `k` b
 \end{code}
 This type of |adf| plus the requirement it be a cartesian \emph{closed} functor implies that the object mapping aspect of |adf| be the identity, and in particular |Exp D u v = u -> v|.
 It is this final conclusion that puts us in the pickle noted above, namely the need to compute the noncomputable.
@@ -298,6 +297,10 @@ In this case, we must alter |adf| so as not to require an identity object mappin
 Letting |O| be this object mapping,
 \begin{code}
 adf :: (a -> b) -> D (O a) (O b)
+\end{code}
+The property of being a closed cartesian functor requires that |O| preserve categorical products and exponentials, i.e.,
+\begin{code}
+O (a :* b) == Prod k (O a) (O b)
 \end{code}
 
 \sectionl{Related Work}
