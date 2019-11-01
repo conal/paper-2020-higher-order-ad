@@ -87,6 +87,8 @@ As typically presented, reverse mode is also much more complicated, but this dif
 Instead, a single, simple algorithm works for both reverse as well as forward (and other) modes, with the only difference being that reverse mode uses a different linear map representation resulting from a simple classic trick \citep{Elliott-2018-ad-icfp}.
 
 This general AD algorithm is justified by three main theorems:
+\begin{quotation}
+\vspace{-3ex}
 \begin{theorem}[compose/``chain'' rule] \thmLabel{compose}
 $|der (g . f) a == der g (f a) . der f a|$.
 \end{theorem}
@@ -96,6 +98,8 @@ $|der (f *** g) (a,b) == der f a *** der g b|$.
 \begin{theorem}[linear rule] \thmLabel{linear}
 For all linear functions |f|, |der f a == f|.
 \end{theorem}
+\end{quotation}
+\noindent
 In addition to these three theorems, we need a collection of facts about the derivatives of various mathematical operations, e.g., |adf sin x = scale (cos x)|, where |scale :: a -> a :-* a| is uncurried scalar multiplication (so |scale s| is linear for all |s|).
 
 \sectionl{Cartesian closed?}
@@ -238,6 +242,7 @@ Then\footnote{There is a temporary abuse of notation here in that lambda express
 ==  \ (da,db) -> (der f (a,b) . inl) da + (der f (a,b) . inr) db
 ==  \ (da,db) -> (der f (a,b) . inl ||| der f (a,b) . inr) (da,db)
 ==  der f (a,b) . inl ||| der f (a,b) . inr
+==  der (f . (,b)) a ||| der (f . (a,)) b  -- TODO: justify
 ==  derl f (a,b) ||| derr f (a,b)
 \end{code}
 where by convenient definition, |derl| and |derr| denote ``partial derivatives'' in which one half of a pair-valued argument is allowed to vary while the other half is held constant, i.e.,\footnote{The Haskell notation ``|(a,)|'' and ``|(b,)|'' refers to right and left ``sections'' of pairing:
@@ -253,9 +258,7 @@ derl f (a,b) = der (f . (,b)) a
 derr :: (a :* b -> c) -> a :* b -> (b :-* c)
 derr f (a,b) = der (f . (a,)) b
 \end{code}
-
 \mynote{Which pair of definitions for |derl| and |derr| should I give; and can I prove that the other pair is equivalent?}
-
 Apply the technique of partial derivatives to |apply|||.
 %format ## = "\mathbin{\$}"
 %if False
@@ -268,11 +271,34 @@ applyTo a f = f a
 Using ``|(##)|'' for infix function application,
 %endif
 \begin{code}
-    der apply (f,x)
-==  derl apply (f,x) ||| derr apply (f,x)  -- method of partial derivatives
-==  der (## NOP x) f ||| der (f NOP ##) x
-==  der (## NOP x) f ||| der f x           -- |(f NOP ##) == f|
-==  (## NOP x) ||| der f x                 -- |(## NOP x) is linear|
+    der apply (f,a)
+==  derl apply (f,a) ||| derr apply (f,a)  -- method of partial derivatives
+==  der (## NOP a) f ||| der (f NOP ##) a  -- |derl| and |derr| definitions; |eval| on functions
+==  der (## NOP a) f ||| der f a           -- |(f NOP ##) == f|
+==  (## NOP a) ||| der f a                 -- \thmRef{linear}, since |(## NOP a) is linear|
+==  \ (df,dx) -> df a + der f a dx         -- |(###) on linear maps|
+\end{code}
+
+Now we can complete the calculation of |apply| for |D|:
+\begin{code}
+    adf apply
+==  D (apply &&& der apply)                       -- definition of |adf|
+==  D (\ (f,a) -> (apply (f,a), der apply (f,a))  -- |(&&&) on functions|
+==  D (\ (f,a) -> (f a, der apply (f,a))          -- |apply| on functions
+==  D (\ (f,a) -> (f a, (## NOP a) ||| der f a)   -- above
+\end{code}
+Although this final form is well-defined, it is not a computable recipe, since |der| is not computable.
+It seems that the current problem specification (inherited from \cite{Elliott-2018-ad-icfp}) leaves us in a pickle.
+
+Recall the types of |apply| and |adf|:
+\begin{code}
+apply :: CartesianClosed k => ((Exp k a b) :* a) `k` b
+
+adf :: (a -> b) -> D a b
+\end{code}
+The requirement that |adf| be a cartesian \emph{closed} functor includes that
+\begin{code}
+Exp k b c = 
 \end{code}
 
 \sectionl{Related Work}
