@@ -245,12 +245,7 @@ Then\footnote{There is a temporary abuse of notation here in that lambda express
 ==  der (f . (,b)) a ||| der (f . (a,)) b  -- TODO: justify
 ==  derl f (a,b) ||| derr f (a,b)
 \end{code}
-where by convenient definition, |derl| and |derr| denote ``partial derivatives'' in which one half of a pair-valued argument is allowed to vary while the other half is held constant, i.e.,\footnote{The Haskell notation ``|(a,)|'' and ``|(b,)|'' refers to right and left ``sections'' of pairing:
-\begin{code}
-(,b) a = (a,b)
-(a,) b = (a,b)
-\end{code}
-}
+where by convenient definition, |derl| and |derr| denote ``partial derivatives'' in which one half of a pair-valued argument is allowed to vary while the other half is held constant, i.e.,\footnote{The Haskell notation ``|(a,)|'' and ``|(b,)|'' refers to right and left ``sections'' of pairing: |(,b) a == (a,) b == (a,b)|.}
 \begin{code}
 derl :: (a :* b -> c) -> a :* b -> (a :-* c)
 derl f (a,b) = der (f . (,b)) a
@@ -258,8 +253,7 @@ derl f (a,b) = der (f . (,b)) a
 derr :: (a :* b -> c) -> a :* b -> (b :-* c)
 derr f (a,b) = der (f . (a,)) b
 \end{code}
-\mynote{Which pair of definitions for |derl| and |derr| should I give; and can I prove that the other pair is equivalent?}
-Apply the technique of partial derivatives to |apply|||.
+Apply the technique of partial derivatives to |apply|.
 %format ## = "\mathbin{\$}"
 %if False
 First, define reverse function application:
@@ -281,14 +275,15 @@ Using ``|(##)|'' for infix function application,
 
 Now we can complete the calculation of |apply| for |D|:
 \begin{code}
-    adf apply
+    apply
+==  adf apply
 ==  D (apply &&& der apply)                       -- definition of |adf|
 ==  D (\ (f,a) -> (apply (f,a), der apply (f,a))  -- |(&&&) on functions|
 ==  D (\ (f,a) -> (f a, der apply (f,a))          -- |apply| on functions
 ==  D (\ (f,a) -> (f a, (## NOP a) ||| der f a)   -- above
 \end{code}
 Although this final form is well-defined, it is not a computable recipe, since |der| is not computable.
-It seems that the current problem specification (inherited from \cite{Elliott-2018-ad-icfp}) leaves us in a pickle.
+The current problem specification (inherited from \cite{Elliott-2018-ad-icfp}) leaves us in a pickle, so let's look for some wiggle room.
 
 Recall the types of |apply| and |adf|:
 \begin{code}
@@ -296,9 +291,13 @@ apply :: CartesianClosed k => ((Exp k a b) :* a) `k` b
 
 adf :: (a -> b) -> D a b
 \end{code}
-The requirement that |adf| be a cartesian \emph{closed} functor includes that
+This type of |adf| plus the requirement it be a cartesian \emph{closed} functor implies that the object mapping aspect of |adf| be the identity, and in particular |Exp D u v = u -> v|.
+It is this final conclusion that puts us in the pickle noted above, namely the need to compute the noncomputable.
+We could make this impossible task trivial by building the needed derivative into |Exp D u v|, say by choosing |Exp D u v = D u v|.
+In this case, we must alter |adf| so as not to require an identity object mapping.
+Letting |O| be this object mapping,
 \begin{code}
-Exp k b c = 
+adf :: (a -> b) -> D (O a) (O b)
 \end{code}
 
 \sectionl{Related Work}
