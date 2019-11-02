@@ -288,7 +288,7 @@ The functor |adf| defined (noncomputably) above implicitly chooses an \emph{iden
 
 Recall the types of |eval| and |adf|:
 \begin{code}
-eval :: CartesianClosed k => ((Exp k a b) :* a) `k` b
+eval :: CartesianClosed k => (Prod k ((Exp k a b)) a) `k` b
 \end{code}
 This type of |adf| plus the requirement it be a cartesian \emph{closed} functor implies that the object mapping aspect of |adf| be the identity, and in particular |Exp D u v = u -> v|.
 It is this final conclusion that puts us in the pickle noted above, namely the need to compute the noncomputable.
@@ -300,7 +300,14 @@ adf :: (a -> b) -> D (O a) (O b)
 \end{code}
 The property of being a closed cartesian functor requires that |O| preserve categorical products and exponentials, i.e.,
 \begin{code}
-O (a :* b) == Prod k (O a) (O b)
+O (a  :*  b) == Prod D  (O a)  (O b)
+O (a  ->  b) == Exp  D  (O a)  (O b)
+\end{code}
+To make |eval| on |D| computable, we can choose |Exp D u v = D u v| as mentioned above.
+Additionally, make the previously implicit choice of |Prod D u v = u :* v| now explicit.
+\begin{code}
+O (a  :*  b) == Prod D  (O a)  (O b)  == O a :* O b
+O (a  ->  b) == Exp  D  (O a)  (O b)  == D (O a) (O b)
 \end{code}
 
 \sectionl{Related Work}
