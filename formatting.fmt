@@ -81,3 +81,5 @@
 %format (nopar (x)) = x
 
 %% %format eval = apply
+
+%format R = "\mathbb{R}"
