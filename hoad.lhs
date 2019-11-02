@@ -292,9 +292,9 @@ eval :: CartesianClosed k => (Prod k ((Exp k a b)) a) `k` b
 \end{code}
 This type of |adf| plus the requirement it be a cartesian \emph{closed} functor implies that the object mapping aspect of |adf| be the identity, and in particular |Exp D u v = u -> v|.
 It is this final conclusion that puts us in the pickle noted above, namely the need to compute the noncomputable.
-We could make this impossible task trivial by building the needed derivative into |Exp D u v|, say by choosing |Exp D u v = D u v|.
+We can make this impossible task trivial by building the needed derivative into |Exp D u v|, say by choosing |Exp D u v = D u v|.
 In this case, we must alter |adf| so as not to require an identity object mapping.
-Letting |O| be this object mapping,
+Letting |O| be the object mapping aspect of the functor |adf|,
 \begin{code}
 adf :: (a -> b) -> D (O a) (O b)
 \end{code}
@@ -304,11 +304,19 @@ O (a  :*  b) == Prod D  (O a)  (O b)
 O (a  ->  b) == Exp  D  (O a)  (O b)
 \end{code}
 To make |eval| on |D| computable, we can choose |Exp D u v = D u v| as mentioned above.
-Additionally, make the previously implicit choice of |Prod D u v = u :* v| now explicit.
+Additionally map scalars to themselves and cartesian products to cartesian products:
 \begin{code}
+O R == R
 O (a  :*  b) == Prod D  (O a)  (O b)  == O a :* O b
 O (a  ->  b) == Exp  D  (O a)  (O b)  == D (O a) (O b)
 \end{code}
+
+Since we have changed the signature of |adf|, we will have to change its meaning as well, while keeping a close connection to the original specification in terms of differentiation.
+
+\mynote{I guess define another to-be functor in terms of |adf|.
+I'll need to define and use an isomorphism between |u| and |O u|.
+Derive instances of |Category|, etc, and then add |CartesianClosed|.
+}
 
 \sectionl{Related Work}
 
