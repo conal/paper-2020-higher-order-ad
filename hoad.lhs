@@ -72,13 +72,13 @@ newtype D a b = D (a -> b :* (a :-* b))
 where |a :-* b| is the type of linear maps from |a| to |b|.
 The function around which the automatic differentiation (AD) algorithm is organized simply zips together a function |f :: a -> b| and its derivative |der f :: a -> a :-* b|:
 \begin{code}
-adf :: (a -> b) -> D a b
-adf f  = D (\ a -> (f a, der f a))
+adh :: (a -> b) -> D a b
+adh f  = D (\ a -> (f a, der f a))
        = D (f &&& der f)
 \end{code}
 Note that this definition is not computable, since |der| is not \citep{PourEl1978Diff, PourEl1983Comp}.
-The whole specification of AD is then simply that |adf| is a homomorphism with respect to a standard compositional vocabulary of functions, namely that of cartesian categories, plus a collection of numeric primitives like (uncurried) addition and multiplication, |sin| and |cos|, etc.
-An example of such an equation is |adf g . adf f == adf (g . f)|, in which the only unknown is the meaning of the LHS |(.)|, i.e., sequential composition in the category |D|.
+The whole specification of AD is then simply that |adh| is a homomorphism with respect to a standard compositional vocabulary of functions, namely that of cartesian categories, plus a collection of numeric primitives like (uncurried) addition and multiplication, |sin| and |cos|, etc.
+An example of such an equation is |adh g . adh f == adh (g . f)|, in which the only unknown is the meaning of the LHS |(.)|, i.e., sequential composition in the category |D|.
 Solving the collection of such homomorphism equations yields correct-by-construction AD.
 
 AD is often described as coming in forward and backward ``modes''.
@@ -100,17 +100,17 @@ For all linear functions |f|, |der f a == f|.
 \end{theorem}
 \end{quotation}
 \noindent
-In addition to these three theorems, we need a collection of facts about the derivatives of various mathematical operations, e.g., |adf sin x = scale (cos x)|, where |scale :: a -> a :-* a| is uncurried scalar multiplication (so |scale s| is linear for all |s|).
+In addition to these three theorems, we need a collection of facts about the derivatives of various mathematical operations, e.g., |adh sin x = scale (cos x)|, where |scale :: a -> a :-* a| is uncurried scalar multiplication (so |scale s| is linear for all |s|).
 
 \sectionl{Cartesian closed?}
 
-While |D| is a category and a \emph{cartesian} category at that, as specified by |adf| being a cartesian functor, another question naturally arises.
-Can |adf| also a \emph{closed} cartesian functor?
+While |D| is a category and a \emph{cartesian} category at that, as specified by |adh| being a cartesian functor, another question naturally arises.
+Can |adh| also a \emph{closed} cartesian functor?
 In other words, are there definitions of |eval|, |curry|, and |uncurry| on |D| such that
 \begin{code}
-eval = adf eval
-curry (adf f) = adf (curry f)
-uncurry (adf g) = adf (uncurry f)
+eval = adh eval
+curry (adh f) = adh (curry f)
+uncurry (adh g) = adh (uncurry f)
 \end{code}
 These three operations come from the following interface:
 \begin{code}
@@ -192,7 +192,7 @@ from which it follows that
 ==  f c + g d
 \end{code}
 
-Just as the |Category| and |Cartesian| instances for |D| arose from solving corresponding homomorphism equations about |adf|, let's now try the same with |CartesianClosed|.
+Just as the |Category| and |Cartesian| instances for |D| arose from solving corresponding homomorphism equations about |adh|, let's now try the same with |CartesianClosed|.
 First note that we do not really have to define all three methods, since |eval| and |uncurry| can each be defined in terms of the other:\footnote{The pattern |g *** id| is also called ``|first g|'', because it applies |g| to the first element of a pair while leaving the second element unchanged.}
 \begin{code}
 eval = uncurry id
@@ -201,14 +201,14 @@ uncurry g = eval . (g *** id)
 Since |eval| looks simpler, start there.
 The corresponding homomorphism equation has a particularly simple form:
 \begin{code}
-eval = adf eval
+eval = adh eval
 \end{code}
 It might appear that we are done at the start, taking the equation to be a definition for |eval|.
-Recall, however, that |adf| is noncomputable, being defined via |der| (differentiation itself).
-Let us press forward undeterred, opening up the definition of |adf| to see if we can transform away the (noncomputable) |der|:
+Recall, however, that |adh| is noncomputable, being defined via |der| (differentiation itself).
+Let us press forward undeterred, opening up the definition of |adh| to see if we can transform away the (noncomputable) |der|:
 \begin{code}
-    adf eval
-==  D (eval &&& der eval)                        -- definition of |adf|
+    adh eval
+==  D (eval &&& der eval)                        -- definition of |adh|
 ==  D (\ (f,a) -> (eval (f,a), der eval (f,a))   -- |(&&&) on functions|
 ==  D (\ (f,a) -> (f a, der eval (f,a))          -- |eval| on functions
 \end{code}
@@ -266,8 +266,8 @@ Using ``|(##)|'' for infix function application,
 Now we can complete the calculation of |eval| for |D|:
 \begin{code}
     eval
-==  adf eval
-==  D (eval &&& der eval)                        -- definition of |adf|
+==  adh eval
+==  D (eval &&& der eval)                        -- definition of |adh|
 ==  D (\ (f,a) -> (eval (f,a), der eval (f,a))   -- |(&&&) on functions|
 ==  D (\ (f,a) -> (f a, der eval (f,a))          -- |eval| on functions
 ==  D (\ (f,a) -> (f a, (## NOP a) ||| der f a)  -- above
@@ -284,19 +284,19 @@ In general, a functor has two aspects:
 \item a mapping from arrows to arrows, and
 \item a mapping from objects to objects.
 \end{itemize}
-The functor |adf| defined (noncomputably) above implicitly chooses an \emph{identity object mapping}, as evident in its type |(a -> b) -> D a b|.
+The functor |adh| defined (noncomputably) above implicitly chooses an \emph{identity object mapping}, as evident in its type |(a -> b) -> D a b|.
 
-Recall the types of |eval| and |adf|:
+Recall the types of |eval| and |adh|:
 \begin{code}
 eval :: CartesianClosed k => (Prod k ((Exp k a b)) a) `k` b
 \end{code}
-This type of |adf| plus the requirement it be a cartesian \emph{closed} functor implies that the object mapping aspect of |adf| be the identity, and in particular |Exp D u v = u -> v|.
+This type of |adh| plus the requirement it be a cartesian \emph{closed} functor implies that the object mapping aspect of |adh| be the identity, and in particular |Exp D u v = u -> v|.
 It is this final conclusion that puts us in the pickle noted above, namely the need to compute the noncomputable.
 We can make this impossible task trivial by building the needed derivative into |Exp D u v|, say by choosing |Exp D u v = D u v|.
-In this case, we must alter |adf| so as not to require an identity object mapping.
-Letting |O| be the object mapping aspect of the functor |adf|,
+In this case, we must alter |adh| so as not to require an identity object mapping.
+Letting |O| be the object mapping aspect of the functor |adh|,
 \begin{code}
-adf :: (a -> b) -> D (O a) (O b)
+adh :: (a -> b) -> D (O a) (O b)
 \end{code}
 The property of being a closed cartesian functor requires that |O| preserve categorical products and exponentials, i.e.,
 \begin{code}
@@ -311,9 +311,9 @@ O (a  :*  b) == Prod D  (O a)  (O b)  == O a :* O b
 O (a  ->  b) == Exp  D  (O a)  (O b)  == D (O a) (O b)
 \end{code}
 
-Since we have changed the signature of |adf|, we will have to change its meaning as well, while keeping a close connection to the original specification in terms of differentiation.
+Since we have changed the signature of |adh|, we will have to change its meaning as well, while keeping a close connection to the original specification in terms of differentiation.
 
-\mynote{I guess define another to-be functor in terms of |adf|.
+\mynote{I guess define another to-be functor in terms of |adh|.
 I'll need to define and use an isomorphism between |u| and |O u|.
 Derive instances of |Category|, etc, and then add |CartesianClosed|.
 }

@@ -55,9 +55,9 @@
 %format (hat(x)) = "\hat{"x"}"
 
 %% Why doesn't the following definition work?
-%format adf = hat(der)
+%format adh = hat(der)
 
-%format adf = "\hat{"der"}"
+%format adh = "\hat{"der"}"
 
 %% %format :=> = "\mapsto"
 %format :=> = =>
