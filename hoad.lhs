@@ -294,11 +294,11 @@ This type of |adh| plus the requirement it be a cartesian \emph{closed} functor 
 It is this final conclusion that puts us in the pickle noted above, namely the need to compute the noncomputable.
 We can make this impossible task trivial by building the needed derivative into |Exp D u v|, say by choosing |Exp D u v = D u v|.
 In this case, we must alter |adh| so as not to require an identity object mapping.
-Letting |O| be the object mapping aspect of the functor |adh|,
+Letting |O| be the object mapping aspect of the new functor |ado|,
 \begin{code}
-adh :: (a -> b) -> D (O a) (O b)
+ado :: (a -> b) -> D (O a) (O b)
 \end{code}
-The property of being a closed cartesian functor requires that |O| preserve categorical products and exponentials, i.e.,
+The property of being a closed cartesian functor requires |O| to preserve categorical products and exponentials, i.e.,
 \begin{code}
 O (a  :*  b) == Prod D  (O a)  (O b)
 O (a  ->  b) == Exp  D  (O a)  (O b)
@@ -311,12 +311,15 @@ O (a  :*  b) == Prod D  (O a)  (O b)  == O a :* O b
 O (a  ->  b) == Exp  D  (O a)  (O b)  == D (O a) (O b)
 \end{code}
 
-Since we have changed the signature of |adh|, we will have to change its meaning as well, while keeping a close connection to the original specification in terms of differentiation.
+The new functor |ado| turns its given |f :: a -> b| into |g :: O a -> O b| and then applies the |       adh| functor.
+\begin{code}
+ado :: (a -> b) -> D (O a) (O b)
+ado f  = adh (toO . f . unO)
+       = let g = toO . f . unO in D (\ a -> (g a, der g a))
+       = let g = toO . f . unO in D (g &&& der g)
 
-\mynote{I guess define another to-be functor in terms of |adh|.
-I'll need to define and use an isomorphism between |u| and |O u|.
-Derive instances of |Category|, etc, and then add |CartesianClosed|.
-}
+\end{code}
+
 
 \sectionl{Related Work}
 
