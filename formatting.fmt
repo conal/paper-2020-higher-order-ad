@@ -34,7 +34,9 @@
 %format <== = "\Longleftarrow"
 %format <==> = "\Longleftrightarrow"
 
-%format (inv a) = a "^{-1}"
+\nc\inv[1]{#1^{\scriptscriptstyle -1}}
+
+%format (inv a) = "\inv{"a"}"
 %format (sub a (b)) = a "_{" b "}"
 
 %% Specific to this paper
@@ -58,6 +60,8 @@
 %format adh = hat(der)
 
 %format adh = "\hat{"der"}"
+%format ado = der"^\circ"
+%format ado = der"_o"
 
 %% %format :=> = "\mapsto"
 %format :=> = =>
@@ -83,3 +87,4 @@
 %% %format eval = apply
 
 %format R = "\mathbb{R}"
+

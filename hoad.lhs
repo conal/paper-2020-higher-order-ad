@@ -1,8 +1,8 @@
 % -*- latex -*-
 
 %% While editing/previewing, use 12pt and tiny margin.
-\documentclass[12,twoside]{article}  % fleqn,
-\usepackage[margin=0.9in]{geometry}  % 0.12in, 0.9in
+\documentclass[12pt,twoside]{article}  % fleqn,
+\usepackage[margin=0.12in]{geometry}  % 0.12in, 0.9in
 
 %% \documentclass{article}
 %% \usepackage{fullpage}
@@ -80,6 +80,20 @@ Note that this definition is not computable, since |der| is not \citep{PourEl197
 The whole specification of AD is then simply that |adh| is a homomorphism with respect to a standard compositional vocabulary of functions, namely that of cartesian categories, plus a collection of numeric primitives like (uncurried) addition and multiplication, |sin| and |cos|, etc.
 An example of such an equation is |adh g . adh f == adh (g . f)|, in which the only unknown is the meaning of the LHS |(.)|, i.e., sequential composition in the category |D|.
 Solving the collection of such homomorphism equations yields correct-by-construction AD.
+
+%format unadh = "\inv{"adh"}"
+The function |adh| is invertible, i.e., |unadh . adh == id|, where |unadh| simply drops the derivative:
+\begin{code}
+unadh :: D a b -> (a -> b)
+unadh (D h) = exl . h
+\end{code}
+Indeed, |unadh| is a left inverse of |adh|:
+\begin{code}
+    unadh (adh f)
+==  unadh (D (f &&& der f))  -- |adh| definition
+==  exl . (f &&& der f)      -- |unadh| definition
+==  f                        -- |exl . (g &&& h) == g| in cartesian categories
+\end{code}
 
 AD is often described as coming in forward and backward ``modes''.
 For many practical applications (including deep learning and other high-dimensional optimization problems), reverse mode is much more efficient than forward mode.
@@ -298,6 +312,7 @@ Letting |O| be the object mapping aspect of the new functor |ado|,
 \begin{code}
 ado :: (a -> b) -> D (O a) (O b)
 \end{code}
+%format unado = "\inv{"ado"}"
 The property of being a closed cartesian functor requires |O| to preserve categorical products and exponentials, i.e.,
 \begin{code}
 O (a  :*  b) == Prod D  (O a)  (O b)
@@ -310,16 +325,60 @@ O R == R
 O (a  :*  b) == Prod D  (O a)  (O b)  == O a :* O b
 O (a  ->  b) == Exp  D  (O a)  (O b)  == D (O a) (O b)
 \end{code}
+We will need to convert between |a| and |O a| , which can be done simply via the following type class:\notefoot{It may be more elegant to combine the functions |toO| and |unO| into a single \emph{isomorphism}.}
+\begin{code}
+class HasO (k :: * -> * -> *) t where
+  type O k t
+  toO  :: t -> O k t
+  unO  :: O k t -> t
+\end{code}
+Moreover, |toO| and |unO| will form an isomorphism.
+For some types |a|, |O a == a|, so the isomorphism is trivial:
+\begin{code}
+instance HasO k R where
+  type O k R = R
+  toO  = id
+  unO  = id
 
-The new functor |ado| turns its given |f :: a -> b| into |g :: O a -> O b| and then applies the |       adh| functor.
+instance HasO k () where
+  type O k () = ()
+  toO  = id
+  unO  = id
+\end{code}
+For products, convert components independently:
+\begin{code}
+instance (HasO k a, HasO k b) => HasO k (a :* b) where
+  type O k (a :* b) = O k a :* O k b
+  toO  = toO  ***  toO
+  unO  = unO  ***  unO
+\end{code}
+The new functor |ado| converts its given |a -> b| to |O a -> O b| and then applies the |adh| functor.
 \begin{code}
 ado :: (a -> b) -> D (O a) (O b)
 ado f  = adh (toO . f . unO)
        = let g = toO . f . unO in D (\ a -> (g a, der g a))
        = let g = toO . f . unO in D (g &&& der g)
 
+unado :: D (O a) (O b) -> (a -> b)
+unado h = unO . unadh h . toO
 \end{code}
-
+Note that indeed |unado . ado == id|:
+\begin{code}
+    unado (ado f)
+==  unado (adh (toO . f . unO))              -- |ado| definition
+==  unO . unadh (adh (toO . f . unO)) . toO  -- |unado| definition
+==  unO . (toO . f . unO) . toO              -- |unadh . adh == id|
+==  (unO . toO) . f . (unO . toO)            -- associativity of |(.)|
+==  id . f . id                              -- |unO . toO == id|
+==  f                                        -- |id| is the left \& right identity for |(.)|
+\end{code}
+Use |ado| for exponentials in |D|:
+\begin{code}
+instance (HasO k a, HasO k b) => HasO k (a -> b) where
+  type O k (a -> b) = D (O a) (O b)
+  toO  = ado
+  unO  = unado
+\end{code}
 
 \sectionl{Related Work}
 
