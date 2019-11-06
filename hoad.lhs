@@ -292,7 +292,7 @@ Let's look for some wiggle room.
 
 \sectionl{Object mapping}
 
-The choice of category-associated products and exponentials is a degree of freedom not exercised in the development of AD in \cite{Elliott-2018-ad-icfp} and one that is tied closely to another such choice available in the general notion of \emph{functor} in category theory.
+The choice of category-associated products and exponentials is a degree of freedom not exercised in the development of AD in \cite{Elliott-2018-ad-icfp} and one that is tied closely to another such choice available in the general notion of \emph{cartesian closed functor} in category theory.
 In general, a functor has two aspects:
 \begin{itemize}
 \item a mapping from arrows to arrows, and
@@ -304,7 +304,7 @@ Recall the types of |eval| and |adh|:
 \begin{code}
 eval :: CartesianClosed k => (Prod k ((Exp k a b)) a) `k` b
 \end{code}
-This type of |adh| plus the requirement it be a cartesian \emph{closed} functor implies that the object mapping aspect of |adh| be the identity, and in particular |Exp D u v = u -> v|.
+This type of |adh| plus the requirement that it be a cartesian \emph{closed} functor implies that the object mapping aspect of |adh| be the identity, and in particular |Exp D u v = u -> v|.
 It is this final conclusion that puts us in the pickle noted above, namely the need to compute the noncomputable.
 We can make this impossible task trivial by building the needed derivative into |Exp D u v|, say by choosing |Exp D u v = D u v|.
 In this case, we must alter |adh| so as not to require an identity object mapping.
@@ -325,7 +325,9 @@ O R == R
 O (a  :*  b) == Prod D  (O a)  (O b)  == O a :* O b
 O (a  ->  b) == Exp  D  (O a)  (O b)  == D (O a) (O b)
 \end{code}
-We will need to convert between |a| and |O a| , which can be done simply via the following type class:\notefoot{It may be more elegant to combine the functions |toO| and |unO| into a single \emph{isomorphism}.}
+%format toO = "\Varid{o}"
+%format unO = "\inv{\Varid{o}}"
+We will need to convert between |a| and |O a| , which we can do with a family of isomorphisms indexed by |a|:\notefoot{It may be more elegant to combine the functions |toO| and |unO| into a single \emph{isomorphism}.}
 \begin{code}
 class HasO (k :: * -> * -> *) t where
   type O k t
