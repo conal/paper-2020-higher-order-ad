@@ -415,7 +415,52 @@ Also |ado| and |unado| form another isomorphism:
 ==  id
 \end{code}
 
-Use |ado| for exponentials in |D|:
+Because |adh| is a cartesian functor (given the cartesian category operations on |D| defined by \cite{Elliott-2018-ad-icfp}) and thanks to the structure of |toO| and |unO|, |ado| is also a cartesian category, as the following calculations show:\notefoot{Annotate with justifications at each step.}
+\begin{code}
+    ado id
+==  adh (toO . id . unO)
+==  adh (toO . unO)
+==  adh id
+==  id
+
+    ado (g . f)
+==  adh (toO . g . f . unO)
+==  adh (toO . g . unO . toO . f . unO)
+==  adh (toO . g . unO) . adh (toO . f . unO)
+==  ado g . ado f
+
+    ado (f *** g)
+==  adh (toO . (f *** g) . unO)
+==  adh ((toO *** toO) . (f *** g) . (unO *** unO))
+==  adh (toO . f . unO *** toO . g . unO)
+==  adh (toO . f . unO) *** adh (toO . g . unO)
+==  ado f *** ado g
+
+    ado exl
+==  adh (toO . exl . unO)
+==  adh (toO . exl . (unO *** unO))
+==  adh (toO . unO . exl)
+==  adh exl
+==  exl
+
+    ado exr
+==  adh (toO . exr . unO)
+==  adh (toO . exr . (unO *** unO))
+==  adh (toO . unO . exr)
+==  adh exr
+==  exr
+
+    ado dup
+==  adh (toO . dup . unO)
+==  adh (toO . (unO *** unO) . dup)
+==  adh (toO . unO . dup)
+==  adh dup
+==  dup
+\end{code}
+
+What about exponentials and cartesian \emph{closure}?
+As mentioned above, we'll choose |Exp D u v = D u v|.
+Requiring |ado| to be a cartesian closed \emph{functor} necessitates that |O (a -> b) == Exp D (O a) (O b) == D (O a) (O b)|, which suggests using |ado| and |unado| for |toO| and |unO|:
 \begin{code}
 instance (HasO a, HasO b) => HasO (a -> b) where
   type O (a -> b) = D (O a) (O b)
