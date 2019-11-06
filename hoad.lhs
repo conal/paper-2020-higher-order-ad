@@ -74,7 +74,7 @@ The function around which the automatic differentiation (AD) algorithm is organi
 \begin{code}
 adh :: (a -> b) -> D a b
 adh f  = D (\ a -> (f a, der f a))
-       = D (f &&& der f)
+       == D (f &&& der f)
 \end{code}
 Note that this definition is not computable, since |der| is not \citep{PourEl1978Diff, PourEl1983Comp}.
 The whole specification of AD is then simply that |adh| is a homomorphism with respect to a standard compositional vocabulary of functions, namely that of cartesian categories, plus a collection of numeric primitives like (uncurried) addition and multiplication, |sin| and |cos|, etc.
@@ -94,6 +94,18 @@ Indeed, |unadh| is a left inverse of |adh|:
 ==  exl . (f &&& der f)      -- |unadh| definition
 ==  f                        -- |exl . (g &&& h) == g| in cartesian categories
 \end{code}
+
+As defined so far, |unadh| is \emph{not} a right inverse to |adh|, since the linear map portion might not be the true derivative.
+We will thus \emph{restrict} the category |D| to be the image of |adh|, which is to say that |adh| is surjective, i.e., the derivative is correct.
+This restriction guarantees that |unadh| is indeed a right inverse of |adh|.
+Given |h :: D a b| (with the mentioned restriction), there is an |f :: a -> b| such that |h = adh f|, so
+\begin{code}
+    adh (unadh h)
+==  adh (unadh (adh f))  -- |h = adh f|
+==  adh f                -- |unadh . adh == id|
+==  h                    -- |adh f = h|
+\end{code}
+Thus, |adh . unadh == id| as well.
 
 AD is often described as coming in forward and backward ``modes''.
 For many practical applications (including deep learning and other high-dimensional optimization problems), reverse mode is much more efficient than forward mode.
@@ -138,10 +150,12 @@ where |Exp k a b| is a type of ``exponential objects'' (first class functions/ar
 These operations support higher-order programming and arise during translation from a typed lambda calculus (e.g., Haskell) to categorical vocabulary \citep{Elliott-2017-compiling-to-categories}.
 
 Similarly, monoidal and cartesian categories have category-associated categorical \emph{products}:
+%format MonoidalP = Monoidal
+%format MonoidalC = Monoidal'
 \begin{code}
 class Category k => MonoidalP k where
   type ProdOp k :: Type -> Type -> Type
-  (***) :: (a `k` c) -> (b `k` d) -> ((Prod k a b) `k` (Prod k c d))
+  (***) :: (a `k` c) -> (b `k` d) -> ((Prod k a b) `k` (Prod k c d))  -- product bifunctor
 
 class Monoidal k => Cartesian k where
   exl  :: (Prod k a b) `k` a
@@ -163,28 +177,30 @@ dup a = (a,a)
 Hence
 \begin{code}
     (f &&& g) a
+==  ((f *** g) . dup) a
 ==  (f *** g) (dup a)
 ==  (f *** g) (a,a)
 ==  (f a, g a)
 \end{code}
 
-Dually, we have monoidal and cocartesian categories with associated categories ``coproducts'':
+Dually, we have monoidal and cocartesian categories with associated categorical ``coproducts'':
 \begin{code}
 class Category k => MonoidalC k where
   type CoprodOp k :: Type -> Type -> Type
-  (+++) :: (a `k` c) -> (b `k` d) -> ((Coprod k a b) `k` (Coprod k c d))
+  (+++) :: (a `k` c) -> (b `k` d) -> ((Coprod k a b) `k` (Coprod k c d))  -- coproduct bifunctor
 
-class Cocartesian k where
+class MonoidalC k => Cocartesian k where
   inl :: a `k` (Coprod k a b)
   inr :: b `k` (Coprod k a b)
   jam :: (Coprod k a a) `k` a
 
-(|||) :: (c `k` a) -> (d `k` a) -> ((Coprod k c d) `k` a)
+(|||) :: Cocartesian k => (c `k` a) -> (d `k` a) -> ((Coprod k c d) `k` a)
 f ||| g = jam . (f +++ g)
 \end{code}
-In this paper we will be working in the setting of \emph{biproducts}, where products and coproducts coincide, hence
+In this paper we will be working in the setting of \emph{biproducts}, where products and coproducts coincide.
+The corresponding bifunctor operations |(:+)| and |(:*)| thus also coincide, and
 \begin{code}
-class Cocartesian k where
+class MonoidalP k => Cocartesian k where
   inl :: a `k` (Prod k a b)
   inr :: b `k` (Prod k a b)
   jam :: (Prod k a a) `k` a
@@ -356,24 +372,52 @@ instance (HasO k a, HasO k b) => HasO k (a :* b) where
 \end{code}
 The new functor |ado| converts its given |a -> b| to |O a -> O b| and then applies the |adh| functor.
 \begin{code}
+wrapO :: (a -> b) -> (O a -> O b)
+wrapO f = toO . f . unO
+
+unwrapO :: (O a -> O b) -> (a -> b)
+unwrapO h = unO . h . toO
+
 ado :: (a -> b) -> D (O a) (O b)
-ado f  = adh (toO . f . unO)
-       = let g = toO . f . unO in D (\ a -> (g a, der g a))
-       = let g = toO . f . unO in D (g &&& der g)
+ado = adh . wrapO
+
+ado f  = adh (wrapO f)
+       = let g = wrapO f in D (\ a -> (g a, der g a))
+       = let g = wrapO f in D (g &&& der g)
 
 unado :: D (O a) (O b) -> (a -> b)
-unado h = unO . unadh h . toO
+unado = unwrapO . unadh
 \end{code}
-Note that indeed |unado . ado == id|:
+Note that |wrapO| and |unwrapO| form an isomorphism:
 \begin{code}
-    unado (ado f)
-==  unado (adh (toO . f . unO))              -- |ado| definition
-==  unO . unadh (adh (toO . f . unO)) . toO  -- |unado| definition
-==  unO . (toO . f . unO) . toO              -- |unadh . adh == id|
-==  (unO . toO) . f . (unO . toO)            -- associativity of |(.)|
-==  id . f . id                              -- |unO . toO == id|
-==  f                                        -- |id| is the left \& right identity for |(.)|
+    unwrapO (wrapO f)
+==  unwrapO (toO . f . unO)
+==  unO . (toO . f . unO) . toO
+==  (unO . toO) . f . (unO . toO)
+==  id . f . id
+==  f
+
+    wrapO (unwrapO h)
+==  wrapO (unO . h . toO)
+==  toO . (unO . h . toO) . unO
+==  (toO . unO) . h . (toO . unO)
+==  id . h . id
+==  h
 \end{code}
+Also |unado| and |ado| form another isomorphism:
+\begin{code}
+    unado . ado
+==  (unwrapO . unado) . (adh . wrapO)
+==  unwrapO . unado . adh . wrapO
+==  unwrapO . wrapO
+==  id
+
+    ado . unado
+==  adh . wrapO . unwrapO . unado
+==  adh . unado
+==  id
+\end{code}
+
 Use |ado| for exponentials in |D|:
 \begin{code}
 instance (HasO k a, HasO k b) => HasO k (a -> b) where
