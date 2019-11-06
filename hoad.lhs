@@ -324,7 +324,7 @@ This type of |adh| plus the requirement that it be a cartesian \emph{closed} fun
 It is this final conclusion that puts us in the pickle noted above, namely the need to compute the noncomputable.
 We can make this impossible task trivial by building the needed derivative into |Exp D u v|, say by choosing |Exp D u v = D u v|.
 In this case, we must alter |adh| so as not to require an identity object mapping.
-Letting |O| be the object mapping aspect of the new functor |ado|,
+Letting |O| be the object mapping aspect of the new functor |ado|,\notefoot{Experiment with different notation for |O a|, e.g., ``$\bar{a}$''.}
 \begin{code}
 ado :: (a -> b) -> D (O a) (O b)
 \end{code}
@@ -343,34 +343,36 @@ O (a  ->  b) == Exp  D  (O a)  (O b)  == D (O a) (O b)
 \end{code}
 %format toO = "\Varid{o}"
 %format unO = "\inv{\Varid{o}}"
-We will need to convert between |a| and |O a| , which we can do with a family of isomorphisms indexed by |a|:\notefoot{It may be more elegant to combine the functions |toO| and |unO| into a single \emph{isomorphism}.}
+We will need to convert between |a| and |O a| , which we can do with a family of \emph{isomorphisms}\footnote{An implicit requirement is that |toO . unO == id| and |unO . toO == id| for all |HasO| instances.} indexed by |a|:\notefoot{It may be more elegant to combine the functions |toO| and |unO| into a single \emph{isomorphism}.}
 \begin{code}
-class HasO (k :: * -> * -> *) t where
-  type O k t
-  toO  :: t -> O k t
-  unO  :: O k t -> t
+class HasO t where
+  type O t
+  toO  :: t -> O t
+  unO  :: O t -> t
 \end{code}
-Moreover, |toO| and |unO| will form an isomorphism.
-For some types |a|, |O a == a|, so the isomorphism is trivial:
+For scalar types |a| and the unit type, |O a == a|, so the isomorphism is trivial:
 \begin{code}
-instance HasO k R where
-  type O k R = R
+instance HasO R where
+  type O R = R
   toO  = id
   unO  = id
 
-instance HasO k () where
-  type O k () = ()
+instance HasO () where
+  type O () = ()
   toO  = id
   unO  = id
 \end{code}
 For products, convert components independently:
 \begin{code}
-instance (HasO k a, HasO k b) => HasO k (a :* b) where
-  type O k (a :* b) = O k a :* O k b
+instance (HasO a, HasO b) => HasO (a :* b) where
+  type O (a :* b) = O a :* O b
   toO  = toO  ***  toO
   unO  = unO  ***  unO
 \end{code}
 The new functor |ado| converts its given |a -> b| to |O a -> O b| and then applies the |adh| functor.
+%format wrapO = wrap"_o"
+%format wrapO = wrap
+%format unwrapO = "\inv{"wrapO"}"
 \begin{code}
 wrapO :: (a -> b) -> (O a -> O b)
 wrapO f = toO . f . unO
@@ -380,10 +382,6 @@ unwrapO h = unO . h . toO
 
 ado :: (a -> b) -> D (O a) (O b)
 ado = adh . wrapO
-
-ado f  = adh (wrapO f)
-       = let g = wrapO f in D (\ a -> (g a, der g a))
-       = let g = wrapO f in D (g &&& der g)
 
 unado :: D (O a) (O b) -> (a -> b)
 unado = unwrapO . unadh
@@ -404,10 +402,9 @@ Note that |wrapO| and |unwrapO| form an isomorphism:
 ==  id . h . id
 ==  h
 \end{code}
-Also |unado| and |ado| form another isomorphism:
+Also |ado| and |unado| form another isomorphism:
 \begin{code}
     unado . ado
-==  (unwrapO . unado) . (adh . wrapO)
 ==  unwrapO . unado . adh . wrapO
 ==  unwrapO . wrapO
 ==  id
@@ -420,8 +417,8 @@ Also |unado| and |ado| form another isomorphism:
 
 Use |ado| for exponentials in |D|:
 \begin{code}
-instance (HasO k a, HasO k b) => HasO k (a -> b) where
-  type O k (a -> b) = D (O a) (O b)
+instance (HasO a, HasO b) => HasO (a -> b) where
+  type O (a -> b) = D (O a) (O b)
   toO  = ado
   unO  = unado
 \end{code}
