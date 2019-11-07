@@ -131,14 +131,14 @@ In addition to these three theorems, we need a collection of facts about the der
 \sectionl{Cartesian closed?}
 
 While |D| is a category and a \emph{cartesian} category at that, as specified by |adh| being a cartesian functor, another question naturally arises.
-Can |adh| also a \emph{closed} cartesian functor?
+Can |adh| also be a cartesian \emph{closed} functor?
 In other words, are there definitions of |eval|, |curry|, and |uncurry| on |D| such that
 \begin{code}
 eval = adh eval
 curry (adh f) = adh (curry f)
 uncurry (adh g) = adh (uncurry f)
 \end{code}
-These three operations come from the following interface:
+These three operations come  with every \emph{cartesian closed} category:
 \begin{code}
 class Cartesian k => CartesianClosed k where
   type ExpOp k :: Type -> Type -> Type
@@ -227,6 +227,7 @@ First note that we do not really have to define all three methods, since |eval| 
 \begin{code}
 eval = uncurry id
 uncurry g = eval . (g *** id)
+          = eval . first g
 \end{code}
 Since |eval| looks simpler, start there.
 The corresponding homomorphism equation has a particularly simple form:
@@ -299,7 +300,6 @@ Now we can complete the calculation of |eval| for |D|:
 ==  D (\ (f,a) -> (f a, (## NOP a) ||| der f a)  -- above
 \end{code}
 Although this final form is well-defined, it is not a computable recipe, since |der| is not computable, which leaves us in a pickle.
-The problem specification inherited from \cite{Elliott-2018-ad-icfp} leaves us in a pickle.
 Let's look for some wiggle room.
 
 \sectionl{Object mapping}
@@ -316,7 +316,7 @@ Recall the types of |eval| and |adh|:
 \begin{code}
 eval :: CartesianClosed k => (Prod k ((Exp k a b)) a) `k` b
 \end{code}
-This type of |adh| plus the requirement that it be a cartesian \emph{closed} functor implies that the object mapping aspect of |adh| be the identity, and in particular |Exp D u v = u -> v|.
+This type of |adh| plus the requirement that it be a cartesian \emph{closed} functor implies that the object mapping aspect of |adh| is the identity, and in particular |Exp D u v = u -> v|.
 It is this final conclusion that puts us in the pickle noted above, namely the need to compute the noncomputable.
 We can make this impossible task trivial by building the needed derivative into |Exp D u v|, say by choosing |Exp D u v = D u v|.
 In this case, we must alter |adh| so as not to require an identity object mapping.
@@ -339,7 +339,7 @@ O (a  ->  b) == Exp  D  (O a)  (O b)  == D (O a) (O b)
 \end{code}
 %format toO = "\Varid{o}"
 %format unO = "\inv{\Varid{o}}"
-We will need to convert between |a| and |O a| , which we can do with a family of \emph{isomorphisms}\footnote{An implicit requirement is that |toO . unO == id| and |unO . toO == id| for all |HasO| instances.} indexed by |a|:\notefoot{It may be more elegant to combine the functions |toO| and |unO| into a single \emph{isomorphism}.}
+We will need to convert between |a| and |O a| , which we can do with a family of \emph{isomorphisms}\footnote{An implicit requirement for all |HasO| instances is that |toO . unO == id| and |unO . toO == id|.} indexed by |a|:\notefoot{It may be more elegant to combine the functions |toO| and |unO| into a single \emph{isomorphism}.}
 \begin{code}
 class HasO t where
   type O t
@@ -411,7 +411,7 @@ Also |ado| and |unado| form another isomorphism:
 ==  id
 \end{code}
 
-Because |adh| is a cartesian functor (given the cartesian category operations already defined on |D| \citep{Elliott-2018-ad-icfp}) and thanks to the structure of |toO| and |unO|, |ado| is also a cartesian category, as the following calculations show:\notefoot{Annotate with justifications at each step.}
+Because |adh| is a cartesian functor (given the cartesian category operations already defined on |D| \citep{Elliott-2018-ad-icfp}) and thanks to the structure of |toO| and |unO|, |ado| is also a cartesian functor, as the following calculations show:\notefoot{Annotate with justifications at each step.}
 \begin{code}
     ado id
 ==  adh (wrapO id)
@@ -485,19 +485,12 @@ Simplifying the RHS,
 ==  adh (\ (h,a) -> toO (eval (unado h, unO a)))           -- |(.)| and |(***)| on functions
 ==  adh (\ (h,a) -> toO (unado h (unO a)))                 -- |eval| on functions
 ==  adh (\ (h,a) -> toO (unwrapO (unadh h) (unO a)))       -- |unado| definition
-==  adh (\ (h,a) -> toO ((unO . unadh h . toO) (unO a)     -- |unwrapO| definition
+==  adh (\ (h,a) -> toO ((unO . unadh h . toO) (unO a))    -- |unwrapO| definition
 ==  adh (\ (h,a) -> toO (unO (unadh h (toO (unO a)))))     -- |(.)| on functions
 ==  adh (\ (h,a) -> unadh h a)                             -- |toO . unO == id|
-
-
 ==  adh (uncurry unadh)                                    -- |uncurry| on functions
-==  ...
-
-== D (uncurry unadh &&& der (uncurry unadh))
-== D (\ (h,a) -> (unadh h a, der (uncurry unadh) (h,a)))
-
-==  adh (eval . first unadh)                               -- |(.)| and |first| on functions
-==  adh eval . first (adh unadh)
+==  adh (eval . first unadh)                               -- CCC law
+==  adh eval . first (adh unadh)                           -- |adh| is a monoidal functor
 
     adh unadh
 ==  D (unadh &&& der unadh)
@@ -512,8 +505,34 @@ Simplifying the RHS,
 ==  \ (a,b) -> ((## NOP b) ||| der (h a) b) . (der h a *** id)
 ==  \ (a,b) -> (## NOP b) . der h a ||| der (h a) b
 
+    der (uncurry h)
+==  der (eval . first h)
+==  \ (a,b) -> der (eval . first h) (a,b)
+==  \ (a,b) -> der eval (first h (a,b)) . der (first h) (a,b)
+==  \ (a,b) -> der eval (h a,b) . der (first h) (a,b)
+==  \ (a,b) -> ((## NOP b) ||| der (h a) b) . der (first h) (a,b)
+==  \ (a,b) -> ((## NOP b) ||| der (h a) b) . first (der h a)
+
+    der (first h) (a,b)
+==  der (h *** id) (a,b)
+==  der h a *** der id b
+==  der h a *** id
+==  first (der h a)
+
     der (uncurry g) (a,b)
 ==  derl (uncurry g) (a,b) ||| derr (uncurry g) (a,b)
+==  der (uncurry g . (,b)) a ||| der (uncurry g . (a,)) b
+
+==  der (uncurry g) (a,b) . der (,b) a ||| der (uncurry g) (a,b) . der (a,) b
+
+
+==  der (uncurry g) (a,b) . (der (,b) a ||| der (a,) b)
+
+==  der (uncurry g) (a,b) . (inl ||| inr)
+
+
+    der (curry f) a
+==  \ b -> derl f (a,b)
 
     der (curry f) a
 ==  \ b -> derl f (a,b)
