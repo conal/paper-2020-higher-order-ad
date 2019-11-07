@@ -247,30 +247,36 @@ Now we do not need the general |der|, but rather the specific |der eval|.
 If |eval| were linear, we could apply \thmRef{linear}, but alas it is not.
 No matter, as we can instead use the technique of partial derivatives, which is useful for functions of nonscalar domains.
 Suppose we have a function |f :: a :* b -> c|, and we want to compute its derivative at a point in its (pair-valued) domain.
-Then\footnote{There is a temporary abuse of notation here in that lambda expressions do not necessarily denote \emph{linear} functions, although the they do in this calculation, since derivative values are linear maps.}\footnote{\mynote{Skip several steps by using the cocartesian law |h = h . inl ### h . inr|, which is dual to the cartesian law |h = exl . h &&& exr . h|.}}
+Then
+\begin{code}
+der f (a,b) == der f (a,b) . inl ||| der f (a,b) . inr
+\end{code}
+which is a direct application of the cocartesian law |h = h . inl ### h . inr|, which is dual to the cartesian law |h = exl . h &&& exr . h|.
+The arguments to |(###)| here are the partial derivatives of |f| at |(a,b)|.\footnote{Noting that |inl da = (da,0)| and |inr db = (0,db)|, we can see that the partial derivatives allow only one half of a pair to change.}
+Give them names and an alternative form:\footnote{The notation ``|(a,)|'' and ``|(b,)|'' refers to right and left ``sections'' of pairing: |(,b) a == (a,) b == (a,b)|.}
 %format derl = der"_l"
 %format derr = der"_r"
 \begin{code}
-    der f (a,b)
-==  \ (da,db) -> der f (a,b) (da,db)
-==  \ (da,db) -> der f (a,b) ((da,0) + (0,db))
-==  \ (da,db) -> der f (a,b) (da,0) + der f (a,b) (0,db)
-==  \ (da,db) -> der f (a,b) (inl da) + der f (a,b) (inr db)
-==  \ (da,db) -> (der f (a,b) . inl) da + (der f (a,b) . inr) db
-==  \ (da,db) -> (der f (a,b) . inl ||| der f (a,b) . inr) (da,db)
-==  der f (a,b) . inl ||| der f (a,b) . inr
-==  der (f . (,b)) a ||| der (f . (a,)) b  -- \mynote{To do: justify}
-==  derl f (a,b) ||| derr f (a,b)
-\end{code}
-where by convenient definition, |derl| and |derr| denote ``partial derivatives'' in which one half of a pair-valued argument is allowed to vary while the other half is held constant, i.e.,\footnote{The Haskell notation ``|(a,)|'' and ``|(b,)|'' refers to right and left ``sections'' of pairing: |(,b) a == (a,) b == (a,b)|.}
-\begin{code}
 derl :: (a :* b -> c) -> a :* b -> (a :-* c)
-derl f (a,b) = der (f . (,b)) a
+derl f (a,b)  = der f (a,b) . inl
+              = der (f . (,b)) a
 
 derr :: (a :* b -> c) -> a :* b -> (b :-* c)
-derr f (a,b) = der (f . (a,)) b
+derr f (a,b)  = der f (a,b) . inr
+              = der (f . (a,)) b
 \end{code}
-Apply the technique of partial derivatives to |eval|.
+These alternative forms follow from a bit of equational reasoning:\notefoot{Move most of the proofs in this paper to an appendix.}
+\begin{code}
+    der (f . (,b)) a
+==  der f ((,b) a) . der (,b) a                         -- chain rule
+==  der f ((,b) a) . der (inl + const (0,b)) a          -- |inl| on functions, and meaning of |(,b)|
+==  der f ((,b) a) . (der inl a + der (const (0,b)) a)  -- linearity of |(+)|
+==  der f (a,b) . der inl a                             -- |der (const z) a == 0|
+==  der f (a,b) . inl                                   -- linearity of |inl|
+\end{code}
+Likewise for |der (f . (a,)) b|.
+
+Now let's apply the technique of partial derivatives to |eval|.
 %format ## = "\mathbin{\$}"
 %if False
 First, define reverse function application:
@@ -286,7 +292,7 @@ Using ``|(##)|'' for infix function application,
 ==  derl eval (f,a) ||| derr eval (f,a)    -- method of partial derivatives
 ==  der (## NOP a) f ||| der (f NOP ##) a  -- |derl| and |derr| definitions; |eval| on functions
 ==  der (## NOP a) f ||| der f a           -- |(f NOP ##) == f|
-==  (## NOP a) ||| der f a                 -- \thmRef{linear}, since |(## NOP a) is linear|
+==  (## NOP a) ||| der f a                 -- linearity of |(## NOP a)|
 ==  \ (df,dx) -> df a + der f a dx         -- |(###) on linear maps|
 \end{code}
 
@@ -310,7 +316,7 @@ In general, a functor has two aspects:
 \item a mapping from arrows to arrows, and
 \item a mapping from objects to objects.
 \end{itemize}
-The functor |adh| defined (noncomputably) above implicitly chooses an \emph{identity object mapping}, as evident in its type |(a -> b) -> D a b|.
+The functor |adh| defined (noncomputably) above implicitly chooses an \emph{identity object mapping}, as evident in its type |(a -> b) -> D a b|.\notefoot{Rewrite this section more clearly.}
 
 Recall the types of |eval| and |adh|:
 \begin{code}
@@ -319,7 +325,7 @@ eval :: CartesianClosed k => (Prod k ((Exp k a b)) a) `k` b
 This type of |adh| plus the requirement that it be a cartesian \emph{closed} functor implies that the object mapping aspect of |adh| is the identity, and in particular |Exp D u v = u -> v|.
 It is this final conclusion that puts us in the pickle noted above, namely the need to compute the noncomputable.
 We can make this impossible task trivial by building the needed derivative into |Exp D u v|, say by choosing |Exp D u v = D u v|.
-In this case, we must alter |adh| so as not to require an identity object mapping.
+In this case, we must alter |adh| as well.
 Letting |O| be the object mapping aspect of the new functor |ado|,\notefoot{Experiment with different notation for |O a|, e.g., ``$\bar{a}$''.}
 \begin{code}
 ado :: (a -> b) -> D (O a) (O b)
@@ -488,6 +494,16 @@ Simplifying the RHS,
 ==  adh (\ (h,a) -> toO ((unO . unadh h . toO) (unO a))    -- |unwrapO| definition
 ==  adh (\ (h,a) -> toO (unO (unadh h (toO (unO a)))))     -- |(.)| on functions
 ==  adh (\ (h,a) -> unadh h a)                             -- |toO . unO == id|
+
+==  adh (uncurry unadh)
+==  D (uncurry unadh &&& der (uncurry adh))
+==  D (\ (h,a) -> (unadh h a, der (uncurry adh) (h,a)))
+
+
+==  D ((\ (h,a) -> unadh h a) &&& der (\ (h,a) -> unadh h a)) -- 
+
+==  adh (\ (h,a) -> (exl . unD h) a)                       -- |unadh| definition
+
 ==  adh (uncurry unadh)                                    -- |uncurry| on functions
 ==  adh (eval . first unadh)                               -- CCC law
 ==  adh eval . first (adh unadh)                           -- |adh| is a monoidal functor
@@ -522,6 +538,22 @@ Simplifying the RHS,
     der (uncurry g) (a,b)
 ==  derl (uncurry g) (a,b) ||| derr (uncurry g) (a,b)
 ==  der (uncurry g . (,b)) a ||| der (uncurry g . (a,)) b
+==  der (flip g b) a ||| der (g a) b
+==  flipFL (der g) b a ||| der (g a) b
+
+    uncurry g . (,a)
+==  \ b -> (uncurry g . (a,)) b
+==  \ b -> uncurry g (a,b)
+==  \ b -> g a b
+==  g a
+
+    uncurry g . (,b)
+==  \ a -> (uncurry g . (,b)) a
+==  \ a -> uncurry g (a,b)
+==  \ a -> g a b
+==  flip g b
+
+
 
 ==  der (uncurry g) (a,b) . der (,b) a ||| der (uncurry g) (a,b) . der (a,) b
 
