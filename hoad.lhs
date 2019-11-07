@@ -98,7 +98,7 @@ Indeed, |unadh| is a left inverse of |adh|:
 As defined so far, |unadh| is \emph{not} a right inverse to |adh|, since the linear map portion might not be the true derivative.
 We will thus \emph{restrict} the category |D| to be the image of |adh|, which is to say that |adh| is surjective, i.e., the derivative is correct.
 This restriction guarantees that |unadh| is indeed a right inverse of |adh|.
-Given |h :: D a b| (with the mentioned restriction), there is an |f :: a -> b| such that |h = adh f|, so
+Given |h :: D a b| (with the mentioned restriction), there is an |f :: a -> b| such that |h = adh f|, so\footnote{This reasoning hold for \emph{any} surjective function with a left inverse.}
 \begin{code}
     adh (unadh h)
 ==  adh (unadh (adh f))  -- |h = adh f|
@@ -170,8 +170,8 @@ f &&& g = (f *** g) . dup
 For functions and linear maps, the categorical product is the usual cartesian product and
 \begin{code}
 (f *** g) (a,b) = (f a, g b)
-exl (a,b) = a
-exr (a,b) = b
+exl  (a,b) = a
+exr  (a,b) = b
 dup a = (a,a)
 \end{code}
 Hence
@@ -190,28 +190,28 @@ class Category k => MonoidalC k where
   (+++) :: (a `k` c) -> (b `k` d) -> ((Coprod k a b) `k` (Coprod k c d))  -- coproduct bifunctor
 
 class MonoidalC k => Cocartesian k where
-  inl :: a `k` (Coprod k a b)
-  inr :: b `k` (Coprod k a b)
-  jam :: (Coprod k a a) `k` a
+  inl  :: a `k` (Coprod k a b)
+  inr  :: b `k` (Coprod k a b)
+  jam  :: (Coprod k a a) `k` a
 
 (|||) :: Cocartesian k => (c `k` a) -> (d `k` a) -> ((Coprod k c d) `k` a)
 f ||| g = jam . (f +++ g)
 \end{code}
 In this paper we will be working in the setting of \emph{biproducts}, where products and coproducts coincide.
-The corresponding bifunctor operations |(:+)| and |(:*)| thus also coincide, and
+The corresponding bifunctor operations |(:+)| and |(:*)| thus also coincide:
 \begin{code}
 class MonoidalP k => Cocartesian k where
-  inl :: a `k` (Prod k a b)
-  inr :: b `k` (Prod k a b)
-  jam :: (Prod k a a) `k` a
+  inl  :: a `k` (Prod k a b)
+  inr  :: b `k` (Prod k a b)
+  jam  :: (Prod k a a) `k` a
 
 (|||) :: (c `k` a) -> (d `k` a) -> ((Prod k c d) `k` a)
 f ||| g = jam . (f *** g)
 \end{code}
 For functions over additive monoids (including vector spaces and semimodules) and linear maps,
 \begin{code}
-inl a = (a,0)
-inr b = (0,b)
+inl  a = (a,0)
+inr  b = (0,b)
 jam (a,a') = a + a'
 \end{code}
 from which it follows that
@@ -415,28 +415,34 @@ Also |ado| and |unado| form another isomorphism:
 ==  id
 \end{code}
 
-Because |adh| is a cartesian functor (given the cartesian category operations on |D| defined by \cite{Elliott-2018-ad-icfp}) and thanks to the structure of |toO| and |unO|, |ado| is also a cartesian category, as the following calculations show:\notefoot{Annotate with justifications at each step.}
+Because |adh| is a cartesian functor (given the cartesian category operations already defined on |D| \citep{Elliott-2018-ad-icfp}) and thanks to the structure of |toO| and |unO|, |ado| is also a cartesian category, as the following calculations show:\notefoot{Annotate with justifications at each step.}
 \begin{code}
     ado id
+==  adh (wrapO id)
 ==  adh (toO . id . unO)
 ==  adh (toO . unO)
 ==  adh id
 ==  id
 
     ado (g . f)
+==  adh (wrapO (g . f))
 ==  adh (toO . g . f . unO)
 ==  adh (toO . g . unO . toO . f . unO)
 ==  adh (toO . g . unO) . adh (toO . f . unO)
+==  adh (wrapO g) . adh (wrapO f)
 ==  ado g . ado f
 
     ado (f *** g)
+==  adh (wrapO (f *** g))
 ==  adh (toO . (f *** g) . unO)
 ==  adh ((toO *** toO) . (f *** g) . (unO *** unO))
 ==  adh (toO . f . unO *** toO . g . unO)
 ==  adh (toO . f . unO) *** adh (toO . g . unO)
+==  adh (wrapO f) *** adh (wrapO g)
 ==  ado f *** ado g
 
     ado exl
+==  adh (wrapO exl)
 ==  adh (toO . exl . unO)
 ==  adh (toO . exl . (unO *** unO))
 ==  adh (toO . unO . exl)
@@ -444,6 +450,7 @@ Because |adh| is a cartesian functor (given the cartesian category operations on
 ==  exl
 
     ado exr
+==  adh (wrapO exr)
 ==  adh (toO . exr . unO)
 ==  adh (toO . exr . (unO *** unO))
 ==  adh (toO . unO . exr)
@@ -451,6 +458,7 @@ Because |adh| is a cartesian functor (given the cartesian category operations on
 ==  exr
 
     ado dup
+==  adh (wrapO dup)
 ==  adh (toO . dup . unO)
 ==  adh (toO . (unO *** unO) . dup)
 ==  adh (toO . unO . dup)
@@ -466,6 +474,51 @@ instance (HasO a, HasO b) => HasO (a -> b) where
   type O (a -> b) = D (O a) (O b)
   toO  = ado
   unO  = unado
+\end{code}
+For a |CartesianClosed| instance, we'll need to define |curry| and |eval|.
+We don't have definitions to imitate and verify this time, so we have to discover new ones by solving the homomorphism equations.
+For |eval|, the homomorphism equation is |eval == ado eval|, which is already a definition but not a computable one (since |ado| involves |adh|, which involves differentiation).
+Simplifying the RHS,
+\begin{code}
+
+    ado eval
+==  adh (wrapO eval)                                            -- |ado| definition
+==  adh (toO . eval . unO)                                      -- |wrapO| definition
+==  adh (toO . eval . (unado *** unO))                          -- |unO| on |(a -> b) :* a|
+==  adh (\ (ho,ao) -> (toO . eval . (unado *** unO)) (ho,ao))   -- |eta| expansion
+==  adh (\ (ho,ao) -> toO (eval (unado ho, unO ao)))            -- |(.)| and |(***)| on functions
+==  adh (\ (ho,ao) -> toO (unado ho (unO ao)))                  -- |eval| on functions
+==  adh (\ (ho,ao) -> toO (unwrapO (unadh ho) (unO ao)))        -- |unado| definition
+==  adh (\ (ho,ao) -> toO ((unO . unadh ho . toO) (unO ao)      -- |unwrapO| definition
+==  adh (\ (ho,ao) -> toO (unO (unadh ho (toO (unO ao)))))      -- |(.)| on functions
+==  adh (\ (ho,ao) -> unadh ho ao)                              -- |toO . unO == id|
+==  adh (\ (ho,ao) -> eval (unadh ho, ao))                      -- |eval| on functions
+==  adh (eval . first unadh)                                    -- |(.)| and |first| on functions
+==  adh (uncurry unadh)                                         -- |CartesianClosed| law
+==  ...
+
+\end{code}
+
+Types sanity check:
+\begin{code}
+
+                                ao   :: O a
+                            ho       :: O (a -> b)
+                                     :: D (O a) (O b)
+                     unadh  ho       :: O a -> O b
+                     unadh  ho  ao   :: O b
+       \ (ho,ao) ->  unadh  ho  ao   :: D (O a) (O b) :* O a -> O b
+adh (  \ (ho,ao) ->  unadh  ho  ao)  :: D (D (O a) (O b) :* O a) (O b)
+
+                unadh   :: D (O a) (O b) -> (O a -> O b)
+       uncurry  unadh   :: D (O a) (O b) :* O a -> O b
+adh (  uncurry  unadh)  :: D (D (O a) (O b) :* O a) (O b)
+
+
+     eval  :: (a -> b) :* a -> b
+ado  eval  :: D (O ((a -> b) :* a)) (O b)
+           :: D (O (a -> b) :* O a) (O b)
+           :: D (D (O a) (O b) :* O a) (O b)
 \end{code}
 
 \sectionl{Related Work}
