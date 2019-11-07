@@ -246,11 +246,7 @@ Now we do not need the general |der|, but rather the specific |der eval|.
 If |eval| were linear, we could apply \thmRef{linear}, but alas it is not.
 No matter, as we can instead use the technique of partial derivatives, which is useful for functions of nonscalar domains.
 Suppose we have a function |f :: a :* b -> c|, and we want to compute its derivative at a point in its (pair-valued) domain.
-Then\footnote{There is a temporary abuse of notation here in that lambda expressions do not necessarily denote \emph{linear} functions, although the they do in this calculation, since derivative values are linear maps.}
-%% %format da = "\Varid{\mathrm{\Delta} a}"
-%% %format db = "\Varid{\mathrm{\Delta} b}"
-%% %format derl = sub der l
-%% %format derr = sub der r
+Then\footnote{There is a temporary abuse of notation here in that lambda expressions do not necessarily denote \emph{linear} functions, although the they do in this calculation, since derivative values are linear maps.}\footnote{\mynote{Skip several steps by using the cocartesian law |h = h . inl ### h . inr|, which is dual to the cartesian law |h = exl . h &&& exr . h|.}}
 %format derl = der"_l"
 %format derr = der"_r"
 \begin{code}
@@ -482,33 +478,60 @@ Simplifying the RHS,
 \begin{code}
 
     ado eval
-==  adh (wrapO eval)                                            -- |ado| definition
-==  adh (toO . eval . unO)                                      -- |wrapO| definition
-==  adh (toO . eval . (unado *** unO))                          -- |unO| on |(a -> b) :* a|
-==  adh (\ (ho,ao) -> (toO . eval . (unado *** unO)) (ho,ao))   -- |eta| expansion
-==  adh (\ (ho,ao) -> toO (eval (unado ho, unO ao)))            -- |(.)| and |(***)| on functions
-==  adh (\ (ho,ao) -> toO (unado ho (unO ao)))                  -- |eval| on functions
-==  adh (\ (ho,ao) -> toO (unwrapO (unadh ho) (unO ao)))        -- |unado| definition
-==  adh (\ (ho,ao) -> toO ((unO . unadh ho . toO) (unO ao)      -- |unwrapO| definition
-==  adh (\ (ho,ao) -> toO (unO (unadh ho (toO (unO ao)))))      -- |(.)| on functions
-==  adh (\ (ho,ao) -> unadh ho ao)                              -- |toO . unO == id|
-==  adh (\ (ho,ao) -> eval (unadh ho, ao))                      -- |eval| on functions
-==  adh (eval . first unadh)                                    -- |(.)| and |first| on functions
-==  adh (uncurry unadh)                                         -- |CartesianClosed| law
+==  adh (wrapO eval)                                       -- |ado| definition
+==  adh (toO . eval . unO)                                 -- |wrapO| definition
+==  adh (toO . eval . (unado *** unO))                     -- |unO| on |(a -> b) :* a|
+==  adh (\ (h,a) -> (toO . eval . (unado *** unO)) (h,a))  -- |eta| expansion
+==  adh (\ (h,a) -> toO (eval (unado h, unO a)))           -- |(.)| and |(***)| on functions
+==  adh (\ (h,a) -> toO (unado h (unO a)))                 -- |eval| on functions
+==  adh (\ (h,a) -> toO (unwrapO (unadh h) (unO a)))       -- |unado| definition
+==  adh (\ (h,a) -> toO ((unO . unadh h . toO) (unO a)     -- |unwrapO| definition
+==  adh (\ (h,a) -> toO (unO (unadh h (toO (unO a)))))     -- |(.)| on functions
+==  adh (\ (h,a) -> unadh h a)                             -- |toO . unO == id|
+
+
+==  adh (uncurry unadh)                                    -- |uncurry| on functions
 ==  ...
 
+== D (uncurry unadh &&& der (uncurry unadh))
+== D (\ (h,a) -> (unadh h a, der (uncurry unadh) (h,a)))
+
+==  adh (eval . first unadh)                               -- |(.)| and |first| on functions
+==  adh eval . first (adh unadh)
+
+    adh unadh
+==  D (unadh &&& der unadh)
+==  D (\ h -> (unadh h, der unadh h))
+
+    der (uncurry h)
+==  der (eval . (h *** id))
+==  \ (a,b) -> der (eval . (h *** id)) (a,b)
+==  \ (a,b) -> der eval (h a, b) . der (h *** id) (a,b)
+==  \ (a,b) -> der eval (h a, b) . (der h a *** der id b)
+==  \ (a,b) -> der eval (h a, b) . (der h a *** id)
+==  \ (a,b) -> ((## NOP b) ||| der (h a) b) . (der h a *** id)
+==  \ (a,b) -> (## NOP b) . der h a ||| der (h a) b
+
+    der (uncurry g) (a,b)
+==  derl (uncurry g) (a,b) ||| derr (uncurry g) (a,b)
+
+    der (curry f) a
+==  \ b -> derl f (a,b)
+
 \end{code}
+
+
 
 Types sanity check:
 \begin{code}
 
-                                ao   :: O a
-                            ho       :: O (a -> b)
-                                     :: D (O a) (O b)
-                     unadh  ho       :: O a -> O b
-                     unadh  ho  ao   :: O b
-       \ (ho,ao) ->  unadh  ho  ao   :: D (O a) (O b) :* O a -> O b
-adh (  \ (ho,ao) ->  unadh  ho  ao)  :: D (D (O a) (O b) :* O a) (O b)
+                             a   :: O a
+                          h      :: O (a -> b)
+                                 :: D (O a) (O b)
+                   unadh  h      :: O a -> O b
+                   unadh  h  a   :: O b
+       \ (h,a) ->  unadh  h  a   :: D (O a) (O b) :* O a -> O b
+adh (  \ (h,a) ->  unadh  h  a)  :: D (D (O a) (O b) :* O a) (O b)
 
                 unadh   :: D (O a) (O b) -> (O a -> O b)
        uncurry  unadh   :: D (O a) (O b) :* O a -> O b
