@@ -509,25 +509,30 @@ Simplifying the RHS,
 ==  adh eval . first (adh unadh)                           -- |adh| is a monoidal functor
 
     adh unadh
-==  D (unadh &&& der unadh)
-==  D (\ h -> (unadh h, der unadh h))
+==  linearD unadh                -- |unadh| is linear
+==  D (\ h -> (unadh h, unadh))  -- |linearD| definition
 
-    der (uncurry h)
-==  der (eval . (h *** id))
-==  \ (a,b) -> der (eval . (h *** id)) (a,b)
-==  \ (a,b) -> der eval (h a, b) . der (h *** id) (a,b)
-==  \ (a,b) -> der eval (h a, b) . (der h a *** der id b)
-==  \ (a,b) -> der eval (h a, b) . (der h a *** id)
-==  \ (a,b) -> ((## NOP b) ||| der (h a) b) . (der h a *** id)
-==  \ (a,b) -> (## NOP b) . der h a ||| der (h a) b
 
-    der (uncurry h)
-==  der (eval . first h)
-==  \ (a,b) -> der (eval . first h) (a,b)
-==  \ (a,b) -> der eval (first h (a,b)) . der (first h) (a,b)
-==  \ (a,b) -> der eval (h a,b) . der (first h) (a,b)
-==  \ (a,b) -> ((## NOP b) ||| der (h a) b) . der (first h) (a,b)
-==  \ (a,b) -> ((## NOP b) ||| der (h a) b) . first (der h a)
+==  adh (uncurry unadh)                                    -- |uncurry| on functions
+==  D (\ (h,a) -> (unadh h a, der (uncurry unadh) (h,a)))
+
+
+    der (uncurry h) (a,b)
+==  der (eval . (h *** id)) (a,b)
+==  der eval (h a, b) . der (h *** id) (a,b)
+==  der eval (h a, b) . (der h a *** der id b)
+==  der eval (h a, b) . (der h a *** id)
+==  ((## NOP b) ||| der (h a) b) . (der h a *** id)
+==  (## NOP b) . der h a ||| der (h a) b . id
+==  (## NOP b) . der h a ||| der (h a) b
+
+    der (uncurry h) (a,b)
+==  der (eval . first h) (a,b)
+==  der eval (first h (a,b)) . der (first h) (a,b)
+==  der eval (h a,b) . der (first h) (a,b)
+==  ((## NOP b) ||| der (h a) b) . der (first h) (a,b)
+==  ((## NOP b) ||| der (h a) b) . first (der h a)
+==  (## NOP b) . der h a ||| der (h a) b
 
     der (first h) (a,b)
 ==  der (h *** id) (a,b)
@@ -535,11 +540,11 @@ Simplifying the RHS,
 ==  der h a *** id
 ==  first (der h a)
 
-    der (uncurry g) (a,b)
-==  derl (uncurry g) (a,b) ||| derr (uncurry g) (a,b)
-==  der (uncurry g . (,b)) a ||| der (uncurry g . (a,)) b
-==  der (flip g b) a ||| der (g a) b
-==  flipFL (der g) b a ||| der (g a) b
+    der (uncurry h) (a,b)
+==  derl (uncurry h) (a,b) ||| derr (uncurry h) (a,b)
+==  der (uncurry h . (,b)) a ||| der (uncurry h . (a,)) b
+==  der (flip h b) a ||| der (h a) b
+==  flipFL (der h) b a ||| der (h a) b
 
     uncurry g . (,a)
 ==  \ b -> (uncurry g . (a,)) b
@@ -555,19 +560,48 @@ Simplifying the RHS,
 
 
 
-==  der (uncurry g) (a,b) . der (,b) a ||| der (uncurry g) (a,b) . der (a,) b
+g :: a -> b -> c
+
+uncurry g :: a :* b -> c
+
+wrapO (uncurry g) :: O a :* O b -> O c
+
+ado (uncurry g)
+adh (wrapO (uncurry g))
+
+f :: a :* b -> c
+
+curry f :: a -> b -> c
+
+wrapO (curry f)  :: O a -> O (b -> c)
+                 :: O a -> D (O b) (O c)
+
+    wrapO (curry f)
+==  toO . curry f . unO
+==  ado . curry f . unO
+==  adh . wrapO . curry f . unO
+==  adh . curry (toO . f . unO)
+==  adh . curry (wrapO f)
+
+    wrapO (uncurry g)
+==  toO . uncurry g . unO
+==  ado . uncurry g . unO
+==  adh . wrapO . uncurry g . unO
+==  adh . uncurry (toO . g . unO)
+==  adh . uncurry (wrapO g)
 
 
-==  der (uncurry g) (a,b) . (der (,b) a ||| der (a,) b)
+D ((adh . wrapO . uncurry g . unO) &&& der (adh . wrapO . uncurry g . unO))
+D (\ a -> (adh (wrapO (uncurry g (unO a))), der (adh . wrapO . uncurry g . unO) a))
 
-==  der (uncurry g) (a,b) . (inl ||| inr)
+
 
 
     der (curry f) a
 ==  \ b -> derl f (a,b)
 
-    der (curry f) a
-==  \ b -> derl f (a,b)
+
+    
 
 \end{code}
 
