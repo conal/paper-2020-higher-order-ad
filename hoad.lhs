@@ -277,33 +277,29 @@ These alternative forms follow from a bit of equational reasoning:\notefoot{Move
 Likewise for |der (f . (a,)) b|.
 
 Now let's apply the technique of partial derivatives to |eval|.
-%format ## = "\mathbin{\$}"
-%if False
-First, define reverse function application:
+We'll need another linear map operation, which is reverse function application:
+%format applyTo = at
 \begin{code}
-applyTo :: a -> (a -> b) -> b
-applyTo a f = f a
+applyTo :: a -> ((a -> b) :-* b)
+applyTo a df = df a
 \end{code}
-%else
-Using ``|(##)|'' for infix function application,
-%endif
+Linearity of |applyTo a| follows from the usual definition of addition and scaling on functions.
 \begin{code}
     der eval (f,a)
-==  derl eval (f,a) ||| derr eval (f,a)    -- method of partial derivatives
-==  der (## NOP a) f ||| der (f NOP ##) a  -- |derl| and |derr| definitions; |eval| on functions
-==  der (## NOP a) f ||| der f a           -- |(f NOP ##) == f|
-==  (## NOP a) ||| der f a                 -- linearity of |(## NOP a)|
-==  \ (df,dx) -> df a + der f a dx         -- |(###) on linear maps|
+==  derl eval (f,a) ||| derr eval (f,a)     -- method of partial derivatives
+==  der (applyTo a) f ||| der f          a  -- |derl| and |derr| definitions; |eval| on functions
+==  applyTo a ||| der f a                   -- linearity of |applyTo a|
+==  \ (df,dx) -> df a + der f a dx          -- |(###) on linear maps| and |applyTo| definition
 \end{code}
 
 Now we can complete the calculation of |eval| for |D|:
 \begin{code}
     eval
 ==  adh eval
-==  D (eval &&& der eval)                        -- definition of |adh|
-==  D (\ (f,a) -> (eval (f,a), der eval (f,a))   -- |(&&&) on functions|
-==  D (\ (f,a) -> (f a, der eval (f,a))          -- |eval| on functions
-==  D (\ (f,a) -> (f a, (## NOP a) ||| der f a)  -- above
+==  D (eval &&& der eval)                       -- definition of |adh|
+==  D (\ (f,a) -> (eval (f,a), der eval (f,a))  -- |(&&&) on functions|
+==  D (\ (f,a) -> (f a, der eval (f,a))         -- |eval| on functions
+==  D (\ (f,a) -> (f a, applyTo a ||| der f a)  -- above
 \end{code}
 Although this final form is well-defined, it is not a computable recipe, since |der| is not computable, which leaves us in a pickle.
 Let's look for some wiggle room.
@@ -522,17 +518,17 @@ Simplifying the RHS,
 ==  der eval (h a, b) . der (h *** id) (a,b)
 ==  der eval (h a, b) . (der h a *** der id b)
 ==  der eval (h a, b) . (der h a *** id)
-==  ((## NOP b) ||| der (h a) b) . (der h a *** id)
-==  (## NOP b) . der h a ||| der (h a) b . id
-==  (## NOP b) . der h a ||| der (h a) b
+==  (at b ||| der (h a) b) . (der h a *** id)
+==  at b . der h a ||| der (h a) b . id
+==  at b . der h a ||| der (h a) b
 
     der (uncurry h) (a,b)
 ==  der (eval . first h) (a,b)
 ==  der eval (first h (a,b)) . der (first h) (a,b)
 ==  der eval (h a,b) . der (first h) (a,b)
-==  ((## NOP b) ||| der (h a) b) . der (first h) (a,b)
-==  ((## NOP b) ||| der (h a) b) . first (der h a)
-==  (## NOP b) . der h a ||| der (h a) b
+==  (at b ||| der (h a) b) . der (first h) (a,b)
+==  (at b ||| der (h a) b) . first (der h a)
+==  at b . der h a ||| der (h a) b
 
     der (first h) (a,b)
 ==  der (h *** id) (a,b)
@@ -543,18 +539,18 @@ Simplifying the RHS,
     der (uncurry h) (a,b)
 ==  derl (uncurry h) (a,b) ||| derr (uncurry h) (a,b)
 ==  der (uncurry h . (,b)) a ||| der (uncurry h . (a,)) b
-==  der ((## NOP b) . h) a ||| der (uncurry h . (a,)) b
+==  der (at b . h) a ||| der (uncurry h . (a,)) b
 ==  ...  -- below
-==  (## NOP b) . der h a ||| der (h a) b
+==  at b . der h a ||| der (h a) b
 
-                   h    :: a -> b -> c
-              der  h a  :: a :-* (b -> c)
-(## NOP b)              :: (b -> c) :-* c
-(## NOP b) .  der  h a  :: a :-* c
+             h    :: a -> b -> c
+        der  h a  :: a :-* (b -> c)
+at b              :: (b -> c) :-* c
+at b .  der  h a  :: a :-* c
 
-    der ((## NOP b) . h) a          -- |(##)| and |(.)|
-==  der (## NOP b) (h a) . der h a  -- chain rule
-==  (## NOP b) . der h a            -- |(## NOP b)| is linear
+    der (at b . h) a          -- |applyTo| and |(.)|
+==  der at b (h a) . der h a  -- chain rule
+==  at b . der h a            -- |applyTo b| is linear
 
     uncurry h . (,a)
 ==  \ b -> (uncurry h . (a,)) b
@@ -566,7 +562,7 @@ Simplifying the RHS,
 ==  \ a -> (uncurry h . (,b)) a
 ==  \ a -> uncurry h (a,b)
 ==  \ a -> h a b
-==  (## NOP b) . h
+==  at b . h
 
 g :: a -> b -> c
 
