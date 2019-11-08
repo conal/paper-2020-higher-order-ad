@@ -543,22 +543,30 @@ Simplifying the RHS,
     der (uncurry h) (a,b)
 ==  derl (uncurry h) (a,b) ||| derr (uncurry h) (a,b)
 ==  der (uncurry h . (,b)) a ||| der (uncurry h . (a,)) b
-==  der (flip h b) a ||| der (h a) b
-==  flipFL (der h) b a ||| der (h a) b
+==  der ((## NOP b) . h) a ||| der (uncurry h . (a,)) b
+==  ...  -- below
+==  (## NOP b) . der h a ||| der (h a) b
 
-    uncurry g . (,a)
-==  \ b -> (uncurry g . (a,)) b
-==  \ b -> uncurry g (a,b)
-==  \ b -> g a b
-==  g a
+                   h    :: a -> b -> c
+              der  h a  :: a :-* (b -> c)
+(## NOP b)              :: (b -> c) :-* c
+(## NOP b) .  der  h a  :: a :-* c
 
-    uncurry g . (,b)
-==  \ a -> (uncurry g . (,b)) a
-==  \ a -> uncurry g (a,b)
-==  \ a -> g a b
-==  flip g b
+    der ((## NOP b) . h) a          -- |(##)| and |(.)|
+==  der (## NOP b) (h a) . der h a  -- chain rule
+==  (## NOP b) . der h a            -- |(## NOP b)| is linear
 
+    uncurry h . (,a)
+==  \ b -> (uncurry h . (a,)) b
+==  \ b -> uncurry h (a,b)
+==  \ b -> h a b
+==  h a
 
+    uncurry h . (,b)
+==  \ a -> (uncurry h . (,b)) a
+==  \ a -> uncurry h (a,b)
+==  \ a -> h a b
+==  (## NOP b) . h
 
 g :: a -> b -> c
 
