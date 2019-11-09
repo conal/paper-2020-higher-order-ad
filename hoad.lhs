@@ -490,6 +490,51 @@ Simplifying the RHS,
 ==  adh (\ (h,a) -> toO ((unO . unadh h . toO) (unO a))    -- |unwrapO| definition
 ==  adh (\ (h,a) -> toO (unO (unadh h (toO (unO a)))))     -- |(.)| on functions
 ==  adh (\ (h,a) -> unadh h a)                             -- |toO . unO == id|
+==  adh (\ (h,a) -> eval (unadh h, a))                     -- |eval| on functions
+==  adh (eval . first unadh)                               -- |(.)| and |first| on functions
+
+==  adh eval . adh (first unadh)                           -- 
+==  adh eval . linearD (first unadh)
+==  D (\ (h,a) -> (unadh h a, der eval (first unadh (h,a)) . first unadh))
+==  D (\ (h,a) -> (unadh h a, der eval (unadh h,a) . first unadh))
+==  D (\ (h,a) -> (unadh h a, (applyTo a ||| der (unadh h) a) . first unadh))
+==  D (\ (h,a) -> (unadh h a, applyTo a . unadh ||| der (unadh h) a))
+
+==  adh (uncurry unadh)
+==  D (\ (h,a) -> (uncurry unadh (h,a), der (uncurry unadh) (h,a)))
+==  D (\ (h,a) -> (unadh h a, der (uncurry unadh) (h,a)))
+==  D (\ (h,a) -> (unadh h a, applyTo a . der unadh h ||| der (unadh h) a))
+==  D (\ (h,a) -> (unadh h a, applyTo a . unadh ||| der (unadh h) a))
+==  D (\ (h,a) -> (unadh h a, applyTo a . unadh ||| exr (unD h a)))
+
+-- Good. Same answer. Continuing
+
+== ...
+==  D (\ (h,a) -> (unadh h a, applyTo a . unadh ||| der (unadh h) a))
+==  D (\ (h,a) -> (unadh h a, applyTo a . unadh ||| exr (unD h a)))   -- aha!
+==  D (\ (h,a) -> let (b,h') = unD h a in (b, applyTo a . unadh ||| h'))
+
+-- Types:
+
+(h,a)  :: O ((a -> b) :* a)
+       :: O (a -> b) :* O a
+       :: D (O a) (O b) :* O a
+
+h  :: D (O a) (O b)
+a  :: O a
+
+unD h :: O a -> O b :* (O a :-* O b)
+unD h a :: O b :* (O a :-* O b)
+
+b :: O b
+
+applyTo a                   :: (O a -> O b) :-* O b
+             unadh          :: D (O a) (O b) :-* (O a -> O b)
+applyTo a .  unadh          :: D (O a) (O b) :-* O b
+                        h'  :: O a :-* O b
+applyTo a .  unadh |||  h'  :: D (O a) (O b) :* O a :-* O b
+                            :: O ((a -> b) :* a) :-* O b
+
 
 ==  adh (uncurry unadh)
 ==  D (uncurry unadh &&& der (uncurry adh))
@@ -518,17 +563,17 @@ Simplifying the RHS,
 ==  der eval (h a, b) . der (h *** id) (a,b)
 ==  der eval (h a, b) . (der h a *** der id b)
 ==  der eval (h a, b) . (der h a *** id)
-==  (at b ||| der (h a) b) . (der h a *** id)
-==  at b . der h a ||| der (h a) b . id
-==  at b . der h a ||| der (h a) b
+==  (applyTo b ||| der (h a) b) . (der h a *** id)
+==  applyTo b . der h a ||| der (h a) b . id
+==  applyTo b . der h a ||| der (h a) b
 
     der (uncurry h) (a,b)
 ==  der (eval . first h) (a,b)
 ==  der eval (first h (a,b)) . der (first h) (a,b)
 ==  der eval (h a,b) . der (first h) (a,b)
-==  (at b ||| der (h a) b) . der (first h) (a,b)
-==  (at b ||| der (h a) b) . first (der h a)
-==  at b . der h a ||| der (h a) b
+==  (applyTo b ||| der (h a) b) . der (first h) (a,b)
+==  (applyTo b ||| der (h a) b) . first (der h a)
+==  applyTo b . der h a ||| der (h a) b
 
     der (first h) (a,b)
 ==  der (h *** id) (a,b)
@@ -539,18 +584,18 @@ Simplifying the RHS,
     der (uncurry h) (a,b)
 ==  derl (uncurry h) (a,b) ||| derr (uncurry h) (a,b)
 ==  der (uncurry h . (,b)) a ||| der (uncurry h . (a,)) b
-==  der (at b . h) a ||| der (uncurry h . (a,)) b
+==  der (applyTo b . h) a ||| der (uncurry h . (a,)) b
 ==  ...  -- below
-==  at b . der h a ||| der (h a) b
+==  applyTo b . der h a ||| der (h a) b
 
-             h    :: a -> b -> c
-        der  h a  :: a :-* (b -> c)
-at b              :: (b -> c) :-* c
-at b .  der  h a  :: a :-* c
+                  h    :: a -> b -> c
+             der  h a  :: a :-* (b -> c)
+applyTo b              :: (b -> c) :-* c
+applyTo b .  der  h a  :: a :-* c
 
-    der (at b . h) a          -- |applyTo| and |(.)|
-==  der at b (h a) . der h a  -- chain rule
-==  at b . der h a            -- |applyTo b| is linear
+    der (applyTo b . h) a          -- |applyTo| and |(.)|
+==  der applyTo b (h a) . der h a  -- chain rule
+==  applyTo b . der h a            -- |applyTo b| is linear
 
     uncurry h . (,a)
 ==  \ b -> (uncurry h . (a,)) b
@@ -562,7 +607,7 @@ at b .  der  h a  :: a :-* c
 ==  \ a -> (uncurry h . (,b)) a
 ==  \ a -> uncurry h (a,b)
 ==  \ a -> h a b
-==  at b . h
+==  applyTo b . h
 
 g :: a -> b -> c
 
