@@ -1,7 +1,7 @@
 % -*- latex -*-
 
 %% While editing/previewing, use 12pt or 14pt and tiny margin.
-\documentclass[14pt,twoside]{extarticle}  % fleqn,14pt
+\documentclass[12pt,twoside]{extarticle}  % fleqn,14pt
 \usepackage[margin=0.2in]{geometry}  % 0.12in, 0.9in
 
 %% \documentclass{article}
@@ -31,7 +31,7 @@ Conal Elliott
 \usepackage[round]{natbib}  % square
 \bibliographystyle{plainnat}
 
-\title{\tit \\ \emph{\large (early draft---comments invited\notefoot{Add GitHub link here for latest version, and welcome issues and even pull requests.})}}
+\title{\tit \emph{\\[1.5ex] \Large (early draft---comments invited\notefoot{Add GitHub link here for latest version, and welcome issues and even pull requests.})}}
 
 \date{\today}
 
@@ -78,7 +78,7 @@ Solving the collection of such homomorphism equations yields correct-by-construc
 
 %format fh = "\Varid{\hat{f}}"
 %format unadh = "\inv{"adh"}"
-The function |adh| is invertible, i.e., |unadh . adh == id|, where |unadh| simply drops the derivative:
+The function |adh| is invertible, i.e., |unadh . adh == id|, where |unadh| simply drops the derivative:\footnote{This paper uses ``|exl|'' and ``|exr|'' to name left and right product projections (on all cartesian categories), rather than Haskell's (function-only) ``|fst|'' and ``|snd|''.}
 \begin{code}
 unadh :: D a b -> (a -> b)
 unadh fh = exl . unD fh
@@ -418,6 +418,13 @@ eval ==  D (\ (h,a) -> let (b,h') = unD h a in (b, applyTo a . unadh ||| h'))
 \end{code}
 
 \sectionl{Related Work}
+
+\note{Working here.}
+
+\begin{itemize}
+\item \cite{Vytiniotis-2019-differentiable-curry}
+\item \cite{Brunel2019Backprop}
+\end{itemize}
 
 \bibliography{bib}
 
