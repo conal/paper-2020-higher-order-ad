@@ -1,8 +1,8 @@
 % -*- latex -*-
 
 %% While editing/previewing, use 12pt or 14pt and tiny margin.
-\documentclass[12pt,twoside]{extarticle}  % fleqn,14pt
-\usepackage[margin=0.12in]{geometry}  % 0.12in, 0.9in
+\documentclass[14pt,twoside]{extarticle}  % fleqn,14pt
+\usepackage[margin=0.2in]{geometry}  % 0.12in, 0.9in
 
 %% \documentclass{article}
 %% \usepackage{fullpage}
@@ -28,8 +28,7 @@ Conal Elliott
 %include greek.fmt
 %include formatting.fmt
 
-% \usepackage[square]{natbib}
-\usepackage[round]{natbib}
+\usepackage[round]{natbib}  % square
 \bibliographystyle{plainnat}
 
 \title{\tit \\ \emph{\large (early draft---comments invited\notefoot{Add GitHub link here for latest version, and welcome issues and even pull requests.})}}
