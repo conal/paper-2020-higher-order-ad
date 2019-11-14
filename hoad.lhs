@@ -530,27 +530,29 @@ Simplifying the RHS,
 Since this calculation was fairly involved, let's get a sanity check on the types in the final form:
 \begin{code}
 
-          (h,a)                   :: O ((a -> b) :* a)
-                                  :: O (a -> b) :* O a
-                                  :: D (O a) (O b) :* O a
-          
-                              a   :: O a
-                           h      :: O (a -> b)
-                                  :: D (O a) (O b)
-                    unadh  h      :: O a -> O b
-                    unadh  h  a   :: O b
-       \  (h,a) ->  unadh  h  a   :: D (O a) (O b) :* O a -> O b
-adh (  \  (h,a) ->  unadh  h  a)  :: D (D (O a) (O b) :* O a) (O b)
+(  h,  a)  :: O ((a -> b) :* a)
+           :: D (O a) (O b) :* O a
+   h       :: D (O a) (O b)
+       a   :: O a
 
-                unadh            :: D (O a) (O b) -> (O a -> O b)
-       uncurry  unadh            :: D (O a) (O b) :* O a -> O b
-adh (  uncurry  unadh)           :: D (D (O a) (O b) :* O a) (O b)
+unD h       :: O a -> O b :* (O a :-* O b)
+unD h a     :: O b :* (O a :-* O b)
+                
+(  b,  h')  :: O b :* (O a :-* O b)
+   b        :: O b
+       h'   :: O a :-* O b
 
+                                           unadh          :: D (O a) (O b) :-* (O a -> O b)
+                              applyTo a                   :: (O a -> O b) :-* O b
+                              applyTo a .  unadh          :: D (O a) (O b) :-* O b
+                              applyTo a .  unadh ||| h'   :: D (O a) (O b) :* O a :-* O b
+                         (b,  applyTo a .  unadh ||| h')  :: O b :* (D (O a) (O b) :* O a :-* O b)
+     \ (h,a) -> ... in   (b,  applyTo a . unadh ||| h')   :: O ((a -> b) :* a) -> O b :* (D (O a) (O b) :* O a :-* O b)
+D (  \ (h,a) -> ... in   (b,  applyTo a . unadh ||| h'))  :: D (O ((a -> b) :* a)) (O b)
 
-     eval                        :: (a -> b) :* a -> b
-ado  eval                        :: D (O ((a -> b) :* a)) (O b)
-                                 :: D (O (a -> b) :* O a) (O b)
-                                 :: D (D (O a) (O b) :* O a) (O b)
+     eval   :: (a -> b) :* a -> b
+ado  eval   :: D (O ((a -> b) :* a)) (O b)
+            :: D (D (O a) (O b) :* O a) (O b)
 
 \end{code}
 
