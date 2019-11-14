@@ -304,7 +304,7 @@ In general, a functor has two aspects:
 \item a mapping from arrows to arrows, and
 \item a mapping from objects to objects.
 \end{itemize}
-The functor |adh| defined (noncomputably) above implicitly chooses an \emph{identity object mapping}, as evident in its type signature |adh :: (a -> b) -> D a b|.\notefoot{Rewrite this section more clearly.}
+The functor |adh| defined (noncomputably) above implicitly chooses an \emph{identity object mapping}, as evident in its type signature |adh :: (a -> b) -> D a b|.\out{\notefoot{Rewrite this section more clearly.}}
 
 Recall the types of |eval| and |adh|:
 \begin{code}
@@ -335,7 +335,7 @@ O (a  ->  b) == Exp  D  (O a)  (O b)  == D (O a) (O b)
 %% \nc\toO{\Varid{obj}}
 %format toO = "\toO"
 %format unO = "\inv{\toO}"
-We will need to convert between |a| and |O a| , which we can do with a family of \emph{isomorphisms}\footnote{An implicit requirement for all |HasO| instances is that |toO . unO == id| and |unO . toO == id|.} indexed by |a|:\notefoot{It may be more elegant to combine the functions |toO| and |unO| into a single \emph{isomorphism}.}
+We will need to convert between |a| and |O a| , which we can do with a family of \emph{isomorphisms}\footnote{An implicit requirement for all |HasO| instances is thus that |toO . unO == id| and |unO . toO == id|.} indexed by |a|:\notefoot{It may be more elegant to combine the functions |toO| and |unO| into a single \emph{isomorphism}.}
 \begin{code}
 class HasO t where
   type O t
