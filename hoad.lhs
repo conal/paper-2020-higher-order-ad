@@ -38,12 +38,7 @@ Conal Elliott
 \setlength{\blanklineskip}{2ex} % blank lines in code environment
 
 \nc\proofLabel[1]{\label{proof:#1}}
-%if short
-\nc\provedIn[1]{\textnormal{See proof \citep[Appendix A]{Elliott-2019-hoad-extended}}}
-%else
 \nc\proofRef[1]{Appendix \ref{proof:#1}}
-\nc\provedIn[1]{\textnormal{Proved in \proofRef{#1}}}
-%endif
 
 \begin{document}
 
@@ -275,7 +270,7 @@ der f (a,b) == der f (a,b) . inl ||| der f (a,b) . inr
 \end{code}
 which is a direct application of the cocartesian law |h = h . inl ### h . inr|, which is dual to the cartesian law |h = exl . h &&& exr . h|.
 The arguments to |(###)| here are the partial derivatives of |f| at |(a,b)|.\footnote{Noting that |inl da = (da,0)| and |inr db = (0,db)|, we can see that the partial derivatives allow only one half of a pair to change.}
-Give them names and an alternative form:\footnote{The notation ``|(a,)|'' and ``|(b,)|'' refers to right and left ``sections'' of pairing: |(,b) a == (a,) b == (a,b)|.}
+Give them names and alternative forms, which follow from a bit of equational reasoning (\proofRef{partial-alt}).\footnote{The notation ``|(a,)|'' and ``|(b,)|'' refers to right and left ``sections'' of pairing: |(,b) a == (a,) b == (a,b)|.}
 %format derl = der"_l"
 %format derr = der"_r"
 \begin{code}
@@ -291,26 +286,14 @@ so that
 \begin{code}
 der f (a,b) == derl f (a,b) ||| derr f (a,b)
 \end{code}
-These alternative forms follow from a bit of equational reasoning:\notefoot{Move most of the proofs in this paper to an appendix.}
-\begin{code}
-    der (f . (,b)) a
-==  der f ((,b) a) . der (,b) a                      -- chain rule
-==  der f (a,b) . der (,b) a                         -- |(,b)| definition
-==  der f (a,b) . der (inl + const (0,b)) a          -- |inl| on functions, and meaning of |(,b)|
-==  der f (a,b) . (der inl a + der (const (0,b)) a)  -- linearity of |(+)|
-==  der f (a,b) . der inl a                          -- |der (const z) a == 0|
-==  der f (a,b) . inl                                -- linearity of |inl|; \thmRef{linear}
-\end{code}
-Likewise for |der (f . (a,)) b|.
 
 Now let's apply the technique of partial derivatives to |eval|.
-We'll need another linear map operation, which is reverse function application:
+We'll need another linear map operation, which is reverse function application:\footnote{Linearity of |applyTo a| follows from the usual definition of addition and scaling on functions.}
 %format applyTo = at
 \begin{code}
-applyTo :: a -> ((a -> b) :-* b)
+applyTo :: a -> (a -> b) :-* b
 applyTo a df = df a
 \end{code}
-Linearity of |applyTo a| follows from the usual definition of addition and scaling on functions.
 \begin{code}
     der eval (f,a)
 ==  derl eval (f,a) ||| derr eval (f,a)          -- method of partial derivatives
@@ -319,24 +302,6 @@ Linearity of |applyTo a| follows from the usual definition of addition and scali
 ==  applyTo a ||| der f a                        -- linearity of |applyTo a|
 ==  \ (df,dx) -> df a + der f a dx               -- |(###) on linear maps|; |applyTo| definition
 \end{code}
-With this result in hand, we can also differentiate uncurryings:
-\begin{code}
-    der (uncurry h) (a,b)
-==  der (eval . first h) (a,b)                         -- CCC law (above)
-==  der eval (first h (a,b)) . der (first h) (a,b)     -- chain rule
-==  der eval (h a,b) . der (first h) (a,b)             -- |first| for functions
-==  (applyTo b ||| der (h a) b) . der (first h) (a,b)  -- |der eval| (above)
-==  (applyTo b ||| der (h a) b) . first (der h a)      -- below
-==  (applyTo b ||| der (h a) b) . (der h a *** id)     -- |first| definition
-==  applyTo b . der h a ||| der (h a) b                -- |(f ### g) . (p *** q) == f . p ### g . q|
-
-    der (first h) (a,b)
-==  der (h *** id) (a,b)                               -- |first| definition
-==  der h a *** der id b                               -- \thmRef{cross}
-==  der h a *** id                                     -- |id| is linear
-==  first (der h a)                                    -- |first| definition
-\end{code}
-
 Now we can complete the calculation of |eval| for |D|:
 \begin{code}
     eval
@@ -431,7 +396,70 @@ ado = adh . wrapO
 unado :: D (O a) (O b) -> (a -> b)
 unado = unwrapO . unadh
 \end{code}
-Note that |wrapO| and |unwrapO| form an isomorphism:
+A bit of equational reasoning shows that |wrapO| and |unwrapO| form an isomorphism (\proofRef{wrapO-iso}), as do |ado| and |unado| (\proofRef{ado-iso}).
+
+The cartesian category operations already defined |D| \citep{Elliott-2018-ad-icfp} are solutions to homomorphism equations saying that |adh| is a cartesian functor.
+Thanks to the simple, regular structure of |toO| and |unO|, |ado| is a cartesian functor as well (\proofRef{ado-cartesian}).
+What about exponentials and cartesian \emph{closure}?
+As mentioned above, we'll choose |Exp D u v = D u v|.
+Requiring |ado| to be a cartesian closed \emph{functor} necessitates that |O (a -> b) == Exp D (O a) (O b) == D (O a) (O b)|, which suggests using |ado| and |unado| for |toO| and |unO|:
+\begin{code}
+instance (HasO a, HasO b) => HasO (a -> b) where
+  type O (a -> b) = D (O a) (O b)
+  toO  = ado
+  unO  = unado
+\end{code}
+For a |CartesianClosed| instance, we'll need to define |curry| and |eval|.
+We don't have definitions from \cite{Elliott-2018-ad-icfp} to imitate and verify this time, so we have to discover new ones by solving the homomorphism equations.
+For |eval|, the homomorphism equation is |eval == ado eval|, which is already a definition but not a computable one (since |ado| involves |adh|, which involves |der|, i.e., differentiation).
+The choice of |toO = ado| enables a computable solution (\proofRef{ado-eval}):
+\begin{code}
+eval ==  D (\ (h,a) -> let (b,h') = unD h a in (b, applyTo a . unadh ||| h'))
+\end{code}
+
+\sectionl{Related Work}
+
+\bibliography{bib}
+
+\appendix
+
+\sectionl{Proofs}
+
+\subsection{Partial derivatives}\proofLabel{partial-alt}
+
+\begin{code}
+    der (f . (,b)) a
+==  der f ((,b) a) . der (,b) a                      -- chain rule
+==  der f (a,b) . der (,b) a                         -- |(,b)| definition
+==  der f (a,b) . der (inl + const (0,b)) a          -- |inl| on functions, and meaning of |(,b)|
+==  der f (a,b) . (der inl a + der (const (0,b)) a)  -- linearity of |(+)|
+==  der f (a,b) . der inl a                          -- |der (const z) a == 0|
+==  der f (a,b) . inl                                -- linearity of |inl|; \thmRef{linear}
+\end{code}
+Likewise for |der (f . (a,)) b|.
+
+\subsection{Differentiation and uncurrying}\proofLabel{der-uncurry}
+
+\begin{code}
+    der (uncurry h) (a,b)
+==  der (eval . first h) (a,b)                         -- CCC law (above)
+==  der eval (first h (a,b)) . der (first h) (a,b)     -- chain rule
+==  der eval (h a,b) . der (first h) (a,b)             -- |first| for functions
+==  (applyTo b ||| der (h a) b) . der (first h) (a,b)  -- |der eval| (above)
+==  (applyTo b ||| der (h a) b) . first (der h a)      -- below
+==  (applyTo b ||| der (h a) b) . (der h a *** id)     -- |first| definition
+==  applyTo b . der h a ||| der (h a) b                -- |(f ### g) . (p *** q) == f . p ### g . q|
+
+    der (first h) (a,b)
+==  der (h *** id) (a,b)                               -- |first| definition
+==  der h a *** der id b                               -- \thmRef{cross}
+==  der h a *** id                                     -- |id| is linear
+==  first (der h a)                                    -- |first| definition
+\end{code}
+
+\subsection{|wrapO| as isomorphism}\proofLabel{wrapO-iso}
+
+The functions |wrapO| and |unwrapO| form an isomorphism:
 \begin{code}
     unwrapO (wrapO f)
 ==  unwrapO (toO . f . unO)        -- |wrapO| definition
@@ -447,7 +475,10 @@ Note that |wrapO| and |unwrapO| form an isomorphism:
 ==  id . h . id                    -- |toO . unO == id|
 ==  h                              -- |id| is identity for |(.)|
 \end{code}
-Likewise, |ado| and |unado| form another isomorphism:
+
+\subsection{|ado| as isomorphism}\proofLabel{ado-iso}
+
+The functions |ado| and |unado| form an isomorphism:
 \begin{code}
     unado . ado
 ==  unwrapO . unadh . adh . wrapO  -- |unado| and |ado| definitions
@@ -460,7 +491,11 @@ Likewise, |ado| and |unado| form another isomorphism:
 ==  id                             -- |unadh . adh == id|
 \end{code}
 
-Because |adh| is a cartesian functor (given the cartesian category operations already defined on |D| \citep{Elliott-2018-ad-icfp}) and thanks to the structure of |toO| and |unO|, |ado| is also a cartesian functor, as the following calculations show:
+\subsection{|ado| as cartesian functor}\proofLabel{ado-cartesian}
+
+Given the cartesian category operations already defined on |D|, |ado| is also a cartesian functor \citep{Elliott-2018-ad-icfp}.
+The proofs mainly exploit the regular structure of |toO| and |unO|:
+
 \begin{code}
     ado id
 ==  adh (wrapO id)                                   -- |ado| definition
@@ -511,18 +546,9 @@ Because |adh| is a cartesian functor (given the cartesian category operations al
 ==  dup                                              -- |adh| is a cartesian functor
 \end{code}
 
-What about exponentials and cartesian \emph{closure}?
-As mentioned above, we'll choose |Exp D u v = D u v|.
-Requiring |ado| to be a cartesian closed \emph{functor} necessitates that |O (a -> b) == Exp D (O a) (O b) == D (O a) (O b)|, which suggests using |ado| and |unado| for |toO| and |unO|:
-\begin{code}
-instance (HasO a, HasO b) => HasO (a -> b) where
-  type O (a -> b) = D (O a) (O b)
-  toO  = ado
-  unO  = unado
-\end{code}
-For a |CartesianClosed| instance, we'll need to define |curry| and |eval|.
-We don't have definitions from \cite{Elliott-2018-ad-icfp} to imitate and verify this time, so we have to discover new ones by solving the homomorphism equations.
-For |eval|, the homomorphism equation is |eval == ado eval|, which is already a definition but not a computable one (since |ado| involves |adh|, which involves differentiation).
+\subsection{|ado| and |eval|}\proofLabel{ado-eval}
+
+The homomorphism equation is |eval == ado eval|.
 Simplifying the RHS,
 \begin{code}
     ado eval
@@ -539,7 +565,7 @@ Simplifying the RHS,
 ==  adh (uncurry unadh)                                                      -- |uncurry| on functions
 ==  D (\ (h,a) -> (uncurry unadh (h,a), der (uncurry unadh) (h,a)))          -- |adh| definition
 ==  D (\ (h,a) -> (unadh h a, der (uncurry unadh) (h,a)))                    -- |uncurry| on functions
-==  D (\ (h,a) -> (unadh h a, applyTo a . der unadh h ||| der (unadh h) a))  -- |der (unadh f)| above
+==  D (\ (h,a) -> (unadh h a, applyTo a . der unadh h ||| der (unadh h) a))  -- \proofRef{der-uncurry}
 ==  D (\ (h,a) -> (unadh h a, applyTo a . unadh ||| der (unadh h) a))        -- |unadh| is linear
 \end{code}
 % Now we are in a position to eliminate the noncomputable |der| operation.
@@ -583,15 +609,11 @@ unD h a     :: O b :* (O a :-* O b)
      \ (h,a) -> ... in   (b,  applyTo a . unadh ||| h')   :: O ((a -> b) :* a) -> O b :* (D (O a) (O b) :* O a :-* O b)
 D (  \ (h,a) -> ... in   (b,  applyTo a . unadh ||| h'))  :: D (O ((a -> b) :* a)) (O b)
 
-     eval   :: (a -> b) :* a -> b
-ado  eval   :: D (O ((a -> b) :* a)) (O b)
-            :: D (D (O a) (O b) :* O a) (O b)
+     eval  :: (a -> b) :* a -> b
+ado  eval  :: D (O ((a -> b) :* a)) (O b)
+           :: D (D (O a) (O b) :* O a) (O b)
 
 \end{code}
-
-\sectionl{Related Work}
-
-\bibliography{bib}
 
 \end{document}
 
