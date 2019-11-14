@@ -61,7 +61,7 @@
 
 %format adh = "\hat{"der"}"
 %format ado = der"^\circ"
-%format ado = der"_o"
+%format ado = der"_{\!o}"
 
 %% %format :=> = "\mapsto"
 %format :=> = =>
@@ -88,3 +88,4 @@
 
 %format R = "\mathbb{R}"
 
+%format :: = :
