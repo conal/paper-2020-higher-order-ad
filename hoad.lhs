@@ -78,7 +78,7 @@ Solving the collection of such homomorphism equations yields correct-by-construc
 
 %format fh = "\Varid{\hat{f}}"
 %format unadh = "\inv{"adh"}"
-The function |adh| is invertible, i.e., |unadh . adh == id|, where |unadh| simply drops the derivative:\footnote{This paper uses ``|exl|'' and ``|exr|'' to name left and right product projections (on all cartesian categories), rather than Haskell's (function-only) ``|fst|'' and ``|snd|''.}
+The function |adh| is invertible, i.e., |unadh . adh == id|, where |unadh| simply drops the derivative:\footnote{This paper uses ``|exl|'' and ``|exr|'' to name left and right product projections (defined on cartesian categories), rather than Haskell's (function-only) ``|fst|'' and ``|snd|''.}
 \begin{code}
 unadh :: D a b -> (a -> b)
 unadh fh = exl . unD fh
@@ -98,20 +98,6 @@ As defined so far, |unadh| is \emph{not} a right inverse to |adh|, since the lin
 We will thus \emph{restrict} the category |D| to be the image of |adh|, which is to say that |adh| is surjective, i.e., the derivative is correct.\footnote{
 Haskell's type system is not expressive enough to capture this restriction by itself, so the restriction will be only implied in this draft.
 For more rigor, one could use a language (extension) with refinement types such as Liquid Haskell \needcite{} or a dependently-typed language such as Agda \needcite{} or Idris \needcite{}.}
-%if False
-Equivalently, the following property must hold for all |h :: D a b|:
-\begin{code}
-exr . unD fh = der (unadh fh)
-\end{code}
-Thus
-\begin{code}
-unD fh a = (unadh fh a, der (unadh fh) a)
-
-unD fh = unadh fh &&& der (unadh fh)
-
-fh = adh (unadh fh)
-\end{code}
-%endif
 This restriction guarantees that |unadh| is indeed a right inverse of |adh|.
 Given |fh :: D a b| (with the mentioned restriction), there is an |f :: a -> b| such that |fh = adh f|, so\footnote{This reasoning hold for \emph{any} surjective function with a left inverse.}
 \begin{code}
@@ -414,7 +400,7 @@ We don't have definitions from \cite{Elliott-2018-ad-icfp} to imitate and verify
 For |eval|, the homomorphism equation is |eval == ado eval|, which is already a definition but not a computable one (since |ado| involves |adh|, which involves |der|, i.e., differentiation).
 The choice of |toO = ado| enables a computable solution (\proofRef{ado-eval}):
 \begin{code}
-eval ==  D (\ (h,a) -> let (b,h') = unD h a in (b, applyTo a . unadh ||| h'))
+eval ==  D (\ (h,a) -> let (b,f') = unD h a in (b, applyTo a . unadh ||| f'))
 \end{code}
 
 \sectionl{Related Work}
@@ -559,66 +545,65 @@ The homomorphism equation is |eval == ado eval|.
 Simplifying the RHS,
 \begin{code}
     ado eval
-==  adh (wrapO eval)                                                         -- |ado| definition
-==  adh (toO . eval . unO)                                                   -- |wrapO| definition
-==  adh (toO . eval . (unado *** unO))                                       -- |unO| on |(a -> b) :* a|
-==  adh (\ (h,a) -> (toO . eval . (unado *** unO)) (h,a))                    -- |eta| expansion
-==  adh (\ (h,a) -> toO (eval (unado h, unO a)))                             -- |(.)| and |(***)| on functions
-==  adh (\ (h,a) -> toO (unado h (unO a)))                                   -- |eval| on functions
-==  adh (\ (h,a) -> toO (unwrapO (unadh h) (unO a)))                         -- |unado| definition
-==  adh (\ (h,a) -> toO ((unO . unadh h . toO) (unO a))                      -- |unwrapO| definition
-==  adh (\ (h,a) -> toO (unO (unadh h (toO (unO a)))))                       -- |(.)| on functions
-==  adh (\ (h,a) -> unadh h a)                                               -- |toO . unO == id|
-==  adh (uncurry unadh)                                                      -- |uncurry| on functions
-==  D (\ (h,a) -> (uncurry unadh (h,a), der (uncurry unadh) (h,a)))          -- |adh| definition
-==  D (\ (h,a) -> (unadh h a, der (uncurry unadh) (h,a)))                    -- |uncurry| on functions
-==  D (\ (h,a) -> (unadh h a, applyTo a . der unadh h ||| der (unadh h) a))  -- \proofRef{der-uncurry}
-==  D (\ (h,a) -> (unadh h a, applyTo a . unadh ||| der (unadh h) a))        -- |unadh| is linear
+==  adh (wrapO eval)                                                             -- |ado| definition
+==  adh (toO . eval . unO)                                                       -- |wrapO| definition
+==  adh (toO . eval . (unado *** unO))                                           -- |unO| on |(a -> b) :* a|
+==  adh (\ (fh,a) -> (toO . eval . (unado *** unO)) (fh,a))                      -- |eta| expansion
+==  adh (\ (fh,a) -> toO (eval (unado fh, unO a)))                               -- |(.)| and |(***)| on functions
+==  adh (\ (fh,a) -> toO (unado fh (unO a)))                                     -- |eval| on functions
+==  adh (\ (fh,a) -> toO (unwrapO (unadh fh) (unO a)))                           -- |unado| definition
+==  adh (\ (fh,a) -> toO ((unO . unadh fh . toO) (unO a))                        -- |unwrapO| definition
+==  adh (\ (fh,a) -> toO (unO (unadh fh (toO (unO a)))))                         -- |(.)| on functions
+==  adh (\ (fh,a) -> unadh fh a)                                                 -- |toO . unO == id|
+==  adh (uncurry unadh)                                                          -- |uncurry| on functions
+==  D (\ (fh,a) -> (uncurry unadh (fh,a), der (uncurry unadh) (fh,a)))           -- |adh| definition
+==  D (\ (fh,a) -> (unadh fh a, der (uncurry unadh) (fh,a)))                     -- |uncurry| on functions
+==  D (\ (fh,a) -> (unadh fh a, applyTo a . der unadh fh ||| der (unadh fh) a))  -- \proofRef{der-uncurry}
+==  D (\ (fh,a) -> (unadh fh a, applyTo a . unadh ||| der (unadh fh) a))         -- |unadh| is linear
 \end{code}
 % Now we are in a position to eliminate the noncomputable |der| operation.
 Now note that
 \begin{code}
-    h
-==  adh (unadh h)                  -- |adh . unadh == id|
-==  D (unadh h &&& der (unadh h))  -- |adh| definition
+    fh
+==  adh (unadh fh)                   -- |adh . unadh == id|
+==  D (unadh fh &&& der (unadh fh))  -- |adh| definition
 \end{code}
 so
 \begin{code}
-unD h a = (unadh h a, der (unadh h) a)
+unD fh a = (unadh fh a, der (unadh fh) a)
 \end{code}
-A bit of refactoring then replaces |unadh h a| and (the noncomputable) |der (unadh h a)|, yielding a \emph{computable} form:
+A bit of refactoring then replaces |unadh fh a| and (the noncomputable) |der (unadh fh a)|, yielding a \emph{computable} form:
 \begin{code}
     ado eval
 ==  ...
-==  D (\ (h,a) -> let (b,h') = unD h a in (b, applyTo a . unadh ||| h'))
+==  D (\ (fh,a) -> let (b,f') = unD fh a in (b, applyTo a . unadh ||| f'))
 \end{code}
 
 Since this calculation was fairly involved, let's get a sanity check on the types in the final form:
 \begin{code}
 
-(  h,  a)  :: O ((a -> b) :* a)
-           :: D (O a) (O b) :* O a
-   h       :: D (O a) (O b)
-       a   :: O a
+(  fh,  a)  :: O ((a -> b) :* a)
+            :: D (O a) (O b) :* O a
+   fh       :: D (O a) (O b)
+       a    :: O a
 
-unD h       :: O a -> O b :* (O a :-* O b)
-unD h a     :: O b :* (O a :-* O b)
+unD fh       :: O a -> O b :* (O a :-* O b)
+unD fh a     :: O b :* (O a :-* O b)
                 
-(  b,  h')  :: O b :* (O a :-* O b)
-   b        :: O b
-       h'   :: O a :-* O b
+(  b,  f')   :: O b :* (O a :-* O b)
+   b         :: O b
+       f'    :: O a :-* O b
 
-                                           unadh          :: D (O a) (O b) :-* (O a -> O b)
-                              applyTo a                   :: (O a -> O b) :-* O b
-                              applyTo a .  unadh          :: D (O a) (O b) :-* O b
-                              applyTo a .  unadh ||| h'   :: D (O a) (O b) :* O a :-* O b
-                         (b,  applyTo a .  unadh ||| h')  :: O b :* (D (O a) (O b) :* O a :-* O b)
-     \ (h,a) -> ... in   (b,  applyTo a . unadh ||| h')   :: O ((a -> b) :* a) -> O b :* (D (O a) (O b) :* O a :-* O b)
-D (  \ (h,a) -> ... in   (b,  applyTo a . unadh ||| h'))  :: D (O ((a -> b) :* a)) (O b)
+                                           unadh           :: D (O a) (O b) :-* (O a -> O b)
+                              applyTo a                    :: (O a -> O b) :-* O b
+                              applyTo a .  unadh           :: D (O a) (O b) :-* O b
+                              applyTo a .  unadh ||| f'    :: D (O a) (O b) :* O a :-* O b
+                         (b,  applyTo a .  unadh ||| f')   :: O b :* (D (O a) (O b) :* O a :-* O b)
+     \ (fh,a) -> ... in   (b,  applyTo a . unadh ||| f')   :: O ((a -> b) :* a) -> O b :* (D (O a) (O b) :* O a :-* O b)
+D (  \ (fh,a) -> ... in   (b,  applyTo a . unadh ||| f'))  :: D (O ((a -> b) :* a)) (O b)
 
      eval  :: (a -> b) :* a -> b
 ado  eval  :: D (O ((a -> b) :* a)) (O b)
-           :: D (D (O a) (O b) :* O a) (O b)
 
 \end{code}
 
@@ -628,26 +613,26 @@ ado  eval  :: D (O ((a -> b) :* a)) (O b)
 
 \begin{code}
 
-                  h    :: a -> b -> c
-             der  h a  :: a :-* (b -> c)
-applyTo b              :: (b -> c) :-* c
-applyTo b .  der  h a  :: a :-* c
+                  fh    :: a -> b -> c
+             der  fh a  :: a :-* (b -> c)
+applyTo b               :: (b -> c) :-* c
+applyTo b .  der  fh a  :: a :-* c
 
-    der (applyTo b . h) a          -- |applyTo| and |(.)|
-==  der applyTo b (h a) . der h a  -- chain rule
-==  applyTo b . der h a            -- |applyTo b| is linear
+    der (applyTo b . fh) a           -- |applyTo| and |(.)|
+==  der applyTo b (fh a) . der fh a  -- chain rule
+==  applyTo b . der fh a             -- |applyTo b| is linear
 
-    uncurry h . (,a)
-==  \ b -> (uncurry h . (a,)) b
-==  \ b -> uncurry h (a,b)
-==  \ b -> h a b
-==  h a
+    uncurry fh . (,a)
+==  \ b -> (uncurry fh . (a,)) b
+==  \ b -> uncurry fh (a,b)
+==  \ b -> fh a b
+==  fh a
 
-    uncurry h . (,b)
-==  \ a -> (uncurry h . (,b)) a
-==  \ a -> uncurry h (a,b)
-==  \ a -> h a b
-==  applyTo b . h
+    uncurry fh . (,b)
+==  \ a -> (uncurry fh . (,b)) a
+==  \ a -> uncurry fh (a,b)
+==  \ a -> fh a b
+==  applyTo b . fh
 
 g :: a -> b -> c
 
