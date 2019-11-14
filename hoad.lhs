@@ -81,17 +81,14 @@ Solving the collection of such homomorphism equations yields correct-by-construc
 The function |adh| is invertible, i.e., |unadh . adh == id|, where |unadh| simply drops the derivative:\footnote{This paper uses ``|exl|'' and ``|exr|'' to name left and right product projections (defined on cartesian categories), rather than Haskell's (function-only) ``|fst|'' and ``|snd|''.}
 \begin{code}
 unadh :: D a b -> (a -> b)
-unadh fh = exl . unD fh
-
-unD :: D a b -> (a -> b :* (a :-* b))
-unD (D h) = h
+unadh (D h) = exl . h
 \end{code}
 Indeed, |unadh| is a left inverse of |adh|:
 \begin{code}
     unadh (adh f)
 ==  unadh (D (f &&& der f))  -- |adh| definition
 ==  exl . (f &&& der f)      -- |unadh| definition
-==  f                        -- |exl . (g &&& h) == g| in cartesian categories
+==  f                        -- cartesian law: |exl . (g &&& h) == g|
 \end{code}
 
 As defined so far, |unadh| is \emph{not} a right inverse to |adh|, since the linear map portion might not be the true derivative.
@@ -250,11 +247,10 @@ Now we do not need the general |der|, but rather the specific |der eval|.
 If |eval| were linear, we could apply \thmRef{linear}, but alas it is not.
 No matter, as we can instead use the technique of partial derivatives, which is useful for functions of nonscalar domains.
 Suppose we have a function |f :: a :* b -> c|, and we want to compute its derivative at a point in its (pair-valued) domain.
-Then
+Because linear maps (derivatives) form a cocartesian category,\footnote{The cocartesian law |h = h . inl ### h . inr| is dual to the cartesian law |h = exl . h &&& exr . h| \citep{Gibbons2002Calculating}.}
 \begin{code}
 der f (a,b) == der f (a,b) . inl ||| der f (a,b) . inr
 \end{code}
-which is a direct application of the cocartesian law |h = h . inl ### h . inr|, which is dual to the cartesian law |h = exl . h &&& exr . h|.
 The arguments to |(###)| here are the partial derivatives of |f| at |(a,b)|.\footnote{Noting that |inl da = (da,0)| and |inr db = (0,db)|, we can see that the partial derivatives allow only one half of a pair to change.}
 Give them names and alternative forms, which follow from a bit of equational reasoning (\proofRef{partial-alt}).\footnote{The notation ``|(a,)|'' and ``|(b,)|'' refers to right and left ``sections'' of pairing: |(,b) a == (a,) b == (a,b)|.}
 %format derl = der"_l"
@@ -273,9 +269,9 @@ so that
 der f (a,b) == derl f (a,b) ||| derr f (a,b)
 \end{code}
 
+%format applyTo = at
 Now let's apply the technique of partial derivatives to |eval|.
 We'll need another linear map operation, which is reverse function application:\footnote{Linearity of |applyTo a| follows from the usual definition of addition and scaling on functions.}
-%format applyTo = at
 \begin{code}
 applyTo :: a -> (a -> b) :-* b
 applyTo a df = df a
@@ -400,7 +396,7 @@ We don't have definitions from \cite{Elliott-2018-ad-icfp} to imitate and verify
 For |eval|, the homomorphism equation is |eval == ado eval|, which is already a definition but not a computable one (since |ado| involves |adh|, which involves |der|, i.e., differentiation).
 The choice of |toO = ado| enables a computable solution (\proofRef{ado-eval}):
 \begin{code}
-eval ==  D (\ (h,a) -> let (b,f') = unD h a in (b, applyTo a . unadh ||| f'))
+eval = D (\ (D h,a) -> let (b,f') = h a in (b, applyTo a . unadh ||| f'))
 \end{code}
 
 \sectionl{Related Work}
@@ -565,42 +561,41 @@ Simplifying the RHS,
 Now note that
 \begin{code}
     fh
-==  adh (unadh fh)                   -- |adh . unadh == id|
-==  D (unadh fh &&& der (unadh fh))  -- |adh| definition
+==  adh (unadh fh)               -- |adh . unadh == id|
+==  unadh fh &&& der (unadh fh)  -- |adh| definition
 \end{code}
-so
+Letting |fh = D h|, we have
 \begin{code}
-unD fh a = (unadh fh a, der (unadh fh) a)
+h a = (unadh fh a, der (unadh fh) a)
 \end{code}
 A bit of refactoring then replaces |unadh fh a| and (the noncomputable) |der (unadh fh a)|, yielding a \emph{computable} form:
 \begin{code}
     ado eval
 ==  ...
-==  D (\ (fh,a) -> let (b,f') = unD fh a in (b, applyTo a . unadh ||| f'))
+==  D (\ (D h,a) -> let (b,f') = h a in (b, applyTo a . unadh ||| f'))
 \end{code}
 
 Since this calculation was fairly involved, let's get a sanity check on the types in the final form:
 \begin{code}
 
-(  fh,  a)  :: O ((a -> b) :* a)
-            :: D (O a) (O b) :* O a
-   fh       :: D (O a) (O b)
-       a    :: O a
+(  D h,  a)  :: O ((a -> b) :* a)
+             :: D (O a) (O b) :* O a
+   D h       :: D (O a) (O b)
+         a   :: O a
+     h       :: O a -> O b :* (O a :-* O b)
+     h a     :: O b :* (O a :-* O b)
 
-unD fh       :: O a -> O b :* (O a :-* O b)
-unD fh a     :: O b :* (O a :-* O b)
-                
 (  b,  f')   :: O b :* (O a :-* O b)
    b         :: O b
        f'    :: O a :-* O b
 
-                                           unadh           :: D (O a) (O b) :-* (O a -> O b)
-                              applyTo a                    :: (O a -> O b) :-* O b
-                              applyTo a .  unadh           :: D (O a) (O b) :-* O b
-                              applyTo a .  unadh ||| f'    :: D (O a) (O b) :* O a :-* O b
-                         (b,  applyTo a .  unadh ||| f')   :: O b :* (D (O a) (O b) :* O a :-* O b)
-     \ (fh,a) -> ... in   (b,  applyTo a . unadh ||| f')   :: O ((a -> b) :* a) -> O b :* (D (O a) (O b) :* O a :-* O b)
-D (  \ (fh,a) -> ... in   (b,  applyTo a . unadh ||| f'))  :: D (O ((a -> b) :* a)) (O b)
+                                             unadh           :: D (O a) (O b) :-* (O a -> O b)
+                                applyTo a                    :: (O a -> O b) :-* O b
+                                applyTo a .  unadh           :: D (O a) (O b) :-* O b
+                                applyTo a .  unadh ||| f'    :: D (O a) (O b) :* O a :-* O b
+                           (b,  applyTo a .  unadh ||| f')   :: O b :* (D (O a) (O b) :* O a :-* O b)
+     \ (D h,a) -> ... in   (b,  applyTo a .  unadh ||| f')   :: O ((a -> b) :* a) -> O b :* (D (O a) (O b) :* O a :-* O b)
+D (  \ (D h,a) -> ... in   (b,  applyTo a .  unadh ||| f'))  :: D (O ((a -> b) :* a)) (O b)
 
      eval  :: (a -> b) :* a -> b
 ado  eval  :: D (O ((a -> b) :* a)) (O b)
