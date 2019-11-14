@@ -302,6 +302,23 @@ Linearity of |applyTo a| follows from the usual definition of addition and scali
 ==  applyTo a ||| der f a                        -- linearity of |applyTo a|
 ==  \ (df,dx) -> df a + der f a dx               -- |(###) on linear maps|; |applyTo| definition
 \end{code}
+With this result in hand, we can also differentiate uncurryings:
+\begin{code}
+    der (uncurry h) (a,b)
+==  der (eval . first h) (a,b)                         -- CCC law (above)
+==  der eval (first h (a,b)) . der (first h) (a,b)     -- chain rule
+==  der eval (h a,b) . der (first h) (a,b)             -- |first| for functions
+==  (applyTo b ||| der (h a) b) . der (first h) (a,b)  -- |der eval| (above)
+==  (applyTo b ||| der (h a) b) . first (der h a)      -- below
+==  (applyTo b ||| der (h a) b) . (der h a *** id)     -- |first| definition
+==  applyTo b . der h a ||| der (h a) b                -- |(f ### g) . (p *** q) == f . p ### g . q|
+
+    der (first h) (a,b)
+==  der (h *** id) (a,b)                               -- |first| definition
+==  der h a *** der id b                               -- \thmRef{cross}
+==  der h a *** id                                     -- |id| is linear
+==  first (der h a)                                    -- |first| definition
+\end{code}
 
 Now we can complete the calculation of |eval| for |D|:
 \begin{code}
@@ -491,116 +508,61 @@ We don't have definitions from \cite{Elliott-2018-ad-icfp} to imitate and verify
 For |eval|, the homomorphism equation is |eval == ado eval|, which is already a definition but not a computable one (since |ado| involves |adh|, which involves differentiation).
 Simplifying the RHS,
 \begin{code}
-
     ado eval
-==  adh (wrapO eval)                                       -- |ado| definition
-==  adh (toO . eval . unO)                                 -- |wrapO| definition
-==  adh (toO . eval . (unado *** unO))                     -- |unO| on |(a -> b) :* a|
-==  adh (\ (h,a) -> (toO . eval . (unado *** unO)) (h,a))  -- |eta| expansion
-==  adh (\ (h,a) -> toO (eval (unado h, unO a)))           -- |(.)| and |(***)| on functions
-==  adh (\ (h,a) -> toO (unado h (unO a)))                 -- |eval| on functions
-==  adh (\ (h,a) -> toO (unwrapO (unadh h) (unO a)))       -- |unado| definition
-==  adh (\ (h,a) -> toO ((unO . unadh h . toO) (unO a))    -- |unwrapO| definition
-==  adh (\ (h,a) -> toO (unO (unadh h (toO (unO a)))))     -- |(.)| on functions
-==  adh (\ (h,a) -> unadh h a)                             -- |toO . unO == id|
-==  adh (\ (h,a) -> eval (unadh h, a))                     -- |eval| on functions
-==  adh (eval . first unadh)                               -- |(.)| and |first| on functions
+==  adh (wrapO eval)                                                         -- |ado| definition
+==  adh (toO . eval . unO)                                                   -- |wrapO| definition
+==  adh (toO . eval . (unado *** unO))                                       -- |unO| on |(a -> b) :* a|
+==  adh (\ (h,a) -> (toO . eval . (unado *** unO)) (h,a))                    -- |eta| expansion
+==  adh (\ (h,a) -> toO (eval (unado h, unO a)))                             -- |(.)| and |(***)| on functions
+==  adh (\ (h,a) -> toO (unado h (unO a)))                                   -- |eval| on functions
+==  adh (\ (h,a) -> toO (unwrapO (unadh h) (unO a)))                         -- |unado| definition
+==  adh (\ (h,a) -> toO ((unO . unadh h . toO) (unO a))                      -- |unwrapO| definition
+==  adh (\ (h,a) -> toO (unO (unadh h (toO (unO a)))))                       -- |(.)| on functions
+==  adh (\ (h,a) -> unadh h a)                                               -- |toO . unO == id|
+==  adh (uncurry unadh)                                                      -- |uncurry| on functions
+==  D (\ (h,a) -> (uncurry unadh (h,a), der (uncurry unadh) (h,a)))          -- |adh| definition
+==  D (\ (h,a) -> (unadh h a, der (uncurry unadh) (h,a)))                    -- |uncurry| on functions
+==  D (\ (h,a) -> (unadh h a, applyTo a . der unadh h ||| der (unadh h) a))  -- |der (unadh f)| above
+==  D (\ (h,a) -> (unadh h a, applyTo a . unadh ||| der (unadh h) a))        -- |unadh| is linear
+==  D (\ (h,a) -> (unadh h a, applyTo a . unadh ||| exr (unD h a)))          -- |adh| definition (aha!)
+==  D (\ (h,a) -> let (b,h') = unD h a in (b, applyTo a . unadh ||| h'))     -- refactor
+\end{code}
+Since this calculation was fairly involved, let's get a sanity check on the types in the final form:
+\begin{code}
 
-==  adh eval . adh (first unadh)                           -- 
-==  adh eval . linearD (first unadh)
-==  D (\ (h,a) -> (unadh h a, der eval (first unadh (h,a)) . first unadh))
-==  D (\ (h,a) -> (unadh h a, der eval (unadh h,a) . first unadh))
-==  D (\ (h,a) -> (unadh h a, (applyTo a ||| der (unadh h) a) . first unadh))
-==  D (\ (h,a) -> (unadh h a, applyTo a . unadh ||| der (unadh h) a))
+          (h,a)                   :: O ((a -> b) :* a)
+                                  :: O (a -> b) :* O a
+                                  :: D (O a) (O b) :* O a
+          
+                              a   :: O a
+                           h      :: O (a -> b)
+                                  :: D (O a) (O b)
+                    unadh  h      :: O a -> O b
+                    unadh  h  a   :: O b
+       \  (h,a) ->  unadh  h  a   :: D (O a) (O b) :* O a -> O b
+adh (  \  (h,a) ->  unadh  h  a)  :: D (D (O a) (O b) :* O a) (O b)
 
-==  adh (uncurry unadh)
-==  D (\ (h,a) -> (uncurry unadh (h,a), der (uncurry unadh) (h,a)))
-==  D (\ (h,a) -> (unadh h a, der (uncurry unadh) (h,a)))
-==  D (\ (h,a) -> (unadh h a, applyTo a . der unadh h ||| der (unadh h) a))
-==  D (\ (h,a) -> (unadh h a, applyTo a . unadh ||| der (unadh h) a))
-==  D (\ (h,a) -> (unadh h a, applyTo a . unadh ||| exr (unD h a)))
-
--- Good. Same answer. Continuing
-
-== ...
-==  D (\ (h,a) -> (unadh h a, applyTo a . unadh ||| der (unadh h) a))
-==  D (\ (h,a) -> (unadh h a, applyTo a . unadh ||| exr (unD h a)))   -- aha!
-==  D (\ (h,a) -> let (b,h') = unD h a in (b, applyTo a . unadh ||| h'))
-
--- Types:
-
-(h,a)  :: O ((a -> b) :* a)
-       :: O (a -> b) :* O a
-       :: D (O a) (O b) :* O a
-
-h  :: D (O a) (O b)
-a  :: O a
-
-unD h :: O a -> O b :* (O a :-* O b)
-unD h a :: O b :* (O a :-* O b)
-
-b :: O b
-
-applyTo a                   :: (O a -> O b) :-* O b
-             unadh          :: D (O a) (O b) :-* (O a -> O b)
-applyTo a .  unadh          :: D (O a) (O b) :-* O b
-                        h'  :: O a :-* O b
-applyTo a .  unadh |||  h'  :: D (O a) (O b) :* O a :-* O b
-                            :: O ((a -> b) :* a) :-* O b
-
--- Checks out!
-
-==  adh (uncurry unadh)
-==  D (uncurry unadh &&& der (uncurry adh))
-==  D (\ (h,a) -> (unadh h a, der (uncurry adh) (h,a)))
+                unadh            :: D (O a) (O b) -> (O a -> O b)
+       uncurry  unadh            :: D (O a) (O b) :* O a -> O b
+adh (  uncurry  unadh)           :: D (D (O a) (O b) :* O a) (O b)
 
 
-==  D ((\ (h,a) -> unadh h a) &&& der (\ (h,a) -> unadh h a)) -- 
+     eval                        :: (a -> b) :* a -> b
+ado  eval                        :: D (O ((a -> b) :* a)) (O b)
+                                 :: D (O (a -> b) :* O a) (O b)
+                                 :: D (D (O a) (O b) :* O a) (O b)
 
-==  adh (\ (h,a) -> (exl . unD h) a)                       -- |unadh| definition
+\end{code}
 
-==  adh (uncurry unadh)                                    -- |uncurry| on functions
-==  adh (eval . first unadh)                               -- CCC law
-==  adh eval . first (adh unadh)                           -- |adh| is a monoidal functor
+\sectionl{Related Work}
 
-    adh unadh
-==  linearD unadh                -- |unadh| is linear
-==  D (\ h -> (unadh h, unadh))  -- |linearD| definition
+\bibliography{bib}
 
+\end{document}
 
-==  adh (uncurry unadh)                                    -- |uncurry| on functions
-==  D (\ (h,a) -> (unadh h a, der (uncurry unadh) (h,a)))
+%% Some junk
 
-
-    der (uncurry h) (a,b)
-==  der (eval . (h *** id)) (a,b)
-==  der eval (h a, b) . der (h *** id) (a,b)
-==  der eval (h a, b) . (der h a *** der id b)
-==  der eval (h a, b) . (der h a *** id)
-==  (applyTo b ||| der (h a) b) . (der h a *** id)
-==  applyTo b . der h a ||| der (h a) b . id
-==  applyTo b . der h a ||| der (h a) b
-
-    der (uncurry h) (a,b)
-==  der (eval . first h) (a,b)
-==  der eval (first h (a,b)) . der (first h) (a,b)
-==  der eval (h a,b) . der (first h) (a,b)
-==  (applyTo b ||| der (h a) b) . der (first h) (a,b)
-==  (applyTo b ||| der (h a) b) . first (der h a)
-==  applyTo b . der h a ||| der (h a) b
-
-    der (first h) (a,b)
-==  der (h *** id) (a,b)
-==  der h a *** der id b
-==  der h a *** id
-==  first (der h a)
-
-    der (uncurry h) (a,b)
-==  derl (uncurry h) (a,b) ||| derr (uncurry h) (a,b)
-==  der (uncurry h . (,b)) a ||| der (uncurry h . (a,)) b
-==  der (applyTo b . h) a ||| der (uncurry h . (a,)) b
-==  ...  -- below
-==  applyTo b . der h a ||| der (h a) b
+\begin{code}
 
                   h    :: a -> b -> c
              der  h a  :: a :-* (b -> c)
@@ -665,34 +627,3 @@ D (\ a -> (adh (wrapO (uncurry g (unO a))), der (adh . wrapO . uncurry g . unO) 
 
 
 \end{code}
-
-
-
-Types sanity check:
-\begin{code}
-
-                             a   :: O a
-                          h      :: O (a -> b)
-                                 :: D (O a) (O b)
-                   unadh  h      :: O a -> O b
-                   unadh  h  a   :: O b
-       \ (h,a) ->  unadh  h  a   :: D (O a) (O b) :* O a -> O b
-adh (  \ (h,a) ->  unadh  h  a)  :: D (D (O a) (O b) :* O a) (O b)
-
-                unadh   :: D (O a) (O b) -> (O a -> O b)
-       uncurry  unadh   :: D (O a) (O b) :* O a -> O b
-adh (  uncurry  unadh)  :: D (D (O a) (O b) :* O a) (O b)
-
-
-     eval  :: (a -> b) :* a -> b
-ado  eval  :: D (O ((a -> b) :* a)) (O b)
-           :: D (O (a -> b) :* O a) (O b)
-           :: D (D (O a) (O b) :* O a) (O b)
-\end{code}
-
-\sectionl{Related Work}
-
-\bibliography{bib}
-
-\end{document}
-
