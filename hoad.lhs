@@ -32,7 +32,7 @@ Conal Elliott
 \usepackage[round]{natbib}
 \bibliographystyle{plainnat}
 
-\title{\tit \\ \emph{\large (early draft---comments invited)}}
+\title{\tit \\ \emph{\large (early draft---comments invited\notefoot{Add GitHub link here for latest version, and welcome issues and even pull requests.})}}
 
 \date{\today}
 
@@ -63,14 +63,15 @@ The main new contributions are two senses of ``\emph{higher-order} automatic dif
 \item derivatives of higher-order functions, and
 \item higher-order derivatives of functions, and
 \end{itemize}
-The former has been addressed in a recent paper \citep{Vytiniotis-2019-differentiable-curry}, but in a way I find a dissatisfying extension of the work of \cite{Elliott-2018-ad-icfp} for a variety of reasons described in \secref{Related Work} and discussed at length with the authors of \cite{Vytiniotis-2019-differentiable-curry}.
+The former has been addressed in a recent paper \citep{Vytiniotis-2019-differentiable-curry}, but in a way I find dissatisfying for a variety of reasons described in \secref{Related Work} and discussed at length with the authors.
 
 Begin with the category of computably differentiable functions from \cite[Section 4.1]{Elliott-2018-ad-icfp}:
 \begin{code}
 newtype D a b = D (a -> b :* (a :-* b))
 \end{code}
 where |a :-* b| is the type of linear maps from |a| to |b|.
-The function around which the automatic differentiation (AD) algorithm is organized simply zips together a function |f :: a -> b| and its derivative |der f :: a -> a :-* b|:
+The function around which the automatic differentiation (AD) algorithm is organized simply ``zips'' together a function |f :: a -> b| and its derivative |der f :: a -> a :-* b|:\footnote{This paper deviates slightly from Haskell syntax by using a single colon rather than double colon for type signatures. \note{Experimental.}}\footnote{The infix operators for function types (``|->|'') and linear maps (``|:-*|'') both associate to the right and have equal, very low precedence.
+For instance, ``|a -> a :-* b|'' means |a -> (a :-* b)|.}
 \begin{code}
 adh :: (a -> b) -> D a b
 adh f  = D (\ a -> (f a, der f a))
@@ -78,7 +79,7 @@ adh f  = D (\ a -> (f a, der f a))
 \end{code}
 Note that this definition is not computable, since |der| is not \citep{PourEl1978Diff, PourEl1983Comp}.
 The whole specification of AD is then simply that |adh| is a homomorphism with respect to a standard compositional vocabulary of functions, namely that of cartesian categories, plus a collection of numeric primitives like (uncurried) addition and multiplication, |sin| and |cos|, etc.
-An example of such an equation is |adh g . adh f == adh (g . f)|, in which the only unknown is the meaning of the LHS |(.)|, i.e., sequential composition in the category |D|.
+An example of such a homomorphism equation is |adh g . adh f == adh (g . f)|, in which the only unknown is the meaning of the LHS |(.)|, i.e., sequential composition in the category |D|.
 Solving the collection of such homomorphism equations yields correct-by-construction AD.
 
 %format unadh = "\inv{"adh"}"
@@ -96,7 +97,9 @@ Indeed, |unadh| is a left inverse of |adh|:
 \end{code}
 
 As defined so far, |unadh| is \emph{not} a right inverse to |adh|, since the linear map portion might not be the true derivative.
-We will thus \emph{restrict} the category |D| to be the image of |adh|, which is to say that |adh| is surjective, i.e., the derivative is correct.
+We will thus \emph{restrict} the category |D| to be the image of |adh|, which is to say that |adh| is surjective, i.e., the derivative is correct.\footnote{
+Haskell's type system is not expressive enough to capture this restriction by itself, so the restriction will be only implied in this draft.
+For more rigor, one could use a language (extension) with refinement types such as Liquid Haskell \needcite{} or a dependently-typed language such as Agda \needcite{} or Idris \needcite{}.}
 This restriction guarantees that |unadh| is indeed a right inverse of |adh|.
 Given |h :: D a b| (with the mentioned restriction), there is an |f :: a -> b| such that |h = adh f|, so\footnote{This reasoning hold for \emph{any} surjective function with a left inverse.}
 \begin{code}
@@ -107,10 +110,11 @@ Given |h :: D a b| (with the mentioned restriction), there is an |f :: a -> b| s
 \end{code}
 Thus, |adh . unadh == id| as well.
 
-AD is often described as coming in forward and backward ``modes''.
+AD is often described as coming in forward and reverse ``modes''.
 For many practical applications (including deep learning and other high-dimensional optimization problems), reverse mode is much more efficient than forward mode.
-As typically presented, reverse mode is also much more complicated, but this difference appears to be due only to unfortunate choices in how to think about and implement AD.
-Instead, a single, simple algorithm works for both reverse as well as forward (and other) modes, with the only difference being that reverse mode uses a different linear map representation resulting from a simple classic trick \citep{Elliott-2018-ad-icfp}.
+As typically presented, reverse mode is also much more complicated, but this difference appears to be due only to unfortunate choices in how to understand and implement AD.
+Instead, a single, simple algorithm works for forward, reverse, and other modes.
+Reverse mode is distinguished only by using a different linear map representation resulting from a simple classic trick \citep{Elliott-2018-ad-icfp}.
 
 This general AD algorithm is justified by three main theorems:
 \begin{quotation}
@@ -167,7 +171,7 @@ A particularly important related operation:
 (&&&) :: Cartesian k => (a `k` c) -> (a `k` d) -> (a `k` (Prod k c d))
 f &&& g = (f *** g) . dup
 \end{code}
-For functions and linear maps, the categorical product is the usual cartesian product and
+For functions and linear maps, the categorical product is the usual cartesian product, and product operations defined as follows:\footnote{These method definitions are written as if linear maps were represented by functions that happen to be linear. Other representations will be useful as well, with method definitions specified again via simple, regular homomorphism equations \cite{Elliott-2018-ad-icfp}.}
 \begin{code}
 (f *** g) (a,b) = (f a, g b)
 exl  (a,b) = a
@@ -197,7 +201,8 @@ class MonoidalC k => Cocartesian k where
 (|||) :: Cocartesian k => (c `k` a) -> (d `k` a) -> ((Coprod k c d) `k` a)
 f ||| g = jam . (f +++ g)
 \end{code}
-In this paper we will be working in the setting of \emph{biproducts}, where products and coproducts coincide.
+In this paper we will be working in the setting of \emph{biproducts}, where products and coproducts coincide.\footnote{More precisely, linear maps (in all representations) form a biproduct category, but we will not use coproducts with functions or (computably) differentiable functions.
+Coproducts are useful in defining a simple, dualized linear map category that yields reverse mode AD when used with the single, general AD algorithm.}
 The corresponding bifunctor operations |(:+)| and |(:*)| thus also coincide:
 \begin{code}
 class MonoidalP k => Cocartesian k where
@@ -208,7 +213,7 @@ class MonoidalP k => Cocartesian k where
 (|||) :: (c `k` a) -> (d `k` a) -> ((Prod k c d) `k` a)
 f ||| g = jam . (f *** g)
 \end{code}
-For functions over additive monoids (including vector spaces and semimodules) and linear maps,
+For the category of linear maps and vector spaces (or semimodules) over a specified scalar type,
 \begin{code}
 inl  a = (a,0)
 inr  b = (0,b)
@@ -223,11 +228,11 @@ from which it follows that
 \end{code}
 
 Just as the |Category| and |Cartesian| instances for |D| arose from solving corresponding homomorphism equations about |adh|, let's now try the same with |CartesianClosed|.
-First note that we do not really have to define all three methods, since |eval| and |uncurry| can each be defined in terms of the other:\footnote{The pattern |g *** id| is also called ``|first g|'', because it applies |g| to the first element of a pair while leaving the second element unchanged.}
+First note that we do not really have to define all three methods, since |eval| and |uncurry| can each be defined in terms of the other:\out{\footnote{The pattern |g *** id| is also called ``|first g|'', because it applies |g| to the first element of a pair while leaving the second element unchanged.}}
 \begin{code}
 eval = uncurry id
-uncurry g = eval . (g *** id)
-          = eval . first g
+uncurry g  = eval . (g *** id)
+           = eval . first g
 \end{code}
 Since |eval| looks simpler, start there.
 The corresponding homomorphism equation has a particularly simple form:
@@ -265,14 +270,19 @@ derr :: (a :* b -> c) -> a :* b -> (b :-* c)
 derr f (a,b)  = der f (a,b) . inr
               = der (f . (a,)) b
 \end{code}
+so that
+\begin{code}
+der f (a,b) == derl f (a,b) ||| derr f (a,b)
+\end{code}
 These alternative forms follow from a bit of equational reasoning:\notefoot{Move most of the proofs in this paper to an appendix.}
 \begin{code}
     der (f . (,b)) a
-==  der f ((,b) a) . der (,b) a                         -- chain rule
-==  der f ((,b) a) . der (inl + const (0,b)) a          -- |inl| on functions, and meaning of |(,b)|
-==  der f ((,b) a) . (der inl a + der (const (0,b)) a)  -- linearity of |(+)|
-==  der f (a,b) . der inl a                             -- |der (const z) a == 0|
-==  der f (a,b) . inl                                   -- linearity of |inl|
+==  der f ((,b) a) . der (,b) a                      -- chain rule
+==  der f (a,b) . der (,b) a                         -- |(,b)| definition
+==  der f (a,b) . der (inl + const (0,b)) a          -- |inl| on functions, and meaning of |(,b)|
+==  der f (a,b) . (der inl a + der (const (0,b)) a)  -- linearity of |(+)|
+==  der f (a,b) . der inl a                          -- |der (const z) a == 0|
+==  der f (a,b) . inl                                -- linearity of |inl|; \thmRef{linear}
 \end{code}
 Likewise for |der (f . (a,)) b|.
 
@@ -286,10 +296,11 @@ applyTo a df = df a
 Linearity of |applyTo a| follows from the usual definition of addition and scaling on functions.
 \begin{code}
     der eval (f,a)
-==  derl eval (f,a) ||| derr eval (f,a)     -- method of partial derivatives
-==  der (applyTo a) f ||| der f          a  -- |derl| and |derr| definitions; |eval| on functions
-==  applyTo a ||| der f a                   -- linearity of |applyTo a|
-==  \ (df,dx) -> df a + der f a dx          -- |(###) on linear maps| and |applyTo| definition
+==  derl eval (f,a) ||| derr eval (f,a)          -- method of partial derivatives
+==  der (eval . (,a)) f ||| der (eval . (f,)) a  -- |derl| and |derr| alternative definitions
+==  der (applyTo a) f ||| der f          a       -- |eval| on functions
+==  applyTo a ||| der f a                        -- linearity of |applyTo a|
+==  \ (df,dx) -> df a + der f a dx               -- |(###) on linear maps|; |applyTo| definition
 \end{code}
 
 Now we can complete the calculation of |eval| for |D|:
@@ -301,7 +312,7 @@ Now we can complete the calculation of |eval| for |D|:
 ==  D (\ (f,a) -> (f a, der eval (f,a))         -- |eval| on functions
 ==  D (\ (f,a) -> (f a, applyTo a ||| der f a)  -- above
 \end{code}
-Although this final form is well-defined, it is not a computable recipe, since |der| is not computable, which leaves us in a pickle.
+Although this final form is well-defined, it uses the noncomputable |der| and so is not a computable recipe, leaving us in a pickle.
 Let's look for some wiggle room.
 
 \sectionl{Object mapping}
@@ -312,7 +323,7 @@ In general, a functor has two aspects:
 \item a mapping from arrows to arrows, and
 \item a mapping from objects to objects.
 \end{itemize}
-The functor |adh| defined (noncomputably) above implicitly chooses an \emph{identity object mapping}, as evident in its type |(a -> b) -> D a b|.\notefoot{Rewrite this section more clearly.}
+The functor |adh| defined (noncomputably) above implicitly chooses an \emph{identity object mapping}, as evident in its type signature |adh :: (a -> b) -> D a b|.\notefoot{Rewrite this section more clearly.}
 
 Recall the types of |eval| and |adh|:
 \begin{code}
@@ -320,7 +331,7 @@ eval :: CartesianClosed k => (Prod k ((Exp k a b)) a) `k` b
 \end{code}
 This type of |adh| plus the requirement that it be a cartesian \emph{closed} functor implies that the object mapping aspect of |adh| is the identity, and in particular |Exp D u v = u -> v|.
 It is this final conclusion that puts us in the pickle noted above, namely the need to compute the noncomputable.
-We can make this impossible task trivial by building the needed derivative into |Exp D u v|, say by choosing |Exp D u v = D u v|.
+We can, however, make this impossible task trivial by building the needed derivative into |Exp D u v|, say by choosing |Exp D u v = D u v|.
 In this case, we must alter |adh| as well.
 Letting |O| be the object mapping aspect of the new functor |ado|,\notefoot{Experiment with different notation for |O a|, e.g., ``$\bar{a}$''.}
 \begin{code}
@@ -332,15 +343,17 @@ The property of being a closed cartesian functor requires |O| to preserve catego
 O (a  :*  b) == Prod D  (O a)  (O b)
 O (a  ->  b) == Exp  D  (O a)  (O b)
 \end{code}
-To make |eval| on |D| computable, we can choose |Exp D u v = D u v| as mentioned above.
-Additionally map scalars to themselves and cartesian products to cartesian products:
+To make |eval| on |D| computable, choose |Exp D u v = D u v| as mentioned above.
+Additionally, map scalars to themselves and cartesian products to cartesian products:
 \begin{code}
 O R == R
 O (a  :*  b) == Prod D  (O a)  (O b)  == O a :* O b
 O (a  ->  b) == Exp  D  (O a)  (O b)  == D (O a) (O b)
 \end{code}
-%format toO = "\Varid{o}"
-%format unO = "\inv{\Varid{o}}"
+\nc\toO{\Varid{o}}
+%% \nc\toO{\Varid{obj}}
+%format toO = "\toO"
+%format unO = "\inv{\toO}"
 We will need to convert between |a| and |O a| , which we can do with a family of \emph{isomorphisms}\footnote{An implicit requirement for all |HasO| instances is that |toO . unO == id| and |unO . toO == id|.} indexed by |a|:\notefoot{It may be more elegant to combine the functions |toO| and |unO| into a single \emph{isomorphism}.}
 \begin{code}
 class HasO t where
@@ -348,7 +361,7 @@ class HasO t where
   toO  :: t -> O t
   unO  :: O t -> t
 \end{code}
-For scalar types |a| and the unit type, |O a == a|, so the isomorphism is trivial:
+For scalar types |a| and the unit type, |O a == a|, the isomorphism is trivial:
 \begin{code}
 instance HasO R where
   type O R = R
@@ -360,14 +373,14 @@ instance HasO () where
   toO  = id
   unO  = id
 \end{code}
-For products, convert components independently:
+For products, convert components independently:\footnote{Recall that |(f *** g) (a,b)| = |(f a, g b)|, so |toO (a,b) = (toO *** toO) (a,b) = (toO a, toO b)|, and similarly for |unO|.}
 \begin{code}
 instance (HasO a, HasO b) => HasO (a :* b) where
   type O (a :* b) = O a :* O b
   toO  = toO  ***  toO
   unO  = unO  ***  unO
 \end{code}
-The new functor |ado| converts its given |a -> b| to |O a -> O b| and then applies the |adh| functor.
+The new functor |ado| converts its given |a -> b| to |O a -> O b| and then applies the |adh| functor:
 %format wrapO = wrap"_o"
 %format wrapO = wrap
 %format unwrapO = "\inv{"wrapO"}"
@@ -387,81 +400,81 @@ unado = unwrapO . unadh
 Note that |wrapO| and |unwrapO| form an isomorphism:
 \begin{code}
     unwrapO (wrapO f)
-==  unwrapO (toO . f . unO)
-==  unO . (toO . f . unO) . toO
-==  (unO . toO) . f . (unO . toO)
-==  id . f . id
-==  f
+==  unwrapO (toO . f . unO)        -- |wrapO| definition
+==  unO . (toO . f . unO) . toO    -- |unwrapO| definition
+==  (unO . toO) . f . (unO . toO)  -- |(.)| associativity 
+==  id . f . id                    -- |unO . toO == id|
+==  f                              -- |id| is identity for |(.)|
 
     wrapO (unwrapO h)
-==  wrapO (unO . h . toO)
-==  toO . (unO . h . toO) . unO
-==  (toO . unO) . h . (toO . unO)
-==  id . h . id
-==  h
+==  wrapO (unO . h . toO)          -- |unwrapO| definition
+==  toO . (unO . h . toO) . unO    -- |wrapO| definition
+==  (toO . unO) . h . (toO . unO)  -- |(.)| associativity
+==  id . h . id                    -- |toO . unO == id|
+==  h                              -- |id| is identity for |(.)|
 \end{code}
-Also |ado| and |unado| form another isomorphism:
+Likewise, |ado| and |unado| form another isomorphism:
 \begin{code}
     unado . ado
-==  unwrapO . unado . adh . wrapO
-==  unwrapO . wrapO
-==  id
+==  unwrapO . unadh . adh . wrapO  -- |unado| and |ado| definitions
+==  unwrapO . wrapO                -- |unadh . adh == id|
+==  id                             -- |unwrapO . wrapO == id|
 
     ado . unado
-==  adh . wrapO . unwrapO . unado
-==  adh . unado
-==  id
+==  adh . wrapO . unwrapO . unado  -- |ado| and |unado| definitions
+==  adh . unado                    -- |unwrapO . wrapO == id|
+==  id                             -- |unadh . adh == id|
 \end{code}
 
-Because |adh| is a cartesian functor (given the cartesian category operations already defined on |D| \citep{Elliott-2018-ad-icfp}) and thanks to the structure of |toO| and |unO|, |ado| is also a cartesian functor, as the following calculations show:\notefoot{Annotate with justifications at each step.}
+Because |adh| is a cartesian functor (given the cartesian category operations already defined on |D| \citep{Elliott-2018-ad-icfp}) and thanks to the structure of |toO| and |unO|, |ado| is also a cartesian functor, as the following calculations show:
 \begin{code}
     ado id
-==  adh (wrapO id)
-==  adh (toO . id . unO)
-==  adh (toO . unO)
-==  adh id
-==  id
+==  adh (wrapO id)                                   -- |ado| definition
+==  adh (toO . id . unO)                             -- |wrapO| definition
+==  adh (toO . unO)                                  -- |id| is identity for |(.)|
+==  adh id                                           -- |toO . unO == id|
+==  id                                               -- |adh| is funtor
 
     ado (g . f)
-==  adh (wrapO (g . f))
-==  adh (toO . g . f . unO)
-==  adh (toO . g . unO . toO . f . unO)
-==  adh (toO . g . unO) . adh (toO . f . unO)
-==  adh (wrapO g) . adh (wrapO f)
-==  ado g . ado f
+==  adh (wrapO (g . f))                              -- |ado| definition
+==  adh (toO . g . f . unO)                          -- |wrapO| definition
+==  adh (toO . g . unO . toO . f . unO)              -- |unO . toO == id|
+==  adh (toO . g . unO) . adh (toO . f . unO)        -- |adh| is a functor
+==  adh (wrapO g) . adh (wrapO f)                    -- |wrapO| definition
+==  ado g . ado f                                    -- |ado| definition
 
     ado (f *** g)
-==  adh (wrapO (f *** g))
-==  adh (toO . (f *** g) . unO)
-==  adh ((toO *** toO) . (f *** g) . (unO *** unO))
-==  adh (toO . f . unO *** toO . g . unO)
-==  adh (toO . f . unO) *** adh (toO . g . unO)
-==  adh (wrapO f) *** adh (wrapO g)
-==  ado f *** ado g
+==  adh (wrapO (f *** g))                            -- |ado| definition
+==  adh (toO . (f *** g) . unO)                      -- |wrapO| definition
+==  adh ((toO *** toO) . (f *** g) . (unO *** unO))  -- |toO| on products
+==  adh (toO . f . unO *** toO . g . unO)            -- monoidal category law
+==  adh (toO . f . unO) *** adh (toO . g . unO)      -- |adh| is a monoidal functor
+==  adh (wrapO f) *** adh (wrapO g)                  -- |wrapO| definition
+==  ado f *** ado g                                  -- |ado| definition
 
     ado exl
-==  adh (wrapO exl)
-==  adh (toO . exl . unO)
-==  adh (toO . exl . (unO *** unO))
-==  adh (toO . unO . exl)
-==  adh exl
-==  exl
+==  adh (wrapO exl)                                  -- |ado| definition
+==  adh (toO . exl . unO)                            -- |wrapO| definition
+==  adh (toO . exl . (unO *** unO))                  -- |unO| on products
+==  adh (toO . unO . exl)                            -- |exl . (f *** g) == f . exl| for cartesian categories
+==  adh exl                                          -- |toO . unO == id|
+==  exl                                              -- |adh| is a cartesian functor                          
 
     ado exr
-==  adh (wrapO exr)
-==  adh (toO . exr . unO)
-==  adh (toO . exr . (unO *** unO))
-==  adh (toO . unO . exr)
-==  adh exr
-==  exr
+==  adh (wrapO exr)                                  -- |ado| definition
+==  adh (toO . exr . unO)                            -- |wrapO| definition
+==  adh (toO . exr . (unO *** unO))                  -- |unO| on products
+==  adh (toO . unO . exr)                            -- |exr . (f *** g) == g . exr| for cartesian categories
+==  adh exr                                          -- |toO . unO == id|
+==  exr                                              -- |adh| is a cartesian functor
 
     ado dup
-==  adh (wrapO dup)
-==  adh (toO . dup . unO)
-==  adh (toO . (unO *** unO) . dup)
-==  adh (toO . unO . dup)
-==  adh dup
-==  dup
+==  adh (wrapO dup)                                  -- |ado| definition
+==  adh (toO . dup . unO)                            -- |wrapO| definition
+==  adh (toO . (unO *** unO) . dup)                  -- |dup . f == (f *** f) . dup| for cartesian categories
+==  adh (toO . unO . dup)                            -- |unO| on products
+==  adh dup                                          -- |toO . unO == id|
+==  dup                                              -- |adh| is a cartesian functor
 \end{code}
 
 What about exponentials and cartesian \emph{closure}?
@@ -474,7 +487,7 @@ instance (HasO a, HasO b) => HasO (a -> b) where
   unO  = unado
 \end{code}
 For a |CartesianClosed| instance, we'll need to define |curry| and |eval|.
-We don't have definitions to imitate and verify this time, so we have to discover new ones by solving the homomorphism equations.
+We don't have definitions from \cite{Elliott-2018-ad-icfp} to imitate and verify this time, so we have to discover new ones by solving the homomorphism equations.
 For |eval|, the homomorphism equation is |eval == ado eval|, which is already a definition but not a computable one (since |ado| involves |adh|, which involves differentiation).
 Simplifying the RHS,
 \begin{code}
@@ -535,6 +548,7 @@ applyTo a .  unadh          :: D (O a) (O b) :-* O b
 applyTo a .  unadh |||  h'  :: D (O a) (O b) :* O a :-* O b
                             :: O ((a -> b) :* a) :-* O b
 
+-- Checks out!
 
 ==  adh (uncurry unadh)
 ==  D (uncurry unadh &&& der (uncurry adh))
@@ -649,8 +663,6 @@ D (\ a -> (adh (wrapO (uncurry g (unO a))), der (adh . wrapO . uncurry g . unO) 
     der (curry f) a
 ==  \ b -> derl f (a,b)
 
-
-    
 
 \end{code}
 
