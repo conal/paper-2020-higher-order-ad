@@ -1,7 +1,7 @@
 % -*- latex -*-
 
-%% While editing/previewing, use 12pt and tiny margin.
-\documentclass[12pt,twoside]{article}  % fleqn,
+%% While editing/previewing, use 12pt or 14pt and tiny margin.
+\documentclass[12pt,twoside]{extarticle}  % fleqn,14pt
 \usepackage[margin=0.12in]{geometry}  % 0.12in, 0.9in
 
 %% \documentclass{article}
@@ -82,11 +82,15 @@ The whole specification of AD is then simply that |adh| is a homomorphism with r
 An example of such a homomorphism equation is |adh g . adh f == adh (g . f)|, in which the only unknown is the meaning of the LHS |(.)|, i.e., sequential composition in the category |D|.
 Solving the collection of such homomorphism equations yields correct-by-construction AD.
 
+%format fh = "\Varid{\hat{f}}"
 %format unadh = "\inv{"adh"}"
 The function |adh| is invertible, i.e., |unadh . adh == id|, where |unadh| simply drops the derivative:
 \begin{code}
 unadh :: D a b -> (a -> b)
-unadh (D h) = exl . h
+unadh fh = exl . unD fh
+
+unD :: D a b -> (a -> b :* (a :-* b))
+unD (D h) = h
 \end{code}
 Indeed, |unadh| is a left inverse of |adh|:
 \begin{code}
@@ -100,13 +104,27 @@ As defined so far, |unadh| is \emph{not} a right inverse to |adh|, since the lin
 We will thus \emph{restrict} the category |D| to be the image of |adh|, which is to say that |adh| is surjective, i.e., the derivative is correct.\footnote{
 Haskell's type system is not expressive enough to capture this restriction by itself, so the restriction will be only implied in this draft.
 For more rigor, one could use a language (extension) with refinement types such as Liquid Haskell \needcite{} or a dependently-typed language such as Agda \needcite{} or Idris \needcite{}.}
-This restriction guarantees that |unadh| is indeed a right inverse of |adh|.
-Given |h :: D a b| (with the mentioned restriction), there is an |f :: a -> b| such that |h = adh f|, so\footnote{This reasoning hold for \emph{any} surjective function with a left inverse.}
+%if False
+Equivalently, the following property must hold for all |h :: D a b|:
 \begin{code}
-    adh (unadh h)
-==  adh (unadh (adh f))  -- |h = adh f|
+exr . unD fh = der (unadh fh)
+\end{code}
+Thus
+\begin{code}
+unD fh a = (unadh fh a, der (unadh fh) a)
+
+unD fh = unadh fh &&& der (unadh fh)
+
+fh = adh (unadh fh)
+\end{code}
+%endif
+This restriction guarantees that |unadh| is indeed a right inverse of |adh|.
+Given |fh :: D a b| (with the mentioned restriction), there is an |f :: a -> b| such that |fh = adh f|, so\footnote{This reasoning hold for \emph{any} surjective function with a left inverse.}
+\begin{code}
+    adh (unadh fh)
+==  adh (unadh (adh f))  -- |fh = adh f|
 ==  adh f                -- |unadh . adh == id|
-==  h                    -- |adh f = h|
+==  fh                   -- |adh f = fh|
 \end{code}
 Thus, |adh . unadh == id| as well.
 
@@ -140,15 +158,15 @@ In other words, are there definitions of |eval|, |curry|, and |uncurry| on |D| s
 \begin{code}
 eval = adh eval
 curry (adh f) = adh (curry f)
-uncurry (adh g) = adh (uncurry f)
+uncurry (adh g) = adh (uncurry g)
 \end{code}
 These three operations come  with every \emph{cartesian closed} category:
 \begin{code}
 class Cartesian k => CartesianClosed k where
   type ExpOp k :: Type -> Type -> Type
-  eval :: (Prod k ((Exp k a b)) a) `k` b
-  curry :: ((Prod k a b) `k` c) -> (a `k` (Exp k b c))
-  uncurry :: (a `k` (Exp k b c)) -> ((Prod k a b) `k` c)
+  eval     :: (Prod k ((Exp k a b)) a) `k` b
+  curry    :: ((Prod k a b) `k` c) -> (a `k` (Exp k b c))
+  uncurry  :: (a `k` (Exp k b c)) -> ((Prod k a b) `k` c)
 \end{code}
 where |Exp k a b| is a type of ``exponential objects'' (first class functions/arrows) from |a| to |b| for the category |k|.
 These operations support higher-order programming and arise during translation from a typed lambda calculus (e.g., Haskell) to categorical vocabulary \citep{Elliott-2017-compiling-to-categories}.
@@ -171,7 +189,7 @@ A particularly important related operation:
 (&&&) :: Cartesian k => (a `k` c) -> (a `k` d) -> (a `k` (Prod k c d))
 f &&& g = (f *** g) . dup
 \end{code}
-For functions and linear maps, the categorical product is the usual cartesian product, and product operations defined as follows:\footnote{These method definitions are written as if linear maps were represented by functions that happen to be linear. Other representations will be useful as well, with method definitions specified again via simple, regular homomorphism equations \cite{Elliott-2018-ad-icfp}.}
+For functions and linear maps, the categorical product is the usual cartesian product, and product operations defined as follows:\footnote{These method definitions are written as if linear maps were represented by functions that happen to be linear. Other representations will be useful as well, with method definitions specified again via simple, regular homomorphism equations \citep{Elliott-2018-ad-icfp}.}
 \begin{code}
 (f *** g) (a,b) = (f a, g b)
 exl  (a,b) = a
@@ -524,9 +542,25 @@ Simplifying the RHS,
 ==  D (\ (h,a) -> (unadh h a, der (uncurry unadh) (h,a)))                    -- |uncurry| on functions
 ==  D (\ (h,a) -> (unadh h a, applyTo a . der unadh h ||| der (unadh h) a))  -- |der (unadh f)| above
 ==  D (\ (h,a) -> (unadh h a, applyTo a . unadh ||| der (unadh h) a))        -- |unadh| is linear
-==  D (\ (h,a) -> (unadh h a, applyTo a . unadh ||| exr (unD h a)))          -- |adh| definition (aha!)
-==  D (\ (h,a) -> let (b,h') = unD h a in (b, applyTo a . unadh ||| h'))     -- refactor
 \end{code}
+% Now we are in a position to eliminate the noncomputable |der| operation.
+Now note that
+\begin{code}
+    h
+==  adh (unadh h)                  -- |adh . unadh == id|
+==  D (unadh h &&& der (unadh h))  -- |adh| definition
+\end{code}
+so
+\begin{code}
+unD h a = (unadh h a, der (unadh h) a)
+\end{code}
+A bit of refactoring then replaces |unadh h a| and (the noncomputable) |der (unadh h a)|, yielding a \emph{computable} form:
+\begin{code}
+    ado eval
+==  ...
+==  D (\ (h,a) -> let (b,h') = unD h a in (b, applyTo a . unadh ||| h'))
+\end{code}
+
 Since this calculation was fairly involved, let's get a sanity check on the types in the final form:
 \begin{code}
 
