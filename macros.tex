@@ -18,15 +18,15 @@
 \nc\indraft[1]{#1}
 
 % While working, use these defs
-% \nc\mynote[1]{{\em [#1]}}
-\nc\mynote[1]{\indraft{\textcolor{red}{[#1]}}}
+% \nc\note[1]{{\em [#1]}}
+\nc\note[1]{\indraft{\textcolor{red}{[#1]}}}
 
-\nc\notefoot[1]{\indraft{\footnote{\mynote{#1}}}}
+\nc\notefoot[1]{\indraft{\footnote{\note{#1}}}}
 
-\nc\todo{\mynote{To do.}}
+\nc\todo{\note{To do.}}
 
 %% Provides its own initial space.
-\nc\needcite{\indraft{ \mynote{ref}}}
+\nc\needcite{\indraft{ \note{ref}}}
 
 \nc\seclabel[1]{\label{sec:#1}}
 \nc\secref[1]{Section \ref{sec:#1}}
