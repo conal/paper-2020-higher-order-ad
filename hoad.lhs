@@ -165,7 +165,7 @@ For instance, the derivative of uncurried multiplication is given by the Leibniz
 \begin{code}
     der (uncurry (*)) (a,b)
 ==  uncurry (*) . (,b) ||| uncurry (*) . (a,)
-==  (* b) ||| (a *)
+==  (NOP * b) ||| (a * NOP)
 == \ (da,db) -> da * b + a * db
 \end{code}
 % which is sometimes written ``|d (u v) = u dv + v du|''.

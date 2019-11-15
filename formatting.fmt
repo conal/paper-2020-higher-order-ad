@@ -2,12 +2,12 @@
 
 %% Misc lhs2TeX directives
 
-%format NOP = "{}"
-
 %% hack: add missing space, e.g., before "{" in data type decl
 %format SPC = "\:{}"
 %format SPACE = "\ {}"
-%format NOP = "{}"
+
+%% Use as missing argument in a section.
+%format NOP = " \!{}"
 
 %format :* = " \times "
 %format :+ = " + "
