@@ -1,8 +1,5 @@
 %% Discarded text, saved here in case some is useful later.
 
-
-%% Some junk
-
 \begin{code}
 
                   fh    :: a -> b -> c
