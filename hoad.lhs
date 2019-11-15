@@ -178,18 +178,24 @@ For instance, the derivative of uncurried multiplication is given by the Leibniz
 
 It will also be useful to calculate derivatives of functions with higher-order codomains.\notefoot{The previous section and this one provide ``adjoint'' techniques in a sense that they currying is an adjunction from functions from products to functions to functions.
 Is there something else interesting to say here?}
-We'll need another linear map operation, which is reverse function application:\footnote{Linearity of |applyTo a| follows from the usual definition of addition and scaling on functions.}
+We'll need two more linear map operations, the first of which is reverse function application:\footnote{Linearity of |applyTo a| follows from the usual definition of addition and scaling on functions.}
 \begin{code}
 applyTo :: a -> (a -> b) :-* b
 applyTo a df = df a
 \end{code}
-\begin{theorem}\thmLabel{higher-order-codomain}
-Given a function |g :: a -> b -> c|,\notefoot{I think I'd like to introduce |forkF :: (b -> a :-* c) -> (a :-* b -> c)| and use it here. Then $$|der g a = forkF (\ b -> der (applyTo b . g) a)|,$$ which is linear by construction.}
-$$|der g a = \ da b -> der (applyTo b . g) a da|.$$
-\end{theorem}
-Proof:\notefoot{Maybe move this proof to the appendix.}\footnote{As a sanity check, the RHS (``|\ da b -> ...|'') is indeed linear, because |der (applyTo b . g) a| linear is (being a derivative) and noting the usual interpretation of scaling and addition on functions.}
+The second linear map operation is the indexed variant of |(&&&)|:
 \begin{code}
-    \ da b -> der (applyTo b . g) a da
+forkF :: (b -> a :-* c) -> (a :-* b -> c)
+forkF h = \ da b -> h b da
+\end{code}
+\begin{theorem}\thmLabel{higher-order-codomain}
+Given a function |g :: a -> b -> c|,
+$$|der g a = forkF (\ b -> der (applyTo b . g) a)|.$$
+\end{theorem}
+Proof:\notefoot{Move this proof to the appendix.}
+\begin{code}
+    forkF (\ b -> der (applyTo b . g) a)
+==  \ da b -> der (applyTo b . g) a da              -- |forkF| definition
 ==  \ da b -> (der (applyTo b) (g a) . der g a) da  -- chain rule
 ==  \ da b -> (applyTo b . der g a) da              -- |applyTo b| is linear
 ==  \ da b -> applyTo b (der g a da)                -- |(.)| on functions
@@ -221,6 +227,22 @@ Then the RHS:
 ==  D (curry f &&& der (curry f))
 \end{code}
 where (on functions) |curry f = \ a b -> f (a,b)|.
+
+Curried functions differentiate as follows:
+\begin{theorem}
+| der (curry f) a == forkF (derl f . (a,)) |
+\end{theorem}
+The proof is a simple application of \thmRef{higher-order-codomain}:
+\begin{code}
+    der (curry f) a
+==  forkF (\ b -> der (at b . curry f)) a                -- \thmRef{higher-order-codomain}
+==  forkF (\ b -> der (\ a -> applyTo b (curry f a))) a  -- |(.)| on functions
+==  forkF (\ b -> der (\ a -> curry f a b)) a            -- |applyTo| definition
+==  forkF (\ b -> der (\ a -> f (a,b))) a                -- |curry| on functions
+==  forkF (\ b -> der (f . (,b))) a                      -- |(, b)| definition
+==  forkF (\ b -> derl f (a,b))                          -- |derl| definition
+==  forkF (derl f . (a,))                                -- |(a,)| definition
+\end{code}
 
 \workingHere \note{Postpone the class/interface discussion to \secref{Object Mapping}}. \vspace{5ex}
 

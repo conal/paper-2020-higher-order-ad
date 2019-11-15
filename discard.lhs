@@ -96,3 +96,6 @@ A simple proof uses the chain rule in reverse:\footnote{As a sanity check, the R
 ==  \ da b -> (der (applyTo b) (g a) . der g a) da  -- chain rule
 ==  \ da b -> der (applyTo b . g) a da              -- |applyTo b| is linear
 \end{code}
+
+
+\footnote{As a sanity check, the RHS (``|\ da b -> ...|'') is indeed linear, because |der (applyTo b . g) a| linear is (being a derivative) and noting the usual interpretation of scaling and addition on functions.}

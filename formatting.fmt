@@ -23,14 +23,6 @@
 %% Because ||| between inline-code "|" delimiters confuses lhs2tex
 %format ### = "\mathbin{\triangledown}"
 
-% Got from Andres L:
-\newcommand{\calculationcomments}{%
-  \let\onelinecomment=\onelinecommentchars
-  \def\commentbegin{\ \{ }%
-  \def\commentend{\}}%
-}
-\calculationcomments
-
 %format == = =
 
 %format ==> = "\Longrightarrow"
@@ -100,3 +92,5 @@
 %format :: = :
 
 %format applyTo = at
+
+%format forkF = fork"_{\!F}"
