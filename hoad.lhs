@@ -126,7 +126,7 @@ For all linear functions |f|, |der f a == f|.
 \noindent
 In addition to these three theorems, we need a collection of facts about the derivatives of various mathematical operations, e.g., |adh sin x = scale (cos x)|, where |scale :: a -> a :-* a| is uncurried scalar multiplication (so |scale s| is linear for all |s|).
 
-\sectionl{Partial Derivatives}
+\sectionl{Pair-valued Domains}
 
 In tackling the question of cartesian closure for AD, it will be helpful to develop a simple, categorical viewpoint of \emph{partial derivatives}, which serve as a useful tool for differentiating functions having non-scalar domains.
 
@@ -174,7 +174,7 @@ For instance, the derivative of uncurried multiplication is given by the Leibniz
 % which is sometimes written ``|d (u v) = u dv + v du|''.
 
 
-\sectionl{Higher-Order Codomains}
+\sectionl{Function-Valued Codomains}
 
 It will also be useful to calculate derivatives of functions with higher-order codomains.\notefoot{The previous section and this one provide ``adjoint'' techniques in a sense that they currying is an adjunction from functions from products to functions to functions.
 Is there something else interesting to say here?}
@@ -243,6 +243,8 @@ The proof is a simple application of \thmRef{higher-order-codomain}:
 ==  forkF (\ b -> derl f (a,b))                          -- |derl| definition
 ==  forkF (derl f . (a,))                                -- |(a,)| definition
 \end{code}
+
+\note{Move this theorem to \secref{Function-Valued Codomains}.}
 
 \workingHere \note{Postpone the class/interface discussion to \secref{Object Mapping}}. \vspace{5ex}
 
@@ -354,7 +356,7 @@ Let us press forward undeterred, opening up the definition of |adh| to see if we
 \end{code}
 Now we do not need the general |der|, but rather the specific |der eval|.
 If |eval| were linear, we could apply \thmRef{linear}, but alas it is not.
-No matter, as we can instead use the technique of partial derivatives.
+No matter, as we can instead use the technique of partial derivatives.\notefoot{Move this calculation into a proof of a theorem stated in \secref{Pair-valued Domains}}.
 \begin{code}
     der eval (f,a)
 ==  derl eval (f,a) ||| derr eval (f,a)          -- method of partial derivatives
@@ -504,7 +506,7 @@ I can get some of the preparatory work done.}
 
 \sectionl{Proofs}
 
-\subsection{Partial Derivatives}\proofLabel{partial-alt}
+\subsection{Pair-valued Domains}\proofLabel{partial-alt}
 
 \begin{code}
     der (f . (,b)) a
