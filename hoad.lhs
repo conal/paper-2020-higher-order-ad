@@ -184,7 +184,7 @@ applyTo :: a -> (a -> b) :-* b
 applyTo a df = df a
 \end{code}
 \begin{theorem}\thmLabel{higher-order-codomain}
-Given a function |g :: a -> b -> c|,
+Given a function |g :: a -> b -> c|,\notefoot{I think I'd like to introduce |forkF :: (b -> a :-* c) -> (a :-* b -> c)| and use it here. Then $$|der g a = forkF (\ b -> der (applyTo b . g) a)|,$$ which is linear by construction.}
 $$|der g a = \ da b -> der (applyTo b . g) a da|.$$
 \end{theorem}
 Proof:\notefoot{Maybe move this proof to the appendix.}\footnote{As a sanity check, the RHS (``|\ da b -> ...|'') is indeed linear, because |der (applyTo b . g) a| linear is (being a derivative) and noting the usual interpretation of scaling and addition on functions.}
