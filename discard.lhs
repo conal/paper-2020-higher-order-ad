@@ -65,3 +65,34 @@ D (\ a -> (adh (wrapO (uncurry g (unO a))), der (adh . wrapO . uncurry g . unO) 
 
 
 \end{code}
+
+
+If |f :: a :* b -> c|, then |curry f :: a -> b -> c|, so |der (curry f) a :: a :-* b -> c|, i.e., a linear map from |a| to |b -> c|.
+As |a| varies ...
+
+
+\begin{code}
+           
+     
+
+
+der (curry f) a da b = der f (a,b) (da,0)
+
+  der (curry f) a
+= \ da b -> der f (a,b) (da,0)
+= forkF (\ b da -> der f (a,b) (da,0))
+= forkF (\ b -> der f (a,b) . inl)
+= forkF (\ b -> derl f (a,b))
+= forkF (derl f . (a,))
+\end{code}
+
+Note that |der g a :: a :-* b -> c|.
+A simple proof uses the chain rule in reverse:\footnote{As a sanity check, the RHS (``|\ da b -> ...|'') is indeed linear, because |der (applyTo b . g) a| linear is (being a derivative) and noting the usual interpretation of scaling and addition on functions.}
+\begin{code}
+    der g a
+==  \ da b -> der g a da b                          -- $\eta$ expansion (twice)
+==  \ da b -> applyTo b (der g a da)                -- |applyTo| definition
+==  \ da b -> (applyTo b . der g a) da              -- |(.)| on functions
+==  \ da b -> (der (applyTo b) (g a) . der g a) da  -- chain rule
+==  \ da b -> der (applyTo b . g) a da              -- |applyTo b| is linear
+\end{code}
