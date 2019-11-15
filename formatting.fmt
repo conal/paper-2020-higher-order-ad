@@ -63,6 +63,12 @@
 %format ado = der"^\circ"
 %format ado = der"_{\!o}"
 
+%format unadh = "\inv{"adh"}"
+%format unado = "\inv{"ado"}"
+
+%format derl = der"_l"
+%format derr = der"_r"
+
 %% %format :=> = "\mapsto"
 %format :=> = =>
 
@@ -89,3 +95,5 @@
 %format R = "\mathbb{R}"
 
 %format :: = :
+
+%format applyTo = at

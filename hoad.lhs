@@ -77,7 +77,6 @@ An example of such a homomorphism equation is |adh g . adh f == adh (g . f)|, in
 Solving the collection of such homomorphism equations yields correct-by-construction AD.
 
 %format fh = "\Varid{\hat{f}}"
-%format unadh = "\inv{"adh"}"
 The function |adh| is invertible, i.e., |unadh . adh == id|, where |unadh| simply drops the derivative:\footnote{This paper uses ``|exl|'' and ``|exr|'' to name left and right product projections (defined on cartesian categories), rather than Haskell's (function-only) ``|fst|'' and ``|snd|''.}
 \begin{code}
 unadh :: D a b -> (a -> b)
@@ -126,6 +125,50 @@ For all linear functions |f|, |der f a == f|.
 \end{quotation}
 \noindent
 In addition to these three theorems, we need a collection of facts about the derivatives of various mathematical operations, e.g., |adh sin x = scale (cos x)|, where |scale :: a -> a :-* a| is uncurried scalar multiplication (so |scale s| is linear for all |s|).
+
+\sectionl{Partial derivatives}
+
+In tackling the question of cartesian closure for AD, it will be helpful to develop a simple, categorical viewpoint of \emph{partial derivatives}, which serve as a useful tool for differentiating functions having non-scalar domains.
+
+Suppose we have a function |f :: a :* b -> c|, and we want to compute its derivative at a point in its (pair-valued) domain.
+Because linear maps (derivatives) form a cocartesian category,\footnote{The cocartesian law |h = h . inl ### h . inr| is dual to the cartesian law |h = exl . h &&& exr . h| \citep{Gibbons2002Calculating}.}
+\begin{code}
+der f (a,b) == der f (a,b) . inl ||| der f (a,b) . inr
+\end{code}
+The arguments to |(###)| here are the (``first'' and ``second'', or ``left'' and ``right'') ``partial derivatives'' of |f| at |(a,b)|.
+Noting that |inl da = (da,0)| and |inr db = (0,db)|, we can see that the partial derivatives allow only one half of a pair to change.
+It will be handy to give names to these arguments, as well as alternative forms, which follow from a bit of equational reasoning (\proofRef{partial-alt}).\footnote{The notation ``|(a,)|'' and ``|(b,)|'' refers to right and left ``sections'' of pairing: |(,b) a == (a,) b == (a,b)|.}
+\begin{code}
+derl :: (a :* b -> c) -> a :* b -> (a :-* c)
+derl f (a,b)  = der f (a,b) . inl
+              = der (f . (,b)) a
+
+derr :: (a :* b -> c) -> a :* b -> (b :-* c)
+derr f (a,b)  = der f (a,b) . inr
+              = der (f . (a,)) b
+\end{code}
+Then
+\begin{code}
+der f (a,b) == derl f (a,b) ||| derr f (a,b)
+\end{code}
+
+As an example of how this decomposition of |der f| helps construct derivatives, suppose that |f| is \emph{bilinear}, which is to say that |f| is linear in each argument, while holding the other constant.
+More formally |bilinearity| of |f| means that |f . (a,)| and |f . (b,)| are both linear for all |a :: a| and |b :: b|.
+Therefore,
+\begin{code}
+    der f (a,b)
+==  derl f (a,b) ||| derr f (a,b)          -- above
+==  der (f . (,b)) a ||| der (f . (a,)) b  -- above
+==  f . (,b) ||| f . (a,)                  -- linearity
+\end{code}
+For instance, the derivative of uncurried multiplication is given by the Leibniz product rule:
+\begin{code}
+    der (uncurry (*)) (a,b)
+==  uncurry (*) . (,b) ||| uncurry (*) . (a,)
+==  (* b) ||| (a *)
+== \ (da,db) -> da * b + a * db
+\end{code}
+% which is sometimes written ``|d (u v) = u dv + v du|''.
 
 \sectionl{Cartesian closed?}
 
@@ -245,32 +288,7 @@ Let us press forward undeterred, opening up the definition of |adh| to see if we
 \end{code}
 Now we do not need the general |der|, but rather the specific |der eval|.
 If |eval| were linear, we could apply \thmRef{linear}, but alas it is not.
-No matter, as we can instead use the technique of partial derivatives, which is useful for functions of nonscalar domains.
-Suppose we have a function |f :: a :* b -> c|, and we want to compute its derivative at a point in its (pair-valued) domain.
-Because linear maps (derivatives) form a cocartesian category,\footnote{The cocartesian law |h = h . inl ### h . inr| is dual to the cartesian law |h = exl . h &&& exr . h| \citep{Gibbons2002Calculating}.}
-\begin{code}
-der f (a,b) == der f (a,b) . inl ||| der f (a,b) . inr
-\end{code}
-The arguments to |(###)| here are the partial derivatives of |f| at |(a,b)|.\footnote{Noting that |inl da = (da,0)| and |inr db = (0,db)|, we can see that the partial derivatives allow only one half of a pair to change.}
-Give them names and alternative forms, which follow from a bit of equational reasoning (\proofRef{partial-alt}).\footnote{The notation ``|(a,)|'' and ``|(b,)|'' refers to right and left ``sections'' of pairing: |(,b) a == (a,) b == (a,b)|.}
-%format derl = der"_l"
-%format derr = der"_r"
-\begin{code}
-derl :: (a :* b -> c) -> a :* b -> (a :-* c)
-derl f (a,b)  = der f (a,b) . inl
-              = der (f . (,b)) a
-
-derr :: (a :* b -> c) -> a :* b -> (b :-* c)
-derr f (a,b)  = der f (a,b) . inr
-              = der (f . (a,)) b
-\end{code}
-so that
-\begin{code}
-der f (a,b) == derl f (a,b) ||| derr f (a,b)
-\end{code}
-
-%format applyTo = at
-Now let's apply the technique of partial derivatives to |eval|.
+No matter, as we can instead use the technique of partial derivatives.
 We'll need another linear map operation, which is reverse function application:\footnote{Linearity of |applyTo a| follows from the usual definition of addition and scaling on functions.}
 \begin{code}
 applyTo :: a -> (a -> b) :-* b
@@ -318,7 +336,6 @@ Letting |O| be the object mapping aspect of the new functor |ado|,\notefoot{Expe
 \begin{code}
 ado :: (a -> b) -> D (O a) (O b)
 \end{code}
-%format unado = "\inv{"ado"}"
 The property of being a closed cartesian functor requires |O| to preserve categorical products and exponentials, i.e.,
 \begin{code}
 O (a  :*  b) == Prod D  (O a)  (O b)
@@ -623,71 +640,3 @@ ado  eval  :: D (O ((a -> b) :* a)) (O b)
 \end{code}
 
 \end{document}
-
-%% Some junk
-
-\begin{code}
-
-                  fh    :: a -> b -> c
-             der  fh a  :: a :-* (b -> c)
-applyTo b               :: (b -> c) :-* c
-applyTo b .  der  fh a  :: a :-* c
-
-    der (applyTo b . fh) a           -- |applyTo| and |(.)|
-==  der applyTo b (fh a) . der fh a  -- chain rule
-==  applyTo b . der fh a             -- |applyTo b| is linear
-
-    uncurry fh . (,a)
-==  \ b -> (uncurry fh . (a,)) b
-==  \ b -> uncurry fh (a,b)
-==  \ b -> fh a b
-==  fh a
-
-    uncurry fh . (,b)
-==  \ a -> (uncurry fh . (,b)) a
-==  \ a -> uncurry fh (a,b)
-==  \ a -> fh a b
-==  applyTo b . fh
-
-g :: a -> b -> c
-
-uncurry g :: a :* b -> c
-
-wrapO (uncurry g) :: O a :* O b -> O c
-
-ado (uncurry g)
-adh (wrapO (uncurry g))
-
-f :: a :* b -> c
-
-curry f :: a -> b -> c
-
-wrapO (curry f)  :: O a -> O (b -> c)
-                 :: O a -> D (O b) (O c)
-
-    wrapO (curry f)
-==  toO . curry f . unO
-==  ado . curry f . unO
-==  adh . wrapO . curry f . unO
-==  adh . curry (toO . f . unO)
-==  adh . curry (wrapO f)
-
-    wrapO (uncurry g)
-==  toO . uncurry g . unO
-==  ado . uncurry g . unO
-==  adh . wrapO . uncurry g . unO
-==  adh . uncurry (toO . g . unO)
-==  adh . uncurry (wrapO g)
-
-
-D ((adh . wrapO . uncurry g . unO) &&& der (adh . wrapO . uncurry g . unO))
-D (\ a -> (adh (wrapO (uncurry g (unO a))), der (adh . wrapO . uncurry g . unO) a))
-
-
-
-
-    der (curry f) a
-==  \ b -> derl f (a,b)
-
-
-\end{code}
