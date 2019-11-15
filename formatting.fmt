@@ -2,6 +2,9 @@
 
 %% Misc lhs2TeX directives
 
+%% Add a thin space after lambda
+%format \ = "\lambda\, "
+
 %% hack: add missing space, e.g., before "{" in data type decl
 %format SPC = "\:{}"
 %format SPACE = "\ {}"
