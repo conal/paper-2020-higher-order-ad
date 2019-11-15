@@ -382,6 +382,10 @@ A bit of equational reasoning shows that |wrapO| and |unwrapO| form an isomorphi
 
 The cartesian category operations already defined |D| \citep{Elliott-2018-ad-icfp} are solutions to homomorphism equations saying that |adh| is a cartesian functor.
 Thanks to the simple, regular structure of |toO| and |unO|, |ado| is a cartesian functor as well (\proofRef{ado-cartesian}).
+
+% \sectionl{A cartesian closed category of computably differentiable functions}
+\sectionl{Cartesian closed}
+
 What about exponentials and cartesian \emph{closure}?
 As mentioned above, we'll choose |Exp D u v = D u v|.
 Requiring |ado| to be a cartesian closed \emph{functor} necessitates that |O (a -> b) == Exp D (O a) (O b) == D (O a) (O b)|, which suggests using |ado| and |unado| for |toO| and |unO|:
@@ -398,6 +402,14 @@ The choice of |toO = ado| enables a computable solution (\proofRef{ado-eval}):
 \begin{code}
 eval = D (\ (D h,a) -> let (b,f') = h a in (b, applyTo a . unadh ||| f'))
 \end{code}
+
+Next consider currying.
+The homomorphism equation is |curry (ado f) == ado (curry f)|, to be solved for the unknown LHS |curry| (on |D|).
+
+\note{Maybe introduce |curry| earlier before |eval|.
+I think it's computable with |adh|, though |eval| isn't.
+I can get some of the preparatory work done.}
+
 
 \sectionl{Related Work}
 
@@ -557,16 +569,24 @@ Simplifying the RHS,
 ==  D (\ (fh,a) -> (unadh fh a, applyTo a . der unadh fh ||| der (unadh fh) a))  -- \proofRef{der-uncurry}
 ==  D (\ (fh,a) -> (unadh fh a, applyTo a . unadh ||| der (unadh fh) a))         -- |unadh| is linear
 \end{code}
+%if False
+\begin{code}
+==  D (\ (D h,a) -> (unadh (D h) a, applyTo a . unadh ||| der (unadh (D h)) a))
+==  D (\ (D h,a) -> let (b,f') = (unadh (D h) a,der (unadh (D h)) a) in(b, applyTo a . unadh ||| f'))
+==  D (\ (D h,a) -> let (b,f') = h a in (b, applyTo a . unadh ||| f'))
+\end{code}
+%endif
 % Now we are in a position to eliminate the noncomputable |der| operation.
 Now note that
 \begin{code}
     fh
-==  adh (unadh fh)               -- |adh . unadh == id|
-==  unadh fh &&& der (unadh fh)  -- |adh| definition
+==  adh (unadh fh)                   -- |adh . unadh == id|
+==  D (unadh fh &&& der (unadh fh))  -- |adh| definition
 \end{code}
-Letting |fh = D h|, we have
+Letting |D h = fh|, we have
 \begin{code}
-h a = (unadh fh a, der (unadh fh) a)
+h a  == (unadh fh &&& der (unadh fh)) a
+     == (unadh fh a, der (unadh fh) a)
 \end{code}
 A bit of refactoring then replaces |unadh fh a| and (the noncomputable) |der (unadh fh a)|, yielding a \emph{computable} form:
 \begin{code}
