@@ -64,7 +64,7 @@ Begin with the category of computably differentiable functions from \cite[Sectio
 newtype D a b = D (a -> b :* (a :-* b))
 \end{code}
 where |a :-* b| is the type of linear maps from |a| to |b|.
-The function around which the automatic differentiation (AD) algorithm is organized simply ``zips'' together a function |f :: a -> b| and its derivative |der f :: a -> a :-* b|:\footnote{This paper deviates slightly from Haskell syntax by using a single colon rather than double colon for type signatures. \note{Experimental.}}\footnote{The infix operators for function types (``|->|'') and linear maps (``|:-*|'') both associate to the right and have equal, very low precedence.
+The function around which the automatic differentiation (AD) algorithm is organized simply ``zips'' together a function |f :: a -> b| and its derivative |der f :: a -> a :-* b|:\footnote{This paper generally uses Haskell notation but deviates slightly by using a single colon rather than double colon for type signatures. \note{Experimental.}}\footnote{The infix operators for function types (``|->|'') and linear maps (``|:-*|'') both associate to the right and have equal, very low precedence.
 For instance, ``|a -> a :-* b|'' means |a -> (a :-* b)|.}
 \begin{code}
 adh :: (a -> b) -> D a b
@@ -114,10 +114,10 @@ This general AD algorithm is justified by three main theorems:
 \begin{quotation}
 \vspace{-3ex}
 \begin{theorem}[compose/``chain'' rule] \thmLabel{compose}
-$|der (g . f) a == der g (f a) . der f a|$.
+|der (g . f) a == der g (f a) . der f a|.
 \end{theorem}
 \begin{theorem}[cross rule] \thmLabel{cross}
-$|der (f *** g) (a,b) == der f a *** der g b|$.
+|der (f *** g) (a,b) == der f a *** der g b|.
 \end{theorem}
 \begin{theorem}[linear rule] \thmLabel{linear}
 For all linear functions |f|, |der f a == f|.
@@ -126,7 +126,7 @@ For all linear functions |f|, |der f a == f|.
 \noindent
 In addition to these three theorems, we need a collection of facts about the derivatives of various mathematical operations, e.g., |adh sin x = scale (cos x)|, where |scale :: a -> a :-* a| is uncurried scalar multiplication (so |scale s| is linear for all |s|).
 
-\sectionl{Partial derivatives}
+\sectionl{Partial Derivatives}
 
 In tackling the question of cartesian closure for AD, it will be helpful to develop a simple, categorical viewpoint of \emph{partial derivatives}, which serve as a useful tool for differentiating functions having non-scalar domains.
 
@@ -152,6 +152,9 @@ Then
 der f (a,b) == derl f (a,b) ||| derr f (a,b)
 \end{code}
 
+\note{To do: Rewrite as a theorem with proof in the appendix.
+Do I need the |inl|/|inr| version at all, or can I seclude it in the proof?}
+
 As an example of how this decomposition of |der f| helps construct derivatives, suppose that |f| is \emph{bilinear}, which is to say that |f| is linear in each argument, while holding the other constant.
 More formally |bilinearity| of |f| means that |f . (a,)| and |f . (b,)| are both linear for all |a :: a| and |b :: b|.
 Therefore,
@@ -170,16 +173,57 @@ For instance, the derivative of uncurried multiplication is given by the Leibniz
 \end{code}
 % which is sometimes written ``|d (u v) = u dv + v du|''.
 
-\sectionl{Cartesian closed?}
+
+\sectionl{Higher-Order Codomains}
+
+It will also be useful to calculate derivatives of functions with higher-order codomains.\notefoot{The previous section and this one provide ``adjoint'' techniques in a sense that they currying is an adjunction from functions from products to functions to functions.
+Is there something else interesting to say here?}
+We'll need another linear map operation, which is reverse function application:\footnote{Linearity of |applyTo a| follows from the usual definition of addition and scaling on functions.}
+\begin{code}
+applyTo :: a -> (a -> b) :-* b
+applyTo a df = df a
+\end{code}
+\begin{theorem}\thmLabel{higher-order-codomain}
+Given a function |g :: a -> b -> c|,
+$$|der g a = \ da b -> der (applyTo b . g) a da|.$$
+\end{theorem}
+Proof:\notefoot{Maybe move this proof to the appendix.}\footnote{As a sanity check, the RHS (``|\ da b -> ...|'') is indeed linear, because |der (applyTo b . g) a| linear is (being a derivative) and noting the usual interpretation of scaling and addition on functions.}
+\begin{code}
+    \ da b -> der (applyTo b . g) a da
+==  \ da b -> (der (applyTo b) (g a) . der g a) da  -- chain rule
+==  \ da b -> (applyTo b . der g a) da              -- |applyTo b| is linear
+==  \ da b -> applyTo b (der g a da)                -- |(.)| on functions
+==  \ da b -> der g a da b                          -- |applyTo| definition
+==  der g a                                         -- $\eta$ reduction (twice)
+\end{code}
+
+
+\sectionl{Cartesian Closed?}
 
 While |D| is a category and a \emph{cartesian} category at that, as specified by |adh| being a cartesian functor, another question naturally arises.
 Can |adh| also be a cartesian \emph{closed} functor?
 In other words, are there definitions of |eval|, |curry|, and |uncurry| on |D| such that
 \begin{code}
-eval = adh eval
 curry (adh f) = adh (curry f)
 uncurry (adh g) = adh (uncurry g)
+eval = adh eval
 \end{code}
+
+As usual, we'll want to solve each homomorphism equation for its single unknown, which is a categorical operation on |D| (on the LHS).
+Start with |curry|, simplifying the LHS:
+\begin{code}
+    curry (adh f)
+==  curry (D (f &&& der f))
+\end{code}
+Then the RHS:
+\begin{code}
+    adh (curry f)
+==  D (curry f &&& der (curry f))
+\end{code}
+where (on functions) |curry f = \ a b -> f (a,b)|.
+
+\workingHere \note{Postpone the class/interface discussion to \secref{Object Mapping}}. \vspace{5ex}
+
 These three operations come  with every \emph{cartesian closed} category:
 \begin{code}
 class Cartesian k => CartesianClosed k where
@@ -289,11 +333,6 @@ Let us press forward undeterred, opening up the definition of |adh| to see if we
 Now we do not need the general |der|, but rather the specific |der eval|.
 If |eval| were linear, we could apply \thmRef{linear}, but alas it is not.
 No matter, as we can instead use the technique of partial derivatives.
-We'll need another linear map operation, which is reverse function application:\footnote{Linearity of |applyTo a| follows from the usual definition of addition and scaling on functions.}
-\begin{code}
-applyTo :: a -> (a -> b) :-* b
-applyTo a df = df a
-\end{code}
 \begin{code}
     der eval (f,a)
 ==  derl eval (f,a) ||| derr eval (f,a)          -- method of partial derivatives
@@ -314,7 +353,7 @@ Now we can complete the calculation of |eval| for |D|:
 Although this final form is well-defined, it uses the noncomputable |der| and so is not a computable recipe, leaving us in a pickle.
 Let's look for some wiggle room.
 
-\sectionl{Object mapping}
+\sectionl{Object Mapping}
 
 The choice of category-associated products and exponentials is a degree of freedom not exercised in the development of AD in \cite{Elliott-2018-ad-icfp} and one that is tied closely to another such choice available in the general notion of \emph{cartesian closed functor} in category theory.
 In general, a functor has two aspects:
@@ -401,7 +440,7 @@ The cartesian category operations already defined |D| \citep{Elliott-2018-ad-icf
 Thanks to the simple, regular structure of |toO| and |unO|, |ado| is a cartesian functor as well (\proofRef{ado-cartesian}).
 
 % \sectionl{A cartesian closed category of computably differentiable functions}
-\sectionl{Cartesian closed}
+\sectionl{Cartesian Closed}
 
 What about exponentials and cartesian \emph{closure}?
 As mentioned above, we'll choose |Exp D u v = D u v|.
@@ -443,7 +482,7 @@ I can get some of the preparatory work done.}
 
 \sectionl{Proofs}
 
-\subsection{Partial derivatives}\proofLabel{partial-alt}
+\subsection{Partial Derivatives}\proofLabel{partial-alt}
 
 \begin{code}
     der (f . (,b)) a
@@ -456,7 +495,7 @@ I can get some of the preparatory work done.}
 \end{code}
 Likewise for |der (f . (a,)) b|.
 
-\subsection{Differentiation and uncurrying}\proofLabel{der-uncurry}
+\subsection{Differentiation and Uncurrying}\proofLabel{der-uncurry}
 
 \begin{code}
     der (uncurry h) (a,b)
@@ -475,7 +514,7 @@ Likewise for |der (f . (a,)) b|.
 ==  first (der h a)                                    -- |first| definition
 \end{code}
 
-\subsection{|wrapO| as isomorphism}\proofLabel{wrapO-iso}
+\subsection{|wrapO| as Isomorphism}\proofLabel{wrapO-iso}
 
 The functions |wrapO| and |unwrapO| form an isomorphism:
 \begin{code}
@@ -494,7 +533,7 @@ The functions |wrapO| and |unwrapO| form an isomorphism:
 ==  h                              -- |id| is identity for |(.)|
 \end{code}
 
-\subsection{|ado| as isomorphism}\proofLabel{ado-iso}
+\subsection{|ado| as Isomorphism}\proofLabel{ado-iso}
 
 The functions |ado| and |unado| form an isomorphism:
 \begin{code}
@@ -509,7 +548,7 @@ The functions |ado| and |unado| form an isomorphism:
 ==  id                             -- |unadh . adh == id|
 \end{code}
 
-\subsection{|ado| as cartesian functor}\proofLabel{ado-cartesian}
+\subsection{|ado| as Cartesian Functor}\proofLabel{ado-cartesian}
 
 Given the cartesian category operations already defined on |D|, |ado| is also a cartesian functor \citep{Elliott-2018-ad-icfp}.
 The proofs mainly exploit the regular structure of |toO| and |unO|:
