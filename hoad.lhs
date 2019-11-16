@@ -233,6 +233,24 @@ Then the RHS:
 ==  D (\ a -> (f . (a,), forkF (\ b -> derl f (a,b))))     -- |(.)| on functions
 ==  D (\ a -> (f . (a,), forkF (\ b -> der f (a,b) . inl)  -- \proofRef{theorem:deriv-pair-domain}
 \end{code}
+The last form uses |f| and |der f|, which can be extracted from |adh f = D (f &&& der f)|, because uncurried |(&&&)| is invertible, as is uncurried |(###)|
+\begin{code}
+fork :: Cartesian k => (a `k` c) :* (a `k` d) -> (a `k` (c :* d))
+fork = uncurry (&&&)
+
+unfork :: Cartesian k => (a `k` (c :* d)) -> (a `k` c) :* (a `k` d)
+unfork h = (exl . h, exr . h)
+
+fork :: Cartesian k => (a `k` c) :* (a `k` d) -> (a `k` (c :* d))
+fork = uncurry (|||)
+
+unfork :: Cocartesian k => (a `k` (c :* d)) -> (a `k` c) :* (a `k` d)
+unfork h = (h . inl, h . inr)
+\end{code}
+\begin{lemma}
+The functions |fork| and |unfork| form a linear isomorphism, as do the functions |join| and |unjoin|.\footnote{The latter claim holds more generally in \emph{any} cocartesian category (not just with biproducts), though with categorical coproducts instead of cartesian products.}
+\end{lemma}
+Proof: exercise.
 
 \note{Finish |curry| calculation.}
 
