@@ -204,10 +204,10 @@ which agrees with the calculation above.
 
 It will also be useful to calculate derivatives of functions with higher-order codomains.\notefoot{The previous section and this one provide ``adjoint'' techniques in a sense that they currying is an adjunction from functions from products to functions to functions.
 Is there something else interesting to say here?}
-We'll need two more linear map operations, the first of which is reverse function application:\footnote{Linearity of |applyTo a| follows from the usual definition of addition and scaling on functions.}
+We'll need two more linear map operations, the first of which is reverse function application:\footnote{Linearity of |at a| follows from the usual definition of addition and scaling on functions.}
 \begin{code}
-applyTo :: a -> (a -> b) :-* b
-applyTo a df = df a
+at :: a -> (a -> b) :-* b
+at a df = df a
 \end{code}
 The second linear map operation is the indexed variant of |(&&&)|:
 \begin{code}
@@ -216,17 +216,17 @@ forkF h = \ da b -> h b da
 \end{code}
 \begin{theorem}\thmLabel{higher-order-codomain}
 Given a function |g :: a -> b -> c|,
-$$|der g a = forkF (\ b -> der (applyTo b . g) a)|.$$
+$$|der g a = forkF (\ b -> der (at b . g) a)|.$$
 \end{theorem}
 Proof:\notefoot{Move this proof to the appendix.}
 \begin{code}
-    forkF (\ b -> der (applyTo b . g) a)
-==  \ da b -> der (applyTo b . g) a da              -- |forkF| definition
-==  \ da b -> (der (applyTo b) (g a) . der g a) da  -- chain rule
-==  \ da b -> (applyTo b . der g a) da              -- |applyTo b| is linear
-==  \ da b -> applyTo b (der g a da)                -- |(.)| on functions
-==  \ da b -> der g a da b                          -- |applyTo| definition
-==  der g a                                         -- $\eta$ reduction (twice)
+    forkF (\ b -> der (at b . g) a)
+==  \ da b -> der (at b . g) a da              -- |forkF| definition
+==  \ da b -> (der (at b) (g a) . der g a) da  -- chain rule
+==  \ da b -> (at b . der g a) da              -- |at b| is linear
+==  \ da b -> at b (der g a da)                -- |(.)| on functions
+==  \ da b -> der g a da b                     -- |at| definition
+==  der g a                                    -- $\eta$ reduction (twice)
 \end{code}
 
 
@@ -261,13 +261,13 @@ Curried functions differentiate as follows:
 The proof is a simple application of \thmRef{higher-order-codomain}:
 \begin{code}
     der (curry f) a
-==  forkF (\ b -> der (at b . curry f)) a                -- \thmRef{higher-order-codomain}
-==  forkF (\ b -> der (\ a -> applyTo b (curry f a))) a  -- |(.)| on functions
-==  forkF (\ b -> der (\ a -> curry f a b)) a            -- |applyTo| definition
-==  forkF (\ b -> der (\ a -> f (a,b))) a                -- |curry| on functions
-==  forkF (\ b -> der (f . (,b))) a                      -- |(, b)| definition
-==  forkF (\ b -> derl f (a,b))                          -- |derl| definition
-==  forkF (derl f . (a,))                                -- |(a,)| definition
+==  forkF (\ b -> der (at b . curry f)) a           -- \thmRef{higher-order-codomain}
+==  forkF (\ b -> der (\ a -> at b (curry f a))) a  -- |(.)| on functions
+==  forkF (\ b -> der (\ a -> curry f a b)) a       -- |at| definition
+==  forkF (\ b -> der (\ a -> f (a,b))) a           -- |curry| on functions
+==  forkF (\ b -> der (f . (,b))) a                 -- |(, b)| definition
+==  forkF (\ b -> derl f (a,b))                     -- |derl| definition
+==  forkF (derl f . (a,))                           -- |(a,)| definition
 \end{code}
 
 \note{Move this theorem to \secref{Function-Valued Codomains}.}
@@ -387,9 +387,9 @@ No matter, as we can instead use the technique of partial derivatives.\notefoot{
     der eval (f,a)
 ==  derl eval (f,a) ||| derr eval (f,a)          -- method of partial derivatives
 ==  der (eval . (,a)) f ||| der (eval . (f,)) a  -- |derl| and |derr| alternative definitions
-==  der (applyTo a) f ||| der f          a       -- |eval| on functions
-==  applyTo a ||| der f a                        -- linearity of |applyTo a|
-==  \ (df,dx) -> df a + der f a dx               -- |(###) on linear maps|; |applyTo| definition
+==  der (at a) f ||| der f          a            -- |eval| on functions
+==  at a ||| der f a                             -- linearity of |at a|
+==  \ (df,dx) -> df a + der f a dx               -- |(###) on linear maps|; |at| definition
 \end{code}
 Now we can complete the calculation of |eval| for |D|:
 \begin{code}
@@ -659,27 +659,27 @@ The homomorphism equation is |eval == ado eval|.
 Simplifying the RHS,
 \begin{code}
     ado eval
-==  adh (wrapO eval)                                                             -- |ado| definition
-==  adh (toO . eval . unO)                                                       -- |wrapO| definition
-==  adh (toO . eval . (unado *** unO))                                           -- |unO| on |(a -> b) :* a|
-==  adh (\ (fh,a) -> (toO . eval . (unado *** unO)) (fh,a))                      -- |eta| expansion
-==  adh (\ (fh,a) -> toO (eval (unado fh, unO a)))                               -- |(.)| and |(***)| on functions
-==  adh (\ (fh,a) -> toO (unado fh (unO a)))                                     -- |eval| on functions
-==  adh (\ (fh,a) -> toO (unwrapO (unadh fh) (unO a)))                           -- |unado| definition
-==  adh (\ (fh,a) -> toO ((unO . unadh fh . toO) (unO a))                        -- |unwrapO| definition
-==  adh (\ (fh,a) -> toO (unO (unadh fh (toO (unO a)))))                         -- |(.)| on functions
-==  adh (\ (fh,a) -> unadh fh a)                                                 -- |toO . unO == id|
-==  adh (uncurry unadh)                                                          -- |uncurry| on functions
-==  D (\ (fh,a) -> (uncurry unadh (fh,a), der (uncurry unadh) (fh,a)))           -- |adh| definition
-==  D (\ (fh,a) -> (unadh fh a, der (uncurry unadh) (fh,a)))                     -- |uncurry| on functions
-==  D (\ (fh,a) -> (unadh fh a, applyTo a . der unadh fh ||| der (unadh fh) a))  -- \proofRef{der-uncurry}
-==  D (\ (fh,a) -> (unadh fh a, applyTo a . unadh ||| der (unadh fh) a))         -- |unadh| is linear
+==  adh (wrapO eval)                                                        -- |ado| definition
+==  adh (toO . eval . unO)                                                  -- |wrapO| definition
+==  adh (toO . eval . (unado *** unO))                                      -- |unO| on |(a -> b) :* a|
+==  adh (\ (fh,a) -> (toO . eval . (unado *** unO)) (fh,a))                 -- |eta| expansion
+==  adh (\ (fh,a) -> toO (eval (unado fh, unO a)))                          -- |(.)| and |(***)| on functions
+==  adh (\ (fh,a) -> toO (unado fh (unO a)))                                -- |eval| on functions
+==  adh (\ (fh,a) -> toO (unwrapO (unadh fh) (unO a)))                      -- |unado| definition
+==  adh (\ (fh,a) -> toO ((unO . unadh fh . toO) (unO a))                   -- |unwrapO| definition
+==  adh (\ (fh,a) -> toO (unO (unadh fh (toO (unO a)))))                    -- |(.)| on functions
+==  adh (\ (fh,a) -> unadh fh a)                                            -- |toO . unO == id|
+==  adh (uncurry unadh)                                                     -- |uncurry| on functions
+==  D (\ (fh,a) -> (uncurry unadh (fh,a), der (uncurry unadh) (fh,a)))      -- |adh| definition
+==  D (\ (fh,a) -> (unadh fh a, der (uncurry unadh) (fh,a)))                -- |uncurry| on functions
+==  D (\ (fh,a) -> (unadh fh a, at a . der unadh fh ||| der (unadh fh) a))  -- \proofRef{der-uncurry}
+==  D (\ (fh,a) -> (unadh fh a, at a . unadh ||| der (unadh fh) a))         -- |unadh| is linear
 \end{code}
 %if False
 \begin{code}
-==  D (\ (D h,a) -> (unadh (D h) a, applyTo a . unadh ||| der (unadh (D h)) a))
-==  D (\ (D h,a) -> let (b,f') = (unadh (D h) a,der (unadh (D h)) a) in(b, applyTo a . unadh ||| f'))
-==  D (\ (D h,a) -> let (b,f') = h a in (b, applyTo a . unadh ||| f'))
+==  D (\ (D h,a) -> (unadh (D h) a, at a . unadh ||| der (unadh (D h)) a))
+==  D (\ (D h,a) -> let (b,f') = (unadh (D h) a,der (unadh (D h)) a) in(b, at a . unadh ||| f'))
+==  D (\ (D h,a) -> let (b,f') = h a in (b, at a . unadh ||| f'))
 \end{code}
 %endif
 % Now we are in a position to eliminate the noncomputable |der| operation.
@@ -698,7 +698,7 @@ A bit of refactoring then replaces |unadh fh a| and (the noncomputable) |der (un
 \begin{code}
     ado eval
 ==  ...
-==  D (\ (D h,a) -> let (b,f') = h a in (b, applyTo a . unadh ||| f'))
+==  D (\ (D h,a) -> let (b,f') = h a in (b, at a . unadh ||| f'))
 \end{code}
 
 Since this calculation was fairly involved, let's get a sanity check on the types in the final form:
@@ -715,13 +715,13 @@ Since this calculation was fairly involved, let's get a sanity check on the type
    b         :: O b
        f'    :: O a :-* O b
 
-                                             unadh           :: D (O a) (O b) :-* (O a -> O b)
-                                applyTo a                    :: (O a -> O b) :-* O b
-                                applyTo a .  unadh           :: D (O a) (O b) :-* O b
-                                applyTo a .  unadh ||| f'    :: D (O a) (O b) :* O a :-* O b
-                           (b,  applyTo a .  unadh ||| f')   :: O b :* (D (O a) (O b) :* O a :-* O b)
-     \ (D h,a) -> ... in   (b,  applyTo a .  unadh ||| f')   :: O ((a -> b) :* a) -> O b :* (D (O a) (O b) :* O a :-* O b)
-D (  \ (D h,a) -> ... in   (b,  applyTo a .  unadh ||| f'))  :: D (O ((a -> b) :* a)) (O b)
+                                             unadh      :: D (O a) (O b) :-* (O a -> O b)
+                                at a                    :: (O a -> O b) :-* O b
+                                at a .  unadh           :: D (O a) (O b) :-* O b
+                                at a .  unadh ||| f'    :: D (O a) (O b) :* O a :-* O b
+                           (b,  at a .  unadh ||| f')   :: O b :* (D (O a) (O b) :* O a :-* O b)
+     \ (D h,a) -> ... in   (b,  at a .  unadh ||| f')   :: O ((a -> b) :* a) -> O b :* (D (O a) (O b) :* O a :-* O b)
+D (  \ (D h,a) -> ... in   (b,  at a .  unadh ||| f'))  :: D (O ((a -> b) :* a)) (O b)
 
      eval  :: (a -> b) :* a -> b
 ado  eval  :: D (O ((a -> b) :* a)) (O b)

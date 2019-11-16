@@ -91,6 +91,4 @@
 
 %format :: = :
 
-%format applyTo = at
-
 %format forkF = fork"_{\!F}"
