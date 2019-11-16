@@ -156,7 +156,7 @@ der f (a,b) == derl f (a,b) ||| derr f (a,b)
 Do I need the |inl|/|inr| version at all, or can I seclude it in the proof?}
 
 As an example of how this decomposition of |der f| helps construct derivatives, suppose that |f| is \emph{bilinear}, which is to say that |f| is linear in each argument, while holding the other constant.
-More formally |bilinearity| of |f| means that |f . (a,)| and |f . (b,)| are both linear for all |a :: a| and |b :: b|.
+More formally |bilinearity| of |f| means that |f . (a,)| and |f . (b,)| are both linear for all |a| and |b|.
 Therefore,
 \begin{code}
     der f (a,b)
@@ -172,6 +172,32 @@ For instance, the derivative of uncurried multiplication is given by the Leibniz
 == \ (da,db) -> da * b + a * db
 \end{code}
 % which is sometimes written ``|d (u v) = u dv + v du|''.
+
+More generally, consider differentiating interacts with uncurrying:
+\begin{theorem}
+$$|der (uncurry g) (a,b) == at b . der g a ### der (g a) b|$$
+\end{theorem}
+Proof:
+\begin{code}
+    der (uncurry g) (a,b)
+==  derl (uncurry g) (a,b) ||| derr (uncurry g) (a,b)      -- above \note{(replace with theorem ref)}
+==  der (uncurry g . (,b)) a ||| der (uncurry g . (a,)) b  -- |derl| and |derr| definitions
+==  der (\ a' -> uncurry g (a',b)) a |||                   -- $\eta$ expand and simplification
+    der (\ b' -> uncurry g (a,b')) b
+==  der (\ a' -> g a' b) a ||| der (\ b' -> g a b') b      -- |uncurry| on functions
+==  der (at b . g) a ||| der (g a) b                       -- |at| definition and $\eta$ reduction
+==  der (at b) (g a) . der g a ||| der (g a) b             -- chain rule
+==  at b . der g a ||| der (g a) b                         -- linearity of |at|
+\end{code}
+
+As a special case, let |g| be curried multiplication:
+\begin{code}
+    der (uncurry (*))
+==  at b . der (*) a ||| der (a *) b
+==  at b . (*) ||| (a *)
+==  (NOP * b) ||| (a * NOP)
+\end{code}
+which agrees with the calculation above.
 
 
 \sectionl{Function-Valued Codomains}
