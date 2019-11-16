@@ -37,8 +37,9 @@ Conal Elliott
 
 \setlength{\blanklineskip}{2ex} % blank lines in code environment
 
-\nc\proofLabel[1]{\label{proof:#1}}
 \nc\proofRef[1]{Appendix \ref{proof:#1}}
+\nc\provedIn[1]{\textnormal{Proved in \proofRef{#1}}}
+\nc\proofLabel[1]{\label{proof:#1}}
 
 \begin{document}
 
@@ -128,40 +129,30 @@ In addition to these three theorems, we need a collection of facts about the der
 
 \sectionl{Pair-valued Domains}
 
-In tackling the question of cartesian closure for AD, it will be helpful to develop a simple, categorical viewpoint of \emph{partial derivatives}, which serve as a useful tool for differentiating functions having non-scalar domains.
-
-Suppose we have a function |f :: a :* b -> c|, and we want to compute its derivative at a point in its (pair-valued) domain.
-Because linear maps (derivatives) form a cocartesian category,\footnote{The cocartesian law |h = h . inl ### h . inr| is dual to the cartesian law |h = exl . h &&& exr . h| \citep{Gibbons2002Calculating}.}
-\begin{code}
-der f (a,b) == der f (a,b) . inl ||| der f (a,b) . inr
-\end{code}
-The arguments to |(###)| here are the (``first'' and ``second'', or ``left'' and ``right'') ``partial derivatives'' of |f| at |(a,b)|.
-Noting that |inl da = (da,0)| and |inr db = (0,db)|, we can see that the partial derivatives allow only one half of a pair to change.
-It will be handy to give names to these arguments, as well as alternative forms, which follow from a bit of equational reasoning (\proofRef{partial-alt}).\footnote{The notation ``|(a,)|'' and ``|(b,)|'' refers to right and left ``sections'' of pairing: |(,b) a == (a,) b == (a,b)|.}
+One half of the |curry|/|uncurry| isomorphism involves functions of pair-valued domains.
+The notion of partial derivatives are helpful for differentiating such functions.\notefoot{I'm leaning toward eliminating |derl| and |derr| in favor of their meanings.
+Whenever I use the names below, I then immediate inline them.}
+\begin{theorem}[\provedIn{theorem:deriv-pair-domain}]\thmLabel{deriv-pair-domain}
+Given a function |f :: a :* b -> c|, $$
+|der f (a,b) == derl f (a,b) ### derr f (a,b)|
+$$ where |derl| and |derr| construct the (``first'' and ``second'', or ``left'' and ``right'') ``partial derivatives'' of |f| at |(a,b)|, defined as follows:
+\end{theorem}
 \begin{code}
 derl :: (a :* b -> c) -> a :* b -> (a :-* c)
-derl f (a,b)  = der f (a,b) . inl
-              = der (f . (,b)) a
+derl f (a,b) = der (f . (,b)) a
 
 derr :: (a :* b -> c) -> a :* b -> (b :-* c)
-derr f (a,b)  = der f (a,b) . inr
-              = der (f . (a,)) b
+derr f (a,b) = der (f . (a,)) b
 \end{code}
-Then
-\begin{code}
-der f (a,b) == derl f (a,b) ||| derr f (a,b)
-\end{code}
-
-\note{To do: Rewrite as a theorem with proof in the appendix.
-Do I need the |inl|/|inr| version at all, or can I seclude it in the proof?}
+The notation ``|(a,)|'' and ``|(b,)|'' refers to right and left ``sections'' of pairing: |(,b) a == (a,) b == (a,b)|.
 
 As an example of how this decomposition of |der f| helps construct derivatives, suppose that |f| is \emph{bilinear}, which is to say that |f| is linear in each argument, while holding the other constant.
 More formally |bilinearity| of |f| means that |f . (a,)| and |f . (b,)| are both linear for all |a| and |b|.
 Therefore,
 \begin{code}
     der f (a,b)
-==  derl f (a,b) ||| derr f (a,b)          -- above
-==  der (f . (,b)) a ||| der (f . (a,)) b  -- above
+==  derl f (a,b) ||| derr f (a,b)          -- \thmRef{deriv-pair-domain}
+==  der (f . (,b)) a ||| der (f . (a,)) b  -- |derl| and |derr| definitions
 ==  f . (,b) ||| f . (a,)                  -- linearity
 \end{code}
 For instance, the derivative of uncurried multiplication is given by the Leibniz product rule:
@@ -174,21 +165,9 @@ For instance, the derivative of uncurried multiplication is given by the Leibniz
 % which is sometimes written ``|d (u v) = u dv + v du|''.
 
 More generally, consider differentiating interacts with uncurrying:
-\begin{theorem}
+\begin{corollary}[\provedIn{corollary:deriv-uncurry}]\corLabel{deriv-uncurry}
 $$|der (uncurry g) (a,b) == at b . der g a ### der (g a) b|$$
-\end{theorem}
-Proof:
-\begin{code}
-    der (uncurry g) (a,b)
-==  derl (uncurry g) (a,b) ||| derr (uncurry g) (a,b)      -- above \note{(replace with theorem ref)}
-==  der (uncurry g . (,b)) a ||| der (uncurry g . (a,)) b  -- |derl| and |derr| definitions
-==  der (\ a' -> uncurry g (a',b)) a |||                   -- $\eta$ expand and simplification
-    der (\ b' -> uncurry g (a,b')) b
-==  der (\ a' -> g a' b) a ||| der (\ b' -> g a b') b      -- |uncurry| on functions
-==  der (at b . g) a ||| der (g a) b                       -- |at| definition and $\eta$ reduction
-==  der (at b) (g a) . der g a ||| der (g a) b             -- chain rule
-==  at b . der g a ||| der (g a) b                         -- linearity of |at|
-\end{code}
+\end{corollary}
 
 As a special case, let |g| be curried multiplication:
 \begin{code}
@@ -199,10 +178,11 @@ As a special case, let |g| be curried multiplication:
 \end{code}
 which agrees with the calculation above.
 
+\note{Reconsider the choices of theorems and examples here. Maybe instead: partial derivatives, |uncurry|, then bilinear, with bilinear as a corollary.}
 
 \sectionl{Function-Valued Codomains}
 
-It will also be useful to calculate derivatives of functions with higher-order codomains.\notefoot{The previous section and this one provide ``adjoint'' techniques in a sense that they currying is an adjunction from functions from products to functions to functions.
+It will also be useful to calculate derivatives of functions with higher-order codomains.\notefoot{The previous section and this one provide ``adjoint'' techniques in a sense that currying is an adjunction from functions from products to functions to functions.
 Is there something else interesting to say here?}
 We'll need two more linear map operations, the first of which is reverse function application:\footnote{Linearity of |at a| follows from the usual definition of addition and scaling on functions.}
 \begin{code}
@@ -214,20 +194,17 @@ The second linear map operation is the indexed variant of |(&&&)|:
 forkF :: (b -> a :-* c) -> (a :-* b -> c)
 forkF h = \ da b -> h b da
 \end{code}
-\begin{theorem}\thmLabel{higher-order-codomain}
+\begin{theorem}[\provedIn{theorem:deriv-function-codomain}]\thmLabel{deriv-function-codomain}
 Given a function |g :: a -> b -> c|,
 $$|der g a = forkF (\ b -> der (at b . g) a)|.$$
 \end{theorem}
-Proof:\notefoot{Move this proof to the appendix.}
-\begin{code}
-    forkF (\ b -> der (at b . g) a)
-==  \ da b -> der (at b . g) a da              -- |forkF| definition
-==  \ da b -> (der (at b) (g a) . der g a) da  -- chain rule
-==  \ da b -> (at b . der g a) da              -- |at b| is linear
-==  \ da b -> at b (der g a da)                -- |(.)| on functions
-==  \ da b -> der g a da b                     -- |at| definition
-==  der g a                                    -- $\eta$ reduction (twice)
-\end{code}
+
+%% Curried functions differentiate as follows:
+\begin{corollary}[\provedIn{corollary:deriv-curry}]\corLabel{deriv-curry}
+$$
+|der (curry f) a == forkF (derl f . (a,))|
+$$
+\end{corollary}
 
 
 \sectionl{Cartesian Closed?}
@@ -250,29 +227,16 @@ Start with |curry|, simplifying the LHS:
 Then the RHS:
 \begin{code}
     adh (curry f)
-==  D (curry f &&& der (curry f))
-\end{code}
-where (on functions) |curry f = \ a b -> f (a,b)|.
-
-Curried functions differentiate as follows:
-\begin{theorem}
-| der (curry f) a == forkF (derl f . (a,)) |
-\end{theorem}
-The proof is a simple application of \thmRef{higher-order-codomain}:
-\begin{code}
-    der (curry f) a
-==  forkF (\ b -> der (at b . curry f)) a           -- \thmRef{higher-order-codomain}
-==  forkF (\ b -> der (\ a -> at b (curry f a))) a  -- |(.)| on functions
-==  forkF (\ b -> der (\ a -> curry f a b)) a       -- |at| definition
-==  forkF (\ b -> der (\ a -> f (a,b))) a           -- |curry| on functions
-==  forkF (\ b -> der (f . (,b))) a                 -- |(, b)| definition
-==  forkF (\ b -> derl f (a,b))                     -- |derl| definition
-==  forkF (derl f . (a,))                           -- |(a,)| definition
+==  D (curry f &&& der (curry f))                          -- |adh| definition
+==  D (\ a -> (curry f a, der (curry f) a))                -- |(&&&)| on functions
+==  D (\ a -> (f . (a,), forkF (derl f . (a,))))           -- |curry| and |(a,)|; \thmRef{deriv-curry}
+==  D (\ a -> (f . (a,), forkF (\ b -> derl f (a,b))))     -- |(.)| on functions
+==  D (\ a -> (f . (a,), forkF (\ b -> der f (a,b) . inl)  -- \proofRef{theorem:deriv-pair-domain}
 \end{code}
 
-\note{Move this theorem to \secref{Function-Valued Codomains}.}
+\note{Finish |curry| calculation.}
 
-\workingHere \note{Postpone the class/interface discussion to \secref{Object Mapping}}. \vspace{5ex}
+\workingHere \note{Postpone the following class/interface discussion to \secref{Object Mapping}}. \vspace{5ex}
 
 These three operations come  with every \emph{cartesian closed} category:
 \begin{code}
@@ -398,7 +362,7 @@ Now we can complete the calculation of |eval| for |D|:
 ==  D (eval &&& der eval)                       -- definition of |adh|
 ==  D (\ (f,a) -> (eval (f,a), der eval (f,a))  -- |(&&&) on functions|
 ==  D (\ (f,a) -> (f a, der eval (f,a))         -- |eval| on functions
-==  D (\ (f,a) -> (f a, applyTo a ||| der f a)  -- above
+==  D (\ (f,a) -> (f a, at a ||| der f a)       -- above
 \end{code}
 Although this final form is well-defined, it uses the noncomputable |der| and so is not a computable recipe, leaving us in a pickle.
 Let's look for some wiggle room.
@@ -506,7 +470,7 @@ We don't have definitions from \cite{Elliott-2018-ad-icfp} to imitate and verify
 For |eval|, the homomorphism equation is |eval == ado eval|, which is already a definition but not a computable one (since |ado| involves |adh|, which involves |der|, i.e., differentiation).
 The choice of |toO = ado| enables a computable solution (\proofRef{ado-eval}):
 \begin{code}
-eval = D (\ (D h,a) -> let (b,f') = h a in (b, applyTo a . unadh ||| f'))
+eval = D (\ (D h,a) -> let (b,f') = h a in (b, at a . unadh ||| f'))
 \end{code}
 
 Next consider currying.
@@ -532,8 +496,16 @@ I can get some of the preparatory work done.}
 
 \sectionl{Proofs}
 
-\subsection{Pair-valued Domains}\proofLabel{partial-alt}
+\subsection{\thmRef{deriv-pair-domain}}\proofLabel{theorem:deriv-pair-domain}
 
+Suppose we have a function |f :: a :* b -> c|, and we want to compute its derivative at a point in its (pair-valued) domain.
+Because linear maps (derivatives) form a cocartesian category,\footnote{The cocartesian law |h = h . inl ### h . inr| is dual to the cartesian law |h = exl . h &&& exr . h| \citep{Gibbons2002Calculating}.}
+\begin{code}
+der f (a,b) == der f (a,b) . inl ||| der f (a,b) . inr
+\end{code}
+Noting that |inl da = (da,0)| and |inr db = (0,db)|, we can see that the partial derivatives allow only one half of a pair to change.
+
+Next, note that |der f (a,b) . inl = der (f . (,b)) a|, by the following equational reasoning:
 \begin{code}
     der (f . (,b)) a
 ==  der f ((,b) a) . der (,b) a                      -- chain rule
@@ -543,26 +515,49 @@ I can get some of the preparatory work done.}
 ==  der f (a,b) . der inl a                          -- |der (const z) a == 0|
 ==  der f (a,b) . inl                                -- linearity of |inl|; \thmRef{linear}
 \end{code}
-Likewise for |der (f . (a,)) b|.
+Likewise, |der f (a,b) . inr = der (f . (a,)) b|.
 
-\subsection{Differentiation and Uncurrying}\proofLabel{der-uncurry}
+\subsection{\corRef{deriv-uncurry}}\proofLabel{corollary:deriv-uncurry}
 
 \begin{code}
-    der (uncurry h) (a,b)
-==  der (eval . first h) (a,b)                         -- CCC law (above)
-==  der eval (first h (a,b)) . der (first h) (a,b)     -- chain rule
-==  der eval (h a,b) . der (first h) (a,b)             -- |first| for functions
-==  (applyTo b ||| der (h a) b) . der (first h) (a,b)  -- |der eval| (above)
-==  (applyTo b ||| der (h a) b) . first (der h a)      -- below
-==  (applyTo b ||| der (h a) b) . (der h a *** id)     -- |first| definition
-==  applyTo b . der h a ||| der (h a) b                -- |(f ### g) . (p *** q) == f . p ### g . q|
-
-    der (first h) (a,b)
-==  der (h *** id) (a,b)                               -- |first| definition
-==  der h a *** der id b                               -- \thmRef{cross}
-==  der h a *** id                                     -- |id| is linear
-==  first (der h a)                                    -- |first| definition
+    der (uncurry g) (a,b)
+==  derl (uncurry g) (a,b) ||| derr (uncurry g) (a,b)      -- \thmRef{deriv-pair-domain}
+==  der (uncurry g . (,b)) a ||| der (uncurry g . (a,)) b  -- |derl| and |derr| definitions
+==  der (\ a' -> uncurry g (a',b)) a |||                   -- $\eta$ expand and simplification
+    der (\ b' -> uncurry g (a,b')) b
+==  der (\ a' -> g a' b) a ||| der (\ b' -> g a b') b      -- |uncurry| on functions
+==  der (at b . g) a ||| der (g a) b                       -- |at| definition and $\eta$ reduction
+==  der (at b) (g a) . der g a ||| der (g a) b             -- chain rule
+==  at b . der g a ||| der (g a) b                         -- linearity of |at|
 \end{code}
+
+
+\subsection{\thmRef{deriv-function-codomain}}\proofLabel{theorem:deriv-function-codomain}
+
+\begin{code}
+    forkF (\ b -> der (at b . g) a)
+==  \ da b -> der (at b . g) a da              -- |forkF| definition
+==  \ da b -> (der (at b) (g a) . der g a) da  -- chain rule
+==  \ da b -> (at b . der g a) da              -- |at b| is linear
+==  \ da b -> at b (der g a da)                -- |(.)| on functions
+==  \ da b -> der g a da b                     -- |at| definition
+==  der g a                                    -- $\eta$ reduction (twice)
+\end{code}
+
+\subsection{\corRef{deriv-curry}}\proofLabel{corollary:deriv-curry}
+
+%% The proof is a simple application of \thmRef{deriv-function-codomain}:
+\begin{code}
+    der (curry f) a
+==  forkF (\ b -> der (at b . curry f)) a           -- \thmRef{deriv-function-codomain}
+==  forkF (\ b -> der (\ a -> at b (curry f a))) a  -- |(.)| on functions
+==  forkF (\ b -> der (\ a -> curry f a b)) a       -- |at| definition
+==  forkF (\ b -> der (\ a -> f (a,b))) a           -- |curry| on functions
+==  forkF (\ b -> der (f . (,b))) a                 -- |(, b)| definition
+==  forkF (\ b -> derl f (a,b))                     -- |derl| definition
+==  forkF (derl f . (a,))                           -- |(a,)| definition
+\end{code}
+
 
 \subsection{|wrapO| as Isomorphism}\proofLabel{wrapO-iso}
 
@@ -672,7 +667,7 @@ Simplifying the RHS,
 ==  adh (uncurry unadh)                                                     -- |uncurry| on functions
 ==  D (\ (fh,a) -> (uncurry unadh (fh,a), der (uncurry unadh) (fh,a)))      -- |adh| definition
 ==  D (\ (fh,a) -> (unadh fh a, der (uncurry unadh) (fh,a)))                -- |uncurry| on functions
-==  D (\ (fh,a) -> (unadh fh a, at a . der unadh fh ||| der (unadh fh) a))  -- \proofRef{der-uncurry}
+==  D (\ (fh,a) -> (unadh fh a, at a . der unadh fh ||| der (unadh fh) a))  -- \proofRef{theorem:deriv-uncurry}
 ==  D (\ (fh,a) -> (unadh fh a, at a . unadh ||| der (unadh fh) a))         -- |unadh| is linear
 \end{code}
 %if False
