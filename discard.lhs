@@ -162,3 +162,29 @@ der f (a,b) . inl :: a :-* c
 \ b -> der f (a,b) . inl :: b -> a :-* c
 forkF (\ b -> der f (a,b) . inl) :: a :-* b -> c
 \end{code}
+
+
+Now we do not need the general |der|, but rather the specific |der eval|.
+If |eval| were linear, we could apply \thmRef{deriv-linear}, and if |eval| were bilinear, we could apply \corRef{deriv-bilinear}, but alas, |eval| is neither.
+No matter, as we can instead use the technique of partial derivatives (\secref{Pair-Valued Domains}).\notefoot{Move this calculation into a proof of a theorem stated in \secref{Pair-Valued Domains}}.
+\begin{code}
+    der eval (f,a)
+==  derl eval (f,a) !!! derr eval (f,a)          -- method of partial derivatives
+==  der (eval . (,a)) f !!! der (eval . (f,)) a  -- |derl| and |derr| alternative definitions
+==  der (at a) f !!! der f          a            -- |eval| on functions
+==  at a !!! der f a                             -- linearity of |at a|
+==  \ (df,dx) -> df a + der f a dx               -- |(!!!) on linear maps|; |at| definition
+\end{code}
+Now we can complete the calculation of |eval| for |D|:
+\begin{code}
+    eval
+==  adh eval
+==  D (eval &&& der eval)                       -- definition of |adh|
+==  D (\ (f,a) -> (eval (f,a), der eval (f,a))  -- |(&&&) on functions|
+==  D (\ (f,a) -> (f a, der eval (f,a))         -- |eval| on functions
+==  D (\ (f,a) -> (f a, at a !!! der f a))      -- above
+\end{code}
+
+
+Although this final form is well-defined, it uses the noncomputable |der| and so is not a computable recipe, leaving us in a pickle.
+Let's look for some wiggle room.

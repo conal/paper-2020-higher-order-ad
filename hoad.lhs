@@ -114,13 +114,13 @@ Reverse mode is distinguished only by using a different linear map representatio
 This general AD algorithm is justified by three main theorems about differentiation:
 \begin{quotation}
 \vspace{-3ex}
-\begin{theorem}[compose/``chain'' rule] \thmLabel{compose}
+\begin{theorem}[compose/``chain'' rule] \thmLabel{deriv-compose}
 $$|der (g . f) a == der g (f a) . der f a|$$
 \end{theorem}
-\begin{theorem}[cross rule] \thmLabel{cross}
+\begin{theorem}[cross rule] \thmLabel{deriv-cross}
 $$|der (f *** g) (a,b) == der f a *** der g b|$$
 \end{theorem}
-\begin{theorem}[linear rule] \thmLabel{linear}
+\begin{theorem}[linear rule] \thmLabel{deriv-linear}
 For all linear functions |f|, $$|der f a == f|$$
 \end{theorem}
 \end{quotation}
@@ -186,7 +186,7 @@ For instance, the derivative of uncurried multiplication is given by the Leibniz
 
 More generally, consider differentiating interacts with uncurrying:
 \begin{corollary}[\provedIn{corollary:deriv-uncurry}]\corLabel{deriv-uncurry}
-$$|der (uncurry g) (a,b) == at b . der g a !!! der (g a) b|$$
+$$| der (uncurry g) (a,b) == at b . der g a !!! der (g a) b |$$
 \end{corollary}
 
 As a special case, let |g| be curried multiplication:
@@ -198,18 +198,27 @@ As a special case, let |g| be curried multiplication:
 \end{code}
 which agrees with the calculation above.
 
-\note{Reconsider the choices of theorems and examples here. Maybe instead: partial derivatives, |uncurry|, then bilinear, with bilinear as a corollary.}
+For cartesian closure, we'll need the derivative of another function with a pair-valued domain:
+\begin{code}
+eval :: (a -> b) :* a -> b
+eval f a = f a  -- on functions
+\end{code}
+Since |eval| is neither linear nor bilinear, we cannot apply \thmRef{deriv-linear} or \corRef{deriv-bilinear}, and if |eval| were bilinear, we could apply \corRef{deriv-bilinear}, but alas, |eval| is neither.
+
+We'll also need one more linear map operation, which is curried, reverse function application:\footnote{Linearity of |at a| follows from the usual definition of addition and scaling on functions.}
+\begin{code}
+at :: a -> (a -> b) :-* b
+at a df = df a
+\end{code}
+\begin{corollary}[\provedIn{corollary:deriv-eval}] \corLabel{deriv-eval}
+$$ |der eval (f,a) == at a !!! der f a| $$
+\end{corollary}
 
 \subsectionl{Function-Valued Codomains}
 
 It will also be useful to calculate derivatives of functions with higher-order codomains.\notefoot{The previous section and this one provide ``adjoint'' techniques in a sense that currying is an adjunction from functions from products to functions to functions.
 Is there something else interesting to say here?}
-We'll need two more linear map operations, the first of which is reverse function application:\footnote{Linearity of |at a| follows from the usual definition of addition and scaling on functions.}
-\begin{code}
-at :: a -> (a -> b) :-* b
-at a df = df a
-\end{code}
-The second linear map operation is the indexed variant of |(&&&)|:
+We'll need anoter linear map operation, which is the indexed variant of |(&&&)|:
 \begin{code}
 forkF :: (b -> a :-* c) -> (a :-* b -> c)
 forkF h = \ da b -> h b da
@@ -221,9 +230,7 @@ $$|der g a = forkF (\ b -> der (at b . g) a)|.$$
 
 %% Curried functions differentiate as follows:
 \begin{corollary}[\provedIn{corollary:deriv-curry}]\corLabel{deriv-curry}
-$$
-|der (curry f) a == forkF (derl f . (a,))|
-$$
+$$ |der (curry f) a == forkF (derl f . (a,))| $$
 \end{corollary}
 
 
@@ -251,7 +258,7 @@ Then the RHS:
     adh (curry f)
 ==  D (curry f &&& der (curry f))                                    -- |adh| definition
 ==  D (\ a -> (curry f a, der (curry f) a))                          -- |(&&&)| on functions
-==  D (\ a -> ((\ b -> f (a,b)), forkF (derl f . (a,))))             -- |curry| and |(a,)|; \thmRef{deriv-curry}
+==  D (\ a -> ((\ b -> f (a,b)), forkF (derl f . (a,))))             -- |curry| and |(a,)|; \corRef{deriv-curry}
 ==  D (\ a -> ((\ b -> f (a,b)), forkF (\ b -> derl f (a,b))))       -- |(.)| on functions
 ==  D (\ a -> ((\ b -> f (a,b)), forkF (\ b -> der f (a,b) . inl)))  -- \proofRef{theorem:deriv-pair-domain}
 \end{code}
@@ -347,30 +354,9 @@ Let us press forward undeterred, opening up the definition of |adh| to see if we
 ==  D (eval &&& der eval)                        -- definition of |adh|
 ==  D (\ (f,a) -> (eval (f,a), der eval (f,a))   -- |(&&&) on functions|
 ==  D (\ (f,a) -> (f a, der eval (f,a))          -- |eval| on functions
+==  D (\ (f,a) -> (f a, at a !!! der f a))       -- \corRef{deriv-eval}
 \end{code}
-Now we do not need the general |der|, but rather the specific |der eval|.
-If |eval| were linear, we could apply \thmRef{linear}, or if |eval| were bilinear, we could apply 
-but alas it is not.
-No matter, as we can instead use the technique of partial derivatives.\notefoot{Move this calculation into a proof of a theorem stated in \secref{Pair-Valued Domains}}.
-\begin{code}
-    der eval (f,a)
-==  derl eval (f,a) !!! derr eval (f,a)          -- method of partial derivatives
-==  der (eval . (,a)) f !!! der (eval . (f,)) a  -- |derl| and |derr| alternative definitions
-==  der (at a) f !!! der f          a            -- |eval| on functions
-==  at a !!! der f a                             -- linearity of |at a|
-==  \ (df,dx) -> df a + der f a dx               -- |(!!!) on linear maps|; |at| definition
-\end{code}
-Now we can complete the calculation of |eval| for |D|:
-\begin{code}
-    eval
-==  adh eval
-==  D (eval &&& der eval)                       -- definition of |adh|
-==  D (\ (f,a) -> (eval (f,a), der eval (f,a))  -- |(&&&) on functions|
-==  D (\ (f,a) -> (f a, der eval (f,a))         -- |eval| on functions
-==  D (\ (f,a) -> (f a, at a !!! der f a)       -- above
-\end{code}
-Although this final form is well-defined, it uses the noncomputable |der| and so is not a computable recipe, leaving us in a pickle.
-Let's look for some wiggle room.
+Although this final form is well-defined, it uses the noncomputable |der| and so is not a computable recipe.
 
 
 \workingHere \note{Postpone the following class/interface discussion to \secref{Object Mapping}}. \vspace{5ex}
@@ -611,7 +597,7 @@ Next, note that |der f (a,b) . inl = der (f . (,b)) a|, by the following equatio
 ==  der f (a,b) . der (inl + const (0,b)) a          -- |inl| on functions, and meaning of |(,b)|
 ==  der f (a,b) . (der inl a + der (const (0,b)) a)  -- linearity of |(+)|
 ==  der f (a,b) . der inl a                          -- |der (const z) a == 0|
-==  der f (a,b) . inl                                -- linearity of |inl|; \thmRef{linear}
+==  der f (a,b) . inl                                -- linearity of |inl|; \thmRef{deriv-linear}
 \end{code}
 Likewise, |der f (a,b) . inr = der (f . (a,)) b|.
 
@@ -629,6 +615,18 @@ Likewise, |der f (a,b) . inr = der (f . (a,)) b|.
 ==  at b . der g a !!! der (g a) b                         -- linearity of |at|
 \end{code}
 
+\subsection{\corRef{deriv-eval}}\proofLabel{corollary:deriv-eval}
+
+\begin{code}
+    der eval (f,a)
+==  derl eval (f,a) !!! derr eval (f,a)          -- method of partial derivatives
+==  der (eval . (,a)) f !!! der (eval . (f,)) a  -- |derl| and |derr| alternative definitions
+==  der (at a) f !!! der f          a            -- |eval| on functions
+==  at a !!! der f a                             -- linearity of |at a|
+==  \ (df,dx) -> df a + der f a dx               -- |(!!!) on linear maps|; |at| definition
+\end{code}
+
+\note{Give a second proof using |eval = uncurry id| and \corRef{deriv-uncurry}.}
 
 \subsection{\thmRef{deriv-function-codomain}}\proofLabel{theorem:deriv-function-codomain}
 
@@ -765,7 +763,7 @@ Simplifying the RHS,
 ==  adh (uncurry unadh)                                                     -- |uncurry| on functions
 ==  D (\ (fh,a) -> (uncurry unadh (fh,a), der (uncurry unadh) (fh,a)))      -- |adh| definition
 ==  D (\ (fh,a) -> (unadh fh a, der (uncurry unadh) (fh,a)))                -- |uncurry| on functions
-==  D (\ (fh,a) -> (unadh fh a, at a . der unadh fh !!! der (unadh fh) a))  -- \proofRef{theorem:deriv-uncurry}
+==  D (\ (fh,a) -> (unadh fh a, at a . der unadh fh !!! der (unadh fh) a))  -- \proofRef{corollary:deriv-uncurry}
 ==  D (\ (fh,a) -> (unadh fh a, at a . unadh !!! der (unadh fh) a))         -- |unadh| is linear
 \end{code}
 %if False
