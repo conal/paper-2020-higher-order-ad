@@ -222,18 +222,20 @@ $$
 \end{corollary}
 
 
-\sectionl{Cartesian Closed?}
+\sectionl{Cartesian Closure}
 
 While |D| is a category and a \emph{cartesian} category at that, as specified by |adh| being a cartesian functor, another question naturally arises.
 Can |adh| also be a cartesian \emph{closed} functor?
 In other words, are there definitions of |eval|, |curry|, and |uncurry| on |D| such that
 \begin{code}
-curry (adh f) = adh (curry f)
-uncurry (adh g) = adh (uncurry g)
-eval = adh eval
+curry (adh f) == adh (curry f)
+uncurry (adh g) == adh (uncurry g)
+eval == adh eval
 \end{code}
-
 As usual, we'll want to solve each homomorphism equation for its single unknown, which is a categorical operation on |D| (on the LHS).
+
+\subsectionl{Curry}
+
 Start with |curry|, simplifying the LHS:
 \begin{code}
     curry (adh f)
@@ -244,42 +246,60 @@ Then the RHS:
     adh (curry f)
 ==  D (curry f &&& der (curry f))                            -- |adh| definition
 ==  D (\ a -> (curry f a, der (curry f) a))                  -- |(&&&)| on functions
-==  D (\ a -> (f . (a,), forkF (derl f . (a,))))             -- |curry| and |(a,)|; \thmRef{deriv-curry}
-==  D (\ a -> (f . (a,), forkF (\ b -> derl f (a,b))))       -- |(.)| on functions
-==  D (\ a -> (f . (a,), forkF (\ b -> der f (a,b) . inl)))  -- \proofRef{theorem:deriv-pair-domain}
+==  D (\ a -> ((\ b -> f (a,b)), forkF (derl f . (a,))))             -- |curry| and |(a,)|; \thmRef{deriv-curry}
+==  D (\ a -> ((\ b -> f (a,b)), forkF (\ b -> derl f (a,b))))       -- |(.)| on functions
+==  D (\ a -> ((\ b -> f (a,b)), forkF (\ b -> der f (a,b) . inl)))  -- \proofRef{theorem:deriv-pair-domain}
 \end{code}
-The last form uses |f| and |der f|, which can be extracted from |adh f = D (f &&& der f)|, because uncurried |(&&&)| is invertible, as is uncurried |(###)|
+The last form uses |f| and |der f|, which can be extracted from |adh f = D (f &&& der f)|:
+Thus a sufficient condition for our homomorphic specification (|curry (adh f) == adh (curry f)|) is
+\begin{code}
+curry (D ff') = D (\ a -> ((\ b -> f (a,b)), forkF (\ b -> f' (a,b) . inl)))
+  where (f,f') = unfork ff'
+\end{code}
+The |unfork| function is half of an isomorphism that holds for all cartesian categories.
+There is a dual isomorphism for cocartesian categories:
 \begin{code}
 fork :: Cartesian k => (a `k` c) :* (a `k` d) -> (a `k` (c :* d))
 fork = uncurry (&&&)
 
 unfork :: Cartesian k => (a `k` (c :* d)) -> (a `k` c) :* (a `k` d)
 unfork h = (exl . h, exr . h)
+\end{code}
+\begin{lemma}
+The pair of functions |fork| and |unfork| form a linear isomorphism.
+\end{lemma}
+Proof: Exercise.
 
-join :: Cartesian k => (a `k` c) :* (a `k` d) -> (a `k` (c :* d))
+Another such linear isomorphism can be found in cocartesian categories.
+The following types are specialized to biproduct categories (such as linear maps):
+\begin{code}
+join :: Cocartesian k => (a `k` c) :* (a `k` d) -> (a `k` (c :* d))
 join = uncurry (|||)
 
 unjoin :: Cocartesian k => (a `k` (c :* d)) -> (a `k` c) :* (a `k` d)
 unjoin h = (h . inl, h . inr)
 \end{code}
 \begin{lemma}
-The pair of functions |fork| and |unfork| form a linear isomorphism, as do the pair |join| and |unjoin|.\footnote{The latter claim holds more generally in \emph{any} cocartesian category (not just with biproducts), though with categorical coproducts instead of cartesian products.}
+The pair of functions |join| and |unjoin| form a linear isomorphism.
 \end{lemma}
 Proof: Exercise.
 
-Continuing our calculation,
-\begin{code}
-    adh (curry f)
-==  ...
-==  D (\ a -> (f . (a,), forkF (\ b -> der f (a,b) . inl)))
-==  let { D h = adh f ; (p,p') = unfork h } in D (\ a -> (p . (a,), forkF (\ b -> p' (a,b) . inl)))
-\end{code}
+These two isomorphism pairs were used by \cite{Elliott-2018-ad-icfp} to construct a correct-by-construction implementation of reverse-mode AD, by merely altering the representation of linear maps used in the simple, general AD algorithm.
 
-\note{Finish |curry| calculation.}
+Although |fork|/|unfork| form an isomorphism and hence preserve information, |unfork| can result in a loss of efficiency, due to computation that can be (and often is) shared between a function |f| and its derivative |der f|.
+Indeed, the definition of |unfork h| above shows that |h| gets replicated.
+It's unclear how to avoid this redundancy problem in practice with currying when |D| is used to represent computably differentiable functions.
+My own experience with compiling to categories \cite{Elliott-2017-compiling-to-categories} suggests that most uses of |curry| generated during translation from the $\lambda$ calculus (e.g., Haskell) are in fact transformed away at compile time using various equational CCC laws.
+Still, it does seem an important question to explore.
+
+Intriguingly, curried functions can also help eliminate redundant computation suggested by uncurried counterparts functions.
+Given a function |g :: a -> b -> c|, it is sometimes convenient to ``partially apply'' |g| to an argument |u| and then apply the resulting |g u :: b -> c| to many different |v :: b|.
+In some cases, a considerable amount of work can be done based solely on |u|, saving residual work to be done for different |b| values.
+In such situations, |uncurry g| loses this performance advantage.
 
 \workingHere \note{Postpone the following class/interface discussion to \secref{Object Mapping}}. \vspace{5ex}
 
-These three operations come  with every \emph{cartesian closed} category:
+These three operations come with every \emph{cartesian closed} category:
 \begin{code}
 class Cartesian k => CartesianClosed k where
   type ExpOp k :: Type -> Type -> Type
