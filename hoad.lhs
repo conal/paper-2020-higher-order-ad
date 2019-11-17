@@ -111,23 +111,38 @@ As typically presented, reverse mode is also much more complicated, but this dif
 Instead, a single, simple algorithm works for forward, reverse, and other modes.
 Reverse mode is distinguished only by using a different linear map representation resulting from a simple classic trick \citep{Elliott-2018-ad-icfp}.
 
-This general AD algorithm is justified by three main theorems:
+This general AD algorithm is justified by three main theorems about differentiation:
 \begin{quotation}
 \vspace{-3ex}
 \begin{theorem}[compose/``chain'' rule] \thmLabel{compose}
-|der (g . f) a == der g (f a) . der f a|.
+$$|der (g . f) a == der g (f a) . der f a|$$
 \end{theorem}
 \begin{theorem}[cross rule] \thmLabel{cross}
-|der (f *** g) (a,b) == der f a *** der g b|.
+$$|der (f *** g) (a,b) == der f a *** der g b|$$
 \end{theorem}
 \begin{theorem}[linear rule] \thmLabel{linear}
-For all linear functions |f|, |der f a == f|.
+For all linear functions |f|, $$|der f a == f|$$
 \end{theorem}
 \end{quotation}
 \noindent
 In addition to these three theorems, we need a collection of facts about the derivatives of various mathematical operations, e.g., |adh sin x = scale (cos x)|, where |scale :: a -> a :-* a| is uncurried scalar multiplication (so |scale s| is linear for all |s|).
 
-\sectionl{Pair-valued Domains}
+\sectionl{Some Additional Properties of Differentiation}
+
+A few additional properties of differentiation will prove useful in extending \cite{Elliott-2018-ad-icfp} to higher-order functions and higher-order derivatives.
+
+\subsectionl{Linearity and invertibility}
+
+%if False
+As is well-known,
+\begin{theorem}
+Differentiation itself (i.e., |der|) is linear.
+\end{theorem}
+
+\note{|adh| as well. Move inversion and |unadh| here also. Also |fork| and |unfork|}
+%endif
+
+\subsectionl{Pair-Valued Domains}
 
 One half of the |curry|/|uncurry| isomorphism involves functions of pair-valued domains.
 The notion of partial derivatives are helpful for differentiating such functions.\notefoot{I'm leaning toward eliminating |derl| and |derr| in favor of their meanings.
@@ -180,7 +195,7 @@ which agrees with the calculation above.
 
 \note{Reconsider the choices of theorems and examples here. Maybe instead: partial derivatives, |uncurry|, then bilinear, with bilinear as a corollary.}
 
-\sectionl{Function-Valued Codomains}
+\subsectionl{Function-Valued Codomains}
 
 It will also be useful to calculate derivatives of functions with higher-order codomains.\notefoot{The previous section and this one provide ``adjoint'' techniques in a sense that currying is an adjunction from functions from products to functions to functions.
 Is there something else interesting to say here?}
@@ -227,11 +242,11 @@ Start with |curry|, simplifying the LHS:
 Then the RHS:
 \begin{code}
     adh (curry f)
-==  D (curry f &&& der (curry f))                          -- |adh| definition
-==  D (\ a -> (curry f a, der (curry f) a))                -- |(&&&)| on functions
-==  D (\ a -> (f . (a,), forkF (derl f . (a,))))           -- |curry| and |(a,)|; \thmRef{deriv-curry}
-==  D (\ a -> (f . (a,), forkF (\ b -> derl f (a,b))))     -- |(.)| on functions
-==  D (\ a -> (f . (a,), forkF (\ b -> der f (a,b) . inl)  -- \proofRef{theorem:deriv-pair-domain}
+==  D (curry f &&& der (curry f))                            -- |adh| definition
+==  D (\ a -> (curry f a, der (curry f) a))                  -- |(&&&)| on functions
+==  D (\ a -> (f . (a,), forkF (derl f . (a,))))             -- |curry| and |(a,)|; \thmRef{deriv-curry}
+==  D (\ a -> (f . (a,), forkF (\ b -> derl f (a,b))))       -- |(.)| on functions
+==  D (\ a -> (f . (a,), forkF (\ b -> der f (a,b) . inl)))  -- \proofRef{theorem:deriv-pair-domain}
 \end{code}
 The last form uses |f| and |der f|, which can be extracted from |adh f = D (f &&& der f)|, because uncurried |(&&&)| is invertible, as is uncurried |(###)|
 \begin{code}
@@ -241,16 +256,24 @@ fork = uncurry (&&&)
 unfork :: Cartesian k => (a `k` (c :* d)) -> (a `k` c) :* (a `k` d)
 unfork h = (exl . h, exr . h)
 
-fork :: Cartesian k => (a `k` c) :* (a `k` d) -> (a `k` (c :* d))
-fork = uncurry (|||)
+join :: Cartesian k => (a `k` c) :* (a `k` d) -> (a `k` (c :* d))
+join = uncurry (|||)
 
-unfork :: Cocartesian k => (a `k` (c :* d)) -> (a `k` c) :* (a `k` d)
-unfork h = (h . inl, h . inr)
+unjoin :: Cocartesian k => (a `k` (c :* d)) -> (a `k` c) :* (a `k` d)
+unjoin h = (h . inl, h . inr)
 \end{code}
 \begin{lemma}
-The functions |fork| and |unfork| form a linear isomorphism, as do the functions |join| and |unjoin|.\footnote{The latter claim holds more generally in \emph{any} cocartesian category (not just with biproducts), though with categorical coproducts instead of cartesian products.}
+The pair of functions |fork| and |unfork| form a linear isomorphism, as do the pair |join| and |unjoin|.\footnote{The latter claim holds more generally in \emph{any} cocartesian category (not just with biproducts), though with categorical coproducts instead of cartesian products.}
 \end{lemma}
-Proof: exercise.
+Proof: Exercise.
+
+Continuing our calculation,
+\begin{code}
+    adh (curry f)
+==  ...
+==  D (\ a -> (f . (a,), forkF (\ b -> der f (a,b) . inl)))
+==  let { D h = adh f ; (p,p') = unfork h } in D (\ a -> (p . (a,), forkF (\ b -> p' (a,b) . inl)))
+\end{code}
 
 \note{Finish |curry| calculation.}
 
@@ -364,7 +387,7 @@ Let us press forward undeterred, opening up the definition of |adh| to see if we
 \end{code}
 Now we do not need the general |der|, but rather the specific |der eval|.
 If |eval| were linear, we could apply \thmRef{linear}, but alas it is not.
-No matter, as we can instead use the technique of partial derivatives.\notefoot{Move this calculation into a proof of a theorem stated in \secref{Pair-valued Domains}}.
+No matter, as we can instead use the technique of partial derivatives.\notefoot{Move this calculation into a proof of a theorem stated in \secref{Pair-Valued Domains}}.
 \begin{code}
     der eval (f,a)
 ==  derl eval (f,a) ||| derr eval (f,a)          -- method of partial derivatives

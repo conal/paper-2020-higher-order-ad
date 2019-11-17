@@ -92,3 +92,6 @@
 %format :: = :
 
 %format forkF = fork"_{\!F}"
+
+%format unfork = "\inv{"fork"}"
+%format unjoin = "\inv{"join"}"
