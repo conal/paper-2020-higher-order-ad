@@ -145,8 +145,8 @@ Differentiation itself (i.e., |der|) is linear.
 \subsectionl{Pair-Valued Domains}
 
 One half of the |curry|/|uncurry| isomorphism involves functions of pair-valued domains.
-The notion of partial derivatives are helpful for differentiating such functions.\notefoot{I'm leaning toward eliminating |derl| and |derr| in favor of their meanings.
-Whenever I use the names below, I then immediate inline them.}
+The notion of partial derivatives is helpful for differentiating such functions.\notefoot{I'm leaning toward eliminating |derl| and |derr| in favor of their meanings.
+Whenever I use the names below, I then immediate inline them.}\footnote{Recall that, on linear maps, |(f !!! g) (a,b) = f a + g b|.}
 \begin{theorem}[\provedIn{thm:deriv-pair-domain}]\thmLabel{deriv-pair-domain}
 Given a function |f :: a :* b -> c|, $$
 |der f (a,b) == derl f (a,b) !!! derr f (a,b)|
@@ -269,7 +269,6 @@ curry (D ff') = D (\ a -> ((\ b -> f (a,b)), forkF (\ b -> f' (a,b) . inl)))
   where (f,f') = unfork ff'
 \end{code}
 The |unfork| function is half of an isomorphism that holds for all cartesian categories.
-There is a dual isomorphism for cocartesian categories:
 \begin{code}
 fork :: Cartesian k => (a `k` c) :* (a `k` d) -> (a `k` (c :* d))
 fork = uncurry (&&&)
