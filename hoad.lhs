@@ -149,7 +149,7 @@ The notion of partial derivatives are helpful for differentiating such functions
 Whenever I use the names below, I then immediate inline them.}
 \begin{theorem}[\provedIn{theorem:deriv-pair-domain}]\thmLabel{deriv-pair-domain}
 Given a function |f :: a :* b -> c|, $$
-|der f (a,b) == derl f (a,b) ### derr f (a,b)|
+|der f (a,b) == derl f (a,b) !!! derr f (a,b)|
 $$ where |derl| and |derr| construct the (``first'' and ``second'', or ``left'' and ``right'') ``partial derivatives'' of |f| at |(a,b)|, defined as follows:
 \end{theorem}
 \begin{code}
@@ -165,36 +165,36 @@ As an example of how this decomposition of |der f| helps construct derivatives, 
 More formally |bilinearity| of |f| means that |f . (a,)| and |f . (b,)| are both linear for all |a| and |b|.
 \begin{corollary}\corLabel{deriv-bilinear}
 If |f :: a :* b -> c| is bilinear then $$
-|der f (a,b) == f . (,b) ### f . (a,)|
+|der f (a,b) == f . (,b) !!! f . (a,)|
 $$
 \end{corollary}
 Proof:
 \begin{code}
     der f (a,b)
-==  derl f (a,b) ||| derr f (a,b)          -- \thmRef{deriv-pair-domain}
-==  der (f . (,b)) a ||| der (f . (a,)) b  -- |derl| and |derr| definitions
-==  f . (,b) ||| f . (a,)                  -- linearity
+==  derl f (a,b) !!! derr f (a,b)          -- \thmRef{deriv-pair-domain}
+==  der (f . (,b)) a !!! der (f . (a,)) b  -- |derl| and |derr| definitions
+==  f . (,b) !!! f . (a,)                  -- linearity
 \end{code}
 For instance, the derivative of uncurried multiplication is given by the Leibniz product rule:
 \begin{code}
     der (uncurry (*)) (a,b)
-==  uncurry (*) . (,b) ||| uncurry (*) . (a,)
-==  (NOP * b) ||| (a * NOP)
+==  uncurry (*) . (,b) !!! uncurry (*) . (a,)
+==  (NOP * b) !!! (a * NOP)
 == \ (da,db) -> da * b + a * db
 \end{code}
 % which is sometimes written ``|d (u v) = u dv + v du|''.
 
 More generally, consider differentiating interacts with uncurrying:
 \begin{corollary}[\provedIn{corollary:deriv-uncurry}]\corLabel{deriv-uncurry}
-$$|der (uncurry g) (a,b) == at b . der g a ### der (g a) b|$$
+$$|der (uncurry g) (a,b) == at b . der g a !!! der (g a) b|$$
 \end{corollary}
 
 As a special case, let |g| be curried multiplication:
 \begin{code}
     der (uncurry (*))
-==  at b . der (*) a ||| der (a *) b
-==  at b . (*) ||| (a *)
-==  (NOP * b) ||| (a * NOP)
+==  at b . der (*) a !!! der (a *) b
+==  at b . (*) !!! (a *)
+==  (NOP * b) !!! (a * NOP)
 \end{code}
 which agrees with the calculation above.
 
@@ -279,7 +279,7 @@ Another such linear isomorphism can be found in cocartesian categories.
 The following types are specialized to biproduct categories (such as linear maps):
 \begin{code}
 join :: Cocartesian k => (a `k` c) :* (a `k` d) -> (a `k` (c :* d))
-join = uncurry (|||)
+join = uncurry (!!!)
 
 unjoin :: Cocartesian k => (a `k` (c :* d)) -> (a `k` c) :* (a `k` d)
 unjoin h = (h . inl, h . inr)
@@ -319,7 +319,7 @@ Then the RHS:
 ==  D (uncurry g &&& der (uncurry g))                       -- |adh| definition
 ==  D (\ (a,b) -> (uncurry g (a,b), der (uncurry g) (a,b))  -- |(&&&)| definition
 ==  D (\ (a,b) -> (g a b, der (uncurry g) (a,b))            -- |uncurry| on functions
-==  D (\ (a,b) -> (g a b, at b . der g a ||| der (g a) b)   -- \corRef{deriv-uncurry}
+==  D (\ (a,b) -> (g a b, at b . der g a !!! der (g a) b)   -- \corRef{deriv-uncurry}
 \end{code}
 Now we have a problem with solving the defining homomorphism above .
 Although we can extract |g| and |der g| from |adh g|, we cannot extract |der (g a)|.
@@ -354,11 +354,11 @@ but alas it is not.
 No matter, as we can instead use the technique of partial derivatives.\notefoot{Move this calculation into a proof of a theorem stated in \secref{Pair-Valued Domains}}.
 \begin{code}
     der eval (f,a)
-==  derl eval (f,a) ||| derr eval (f,a)          -- method of partial derivatives
-==  der (eval . (,a)) f ||| der (eval . (f,)) a  -- |derl| and |derr| alternative definitions
-==  der (at a) f ||| der f          a            -- |eval| on functions
-==  at a ||| der f a                             -- linearity of |at a|
-==  \ (df,dx) -> df a + der f a dx               -- |(###) on linear maps|; |at| definition
+==  derl eval (f,a) !!! derr eval (f,a)          -- method of partial derivatives
+==  der (eval . (,a)) f !!! der (eval . (f,)) a  -- |derl| and |derr| alternative definitions
+==  der (at a) f !!! der f          a            -- |eval| on functions
+==  at a !!! der f a                             -- linearity of |at a|
+==  \ (df,dx) -> df a + der f a dx               -- |(!!!) on linear maps|; |at| definition
 \end{code}
 Now we can complete the calculation of |eval| for |D|:
 \begin{code}
@@ -367,7 +367,7 @@ Now we can complete the calculation of |eval| for |D|:
 ==  D (eval &&& der eval)                       -- definition of |adh|
 ==  D (\ (f,a) -> (eval (f,a), der eval (f,a))  -- |(&&&) on functions|
 ==  D (\ (f,a) -> (f a, der eval (f,a))         -- |eval| on functions
-==  D (\ (f,a) -> (f a, at a ||| der f a)       -- above
+==  D (\ (f,a) -> (f a, at a !!! der f a)       -- above
 \end{code}
 Although this final form is well-defined, it uses the noncomputable |der| and so is not a computable recipe, leaving us in a pickle.
 Let's look for some wiggle room.
@@ -431,8 +431,8 @@ class MonoidalC k => Cocartesian k where
   inr  :: b `k` (Coprod k a b)
   jam  :: (Coprod k a a) `k` a
 
-(|||) :: Cocartesian k => (c `k` a) -> (d `k` a) -> ((Coprod k c d) `k` a)
-f ||| g = jam . (f +++ g)
+(!!!) :: Cocartesian k => (c `k` a) -> (d `k` a) -> ((Coprod k c d) `k` a)
+f !!! g = jam . (f +++ g)
 \end{code}
 In this paper we will be working in the setting of \emph{biproducts}, where products and coproducts coincide.\footnote{More precisely, linear maps (in all representations) form a biproduct category, but we will not use coproducts with functions or (computably) differentiable functions.
 Coproducts are useful in defining a simple, dualized linear map category that yields reverse mode AD when used with the single, general AD algorithm.}
@@ -443,8 +443,8 @@ class MonoidalP k => Cocartesian k where
   inr  :: b `k` (Prod k a b)
   jam  :: (Prod k a a) `k` a
 
-(|||) :: (c `k` a) -> (d `k` a) -> ((Prod k c d) `k` a)
-f ||| g = jam . (f *** g)
+(!!!) :: (c `k` a) -> (d `k` a) -> ((Prod k c d) `k` a)
+f !!! g = jam . (f *** g)
 \end{code}
 For the category of linear maps and vector spaces (or semimodules) over a specified scalar type,
 \begin{code}
@@ -454,7 +454,7 @@ jam (a,a') = a + a'
 \end{code}
 from which it follows that
 \begin{code}
-    (f ||| g) (c,d)
+    (f !!! g) (c,d)
 ==  jam ((f *** g) (c,d))
 ==  jam (f c, c d)
 ==  f c + g d
@@ -568,7 +568,7 @@ We don't have definitions from \cite{Elliott-2018-ad-icfp} to imitate and verify
 For |eval|, the homomorphism equation is |eval == ado eval|, which is already a definition but not a computable one (since |ado| involves |adh|, which involves |der|, i.e., differentiation).
 The choice of |toO = ado| enables a computable solution (\proofRef{ado-eval}):
 \begin{code}
-eval = D (\ (D h,a) -> let (b,f') = h a in (b, at a . unadh ||| f'))
+eval = D (\ (D h,a) -> let (b,f') = h a in (b, at a . unadh !!! f'))
 \end{code}
 
 Next consider currying.
@@ -597,9 +597,9 @@ I can get some of the preparatory work done.}
 \subsection{\thmRef{deriv-pair-domain}}\proofLabel{theorem:deriv-pair-domain}
 
 Suppose we have a function |f :: a :* b -> c|, and we want to compute its derivative at a point in its (pair-valued) domain.
-Because linear maps (derivatives) form a cocartesian category,\footnote{The cocartesian law |h = h . inl ### h . inr| is dual to the cartesian law |h = exl . h &&& exr . h| \citep{Gibbons2002Calculating}.}
+Because linear maps (derivatives) form a cocartesian category,\footnote{The cocartesian law |h = h . inl !!! h . inr| is dual to the cartesian law |h = exl . h &&& exr . h| \citep{Gibbons2002Calculating}.}
 \begin{code}
-der f (a,b) == der f (a,b) . inl ||| der f (a,b) . inr
+der f (a,b) == der f (a,b) . inl !!! der f (a,b) . inr
 \end{code}
 Noting that |inl da = (da,0)| and |inr db = (0,db)|, we can see that the partial derivatives allow only one half of a pair to change.
 
@@ -619,14 +619,14 @@ Likewise, |der f (a,b) . inr = der (f . (a,)) b|.
 
 \begin{code}
     der (uncurry g) (a,b)
-==  derl (uncurry g) (a,b) ||| derr (uncurry g) (a,b)      -- \thmRef{deriv-pair-domain}
-==  der (uncurry g . (,b)) a ||| der (uncurry g . (a,)) b  -- |derl| and |derr| definitions
-==  der (\ a' -> uncurry g (a',b)) a |||                   -- $\eta$ expand and simplification
+==  derl (uncurry g) (a,b) !!! derr (uncurry g) (a,b)      -- \thmRef{deriv-pair-domain}
+==  der (uncurry g . (,b)) a !!! der (uncurry g . (a,)) b  -- |derl| and |derr| definitions
+==  der (\ a' -> uncurry g (a',b)) a !!!                   -- $\eta$ expand and simplification
     der (\ b' -> uncurry g (a,b')) b
-==  der (\ a' -> g a' b) a ||| der (\ b' -> g a b') b      -- |uncurry| on functions
-==  der (at b . g) a ||| der (g a) b                       -- |at| definition and $\eta$ reduction
-==  der (at b) (g a) . der g a ||| der (g a) b             -- chain rule
-==  at b . der g a ||| der (g a) b                         -- linearity of |at|
+==  der (\ a' -> g a' b) a !!! der (\ b' -> g a b') b      -- |uncurry| on functions
+==  der (at b . g) a !!! der (g a) b                       -- |at| definition and $\eta$ reduction
+==  der (at b) (g a) . der g a !!! der (g a) b             -- chain rule
+==  at b . der g a !!! der (g a) b                         -- linearity of |at|
 \end{code}
 
 
@@ -765,14 +765,14 @@ Simplifying the RHS,
 ==  adh (uncurry unadh)                                                     -- |uncurry| on functions
 ==  D (\ (fh,a) -> (uncurry unadh (fh,a), der (uncurry unadh) (fh,a)))      -- |adh| definition
 ==  D (\ (fh,a) -> (unadh fh a, der (uncurry unadh) (fh,a)))                -- |uncurry| on functions
-==  D (\ (fh,a) -> (unadh fh a, at a . der unadh fh ||| der (unadh fh) a))  -- \proofRef{theorem:deriv-uncurry}
-==  D (\ (fh,a) -> (unadh fh a, at a . unadh ||| der (unadh fh) a))         -- |unadh| is linear
+==  D (\ (fh,a) -> (unadh fh a, at a . der unadh fh !!! der (unadh fh) a))  -- \proofRef{theorem:deriv-uncurry}
+==  D (\ (fh,a) -> (unadh fh a, at a . unadh !!! der (unadh fh) a))         -- |unadh| is linear
 \end{code}
 %if False
 \begin{code}
-==  D (\ (D h,a) -> (unadh (D h) a, at a . unadh ||| der (unadh (D h)) a))
-==  D (\ (D h,a) -> let (b,f') = (unadh (D h) a,der (unadh (D h)) a) in(b, at a . unadh ||| f'))
-==  D (\ (D h,a) -> let (b,f') = h a in (b, at a . unadh ||| f'))
+==  D (\ (D h,a) -> (unadh (D h) a, at a . unadh !!! der (unadh (D h)) a))
+==  D (\ (D h,a) -> let (b,f') = (unadh (D h) a,der (unadh (D h)) a) in(b, at a . unadh !!! f'))
+==  D (\ (D h,a) -> let (b,f') = h a in (b, at a . unadh !!! f'))
 \end{code}
 %endif
 % Now we are in a position to eliminate the noncomputable |der| operation.
@@ -791,7 +791,7 @@ A bit of refactoring then replaces |unadh fh a| and (the noncomputable) |der (un
 \begin{code}
     ado eval
 ==  ...
-==  D (\ (D h,a) -> let (b,f') = h a in (b, at a . unadh ||| f'))
+==  D (\ (D h,a) -> let (b,f') = h a in (b, at a . unadh !!! f'))
 \end{code}
 
 Since this calculation was fairly involved, let's get a sanity check on the types in the final form:
@@ -811,10 +811,10 @@ Since this calculation was fairly involved, let's get a sanity check on the type
                                              unadh      :: D (O a) (O b) :-* (O a -> O b)
                                 at a                    :: (O a -> O b) :-* O b
                                 at a .  unadh           :: D (O a) (O b) :-* O b
-                                at a .  unadh ||| f'    :: D (O a) (O b) :* O a :-* O b
-                           (b,  at a .  unadh ||| f')   :: O b :* (D (O a) (O b) :* O a :-* O b)
-     \ (D h,a) -> ... in   (b,  at a .  unadh ||| f')   :: O ((a -> b) :* a) -> O b :* (D (O a) (O b) :* O a :-* O b)
-D (  \ (D h,a) -> ... in   (b,  at a .  unadh ||| f'))  :: D (O ((a -> b) :* a)) (O b)
+                                at a .  unadh !!! f'    :: D (O a) (O b) :* O a :-* O b
+                           (b,  at a .  unadh !!! f')   :: O b :* (D (O a) (O b) :* O a :-* O b)
+     \ (D h,a) -> ... in   (b,  at a .  unadh !!! f')   :: O ((a -> b) :* a) -> O b :* (D (O a) (O b) :* O a :-* O b)
+D (  \ (D h,a) -> ... in   (b,  at a .  unadh !!! f'))  :: D (O ((a -> b) :* a)) (O b)
 
      eval  :: (a -> b) :* a -> b
 ado  eval  :: D (O ((a -> b) :* a)) (O b)

@@ -18,10 +18,8 @@
 %format *** = "\times"
 %format &&& = "\mathbin{\vartriangle}"
 %format +++ = "+"
-%format ||| = "\mathbin{\triangledown}"
-
-%% Because ||| between inline-code "|" delimiters confuses lhs2tex
-%format ### = "\mathbin{\triangledown}"
+%% Because ||| between inline-code "|" delimiters confuses lhs2tex, use !!!
+%format !!! = "\mathbin{\triangledown}"
 
 %format == = =
 
