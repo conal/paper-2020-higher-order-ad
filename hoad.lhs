@@ -626,7 +626,14 @@ Likewise, |der f (a,b) . inr = der (f . (a,)) b|.
 ==  \ (df,dx) -> df a + der f a dx               -- |(!!!) on linear maps|; |at| definition
 \end{code}
 
-\note{Give a second proof using |eval = uncurry id| and \corRef{deriv-uncurry}.}
+Alternatively, calculate |der eval| via |uncurry|:
+\begin{code}
+    der eval (f,a)
+==  der (uncurry id) (f,a)            -- |eval = uncurry id|
+==  at a . der id a !!! der (id f) a  -- \corRef{deriv-uncurry}
+==  at a . id !!! der f a             -- |id| is linear
+==  at a !!! der f a                  -- |id| as identity
+\end{code}
 
 \subsection{\thmRef{deriv-function-codomain}}\proofLabel{theorem:deriv-function-codomain}
 
