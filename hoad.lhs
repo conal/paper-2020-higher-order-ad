@@ -147,7 +147,7 @@ Differentiation itself (i.e., |der|) is linear.
 One half of the |curry|/|uncurry| isomorphism involves functions of pair-valued domains.
 The notion of partial derivatives are helpful for differentiating such functions.\notefoot{I'm leaning toward eliminating |derl| and |derr| in favor of their meanings.
 Whenever I use the names below, I then immediate inline them.}
-\begin{theorem}[\provedIn{theorem:deriv-pair-domain}]\thmLabel{deriv-pair-domain}
+\begin{theorem}[\provedIn{thm:deriv-pair-domain}]\thmLabel{deriv-pair-domain}
 Given a function |f :: a :* b -> c|, $$
 |der f (a,b) == derl f (a,b) !!! derr f (a,b)|
 $$ where |derl| and |derr| construct the (``first'' and ``second'', or ``left'' and ``right'') ``partial derivatives'' of |f| at |(a,b)|, defined as follows:
@@ -185,7 +185,7 @@ For instance, the derivative of uncurried multiplication is given by the Leibniz
 % which is sometimes written ``|d (u v) = u dv + v du|''.
 
 More generally, consider differentiating interacts with uncurrying:
-\begin{corollary}[\provedIn{corollary:deriv-uncurry}]\corLabel{deriv-uncurry}
+\begin{corollary}[\provedIn{cor:deriv-uncurry}]\corLabel{deriv-uncurry}
 $$| der (uncurry g) (a,b) == at b . der g a !!! der (g a) b |$$
 \end{corollary}
 
@@ -210,7 +210,7 @@ We'll also need one more linear map operation, which is curried, reverse functio
 at :: a -> (a -> b) :-* b
 at a df = df a
 \end{code}
-\begin{corollary}[\provedIn{corollary:deriv-eval}] \corLabel{deriv-eval}
+\begin{corollary}[\provedIn{cor:deriv-eval}] \corLabel{deriv-eval}
 $$ |der eval (f,a) == at a !!! der f a| $$
 \end{corollary}
 
@@ -223,13 +223,13 @@ We'll need anoter linear map operation, which is the indexed variant of |(&&&)|:
 forkF :: (b -> a :-* c) -> (a :-* b -> c)
 forkF h = \ da b -> h b da
 \end{code}
-\begin{theorem}[\provedIn{theorem:deriv-function-codomain}]\thmLabel{deriv-function-codomain}
+\begin{theorem}[\provedIn{thm:deriv-function-codomain}]\thmLabel{deriv-function-codomain}
 Given a function |g :: a -> b -> c|,
 $$|der g a = forkF (\ b -> der (at b . g) a)|.$$
 \end{theorem}
 
 %% Curried functions differentiate as follows:
-\begin{corollary}[\provedIn{corollary:deriv-curry}]\corLabel{deriv-curry}
+\begin{corollary}[\provedIn{cor:deriv-curry}]\corLabel{deriv-curry}
 $$ |der (curry f) a == forkF (derl f . (a,))| $$
 \end{corollary}
 
@@ -260,7 +260,7 @@ Then the RHS:
 ==  D (\ a -> (curry f a, der (curry f) a))                          -- |(&&&)| on functions
 ==  D (\ a -> ((\ b -> f (a,b)), forkF (derl f . (a,))))             -- |curry| and |(a,)|; \corRef{deriv-curry}
 ==  D (\ a -> ((\ b -> f (a,b)), forkF (\ b -> derl f (a,b))))       -- |(.)| on functions
-==  D (\ a -> ((\ b -> f (a,b)), forkF (\ b -> der f (a,b) . inl)))  -- \proofRef{theorem:deriv-pair-domain}
+==  D (\ a -> ((\ b -> f (a,b)), forkF (\ b -> der f (a,b) . inl)))  -- \proofRef{thm:deriv-pair-domain}
 \end{code}
 The last form uses |f| and |der f|, which can be extracted from |adh f = D (f &&& der f)|:
 Thus a sufficient condition for our homomorphic specification (|curry (adh f) == adh (curry f)|) is
@@ -580,7 +580,7 @@ I can get some of the preparatory work done.}
 
 \sectionl{Proofs}
 
-\subsection{\thmRef{deriv-pair-domain}}\proofLabel{theorem:deriv-pair-domain}
+\subsection{\thmRef{deriv-pair-domain}}\proofLabel{thm:deriv-pair-domain}
 
 Suppose we have a function |f :: a :* b -> c|, and we want to compute its derivative at a point in its (pair-valued) domain.
 Because linear maps (derivatives) form a cocartesian category,\footnote{The cocartesian law |h = h . inl !!! h . inr| is dual to the cartesian law |h = exl . h &&& exr . h| \citep{Gibbons2002Calculating}.}
@@ -601,7 +601,7 @@ Next, note that |der f (a,b) . inl = der (f . (,b)) a|, by the following equatio
 \end{code}
 Likewise, |der f (a,b) . inr = der (f . (a,)) b|.
 
-\subsection{\corRef{deriv-uncurry}}\proofLabel{corollary:deriv-uncurry}
+\subsection{\corRef{deriv-uncurry}}\proofLabel{cor:deriv-uncurry}
 
 \begin{code}
     der (uncurry g) (a,b)
@@ -615,7 +615,7 @@ Likewise, |der f (a,b) . inr = der (f . (a,)) b|.
 ==  at b . der g a !!! der (g a) b                         -- linearity of |at|
 \end{code}
 
-\subsection{\corRef{deriv-eval}}\proofLabel{corollary:deriv-eval}
+\subsection{\corRef{deriv-eval}}\proofLabel{cor:deriv-eval}
 
 \begin{code}
     der eval (f,a)
@@ -635,7 +635,7 @@ Alternatively, calculate |der eval| via |uncurry|:
 ==  at a !!! der f a                  -- |id| as identity
 \end{code}
 
-\subsection{\thmRef{deriv-function-codomain}}\proofLabel{theorem:deriv-function-codomain}
+\subsection{\thmRef{deriv-function-codomain}}\proofLabel{thm:deriv-function-codomain}
 
 \begin{code}
     forkF (\ b -> der (at b . g) a)
@@ -647,7 +647,7 @@ Alternatively, calculate |der eval| via |uncurry|:
 ==  der g a                                    -- $\eta$ reduction (twice)
 \end{code}
 
-\subsection{\corRef{deriv-curry}}\proofLabel{corollary:deriv-curry}
+\subsection{\corRef{deriv-curry}}\proofLabel{cor:deriv-curry}
 
 %% The proof is a simple application of \thmRef{deriv-function-codomain}:
 \begin{code}
@@ -770,7 +770,7 @@ Simplifying the RHS,
 ==  adh (uncurry unadh)                                                     -- |uncurry| on functions
 ==  D (\ (fh,a) -> (uncurry unadh (fh,a), der (uncurry unadh) (fh,a)))      -- |adh| definition
 ==  D (\ (fh,a) -> (unadh fh a, der (uncurry unadh) (fh,a)))                -- |uncurry| on functions
-==  D (\ (fh,a) -> (unadh fh a, at a . der unadh fh !!! der (unadh fh) a))  -- \proofRef{corollary:deriv-uncurry}
+==  D (\ (fh,a) -> (unadh fh a, at a . der unadh fh !!! der (unadh fh) a))  -- \proofRef{cor:deriv-uncurry}
 ==  D (\ (fh,a) -> (unadh fh a, at a . unadh !!! der (unadh fh) a))         -- |unadh| is linear
 \end{code}
 %if False
