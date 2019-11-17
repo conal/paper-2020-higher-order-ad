@@ -163,7 +163,12 @@ The notation ``|(a,)|'' and ``|(b,)|'' refers to right and left ``sections'' of 
 
 As an example of how this decomposition of |der f| helps construct derivatives, suppose that |f| is \emph{bilinear}, which is to say that |f| is linear in each argument, while holding the other constant.
 More formally |bilinearity| of |f| means that |f . (a,)| and |f . (b,)| are both linear for all |a| and |b|.
-Therefore,
+\begin{corollary}\corLabel{deriv-bilinear}
+If |f :: a :* b -> c| is bilinear then $$
+|der f (a,b) == f . (,b) ### f . (a,)|
+$$
+\end{corollary}
+Proof:
 \begin{code}
     der f (a,b)
 ==  derl f (a,b) ||| derr f (a,b)          -- \thmRef{deriv-pair-domain}
@@ -234,18 +239,18 @@ eval == adh eval
 \end{code}
 As usual, we'll want to solve each homomorphism equation for its single unknown, which is a categorical operation on |D| (on the LHS).
 
-\subsectionl{Curry}
+\subsectionl{Currying}
 
 Start with |curry|, simplifying the LHS:
 \begin{code}
     curry (adh f)
-==  curry (D (f &&& der f))
+==  curry (D (f &&& der f)) -- |adh| definition
 \end{code}
 Then the RHS:
 \begin{code}
     adh (curry f)
-==  D (curry f &&& der (curry f))                            -- |adh| definition
-==  D (\ a -> (curry f a, der (curry f) a))                  -- |(&&&)| on functions
+==  D (curry f &&& der (curry f))                                    -- |adh| definition
+==  D (\ a -> (curry f a, der (curry f) a))                          -- |(&&&)| on functions
 ==  D (\ a -> ((\ b -> f (a,b)), forkF (derl f . (a,))))             -- |curry| and |(a,)|; \thmRef{deriv-curry}
 ==  D (\ a -> ((\ b -> f (a,b)), forkF (\ b -> derl f (a,b))))       -- |(.)| on functions
 ==  D (\ a -> ((\ b -> f (a,b)), forkF (\ b -> der f (a,b) . inl)))  -- \proofRef{theorem:deriv-pair-domain}
@@ -296,6 +301,77 @@ Intriguingly, curried functions can also help eliminate redundant computation su
 Given a function |g :: a -> b -> c|, it is sometimes convenient to ``partially apply'' |g| to an argument |u| and then apply the resulting |g u :: b -> c| to many different |v :: b|.
 In some cases, a considerable amount of work can be done based solely on |u|, saving residual work to be done for different |b| values.
 In such situations, |uncurry g| loses this performance advantage.
+
+\subsectionl{Uncurry}
+
+Next, let's tackle |uncurry|, whose defining homomorphism is
+\begin{code}
+uncurry (adh g) == adh (uncurry g)
+\end{code}
+Simplify the LHS:
+\begin{code}
+    uncurry (adh g)
+==  uncurry (D (g &&& der g))  -- |adh| definition
+\end{code}
+Then the RHS:
+\begin{code}
+    adh (uncurry g)
+==  D (uncurry g &&& der (uncurry g))                       -- |adh| definition
+==  D (\ (a,b) -> (uncurry g (a,b), der (uncurry g) (a,b))  -- |(&&&)| definition
+==  D (\ (a,b) -> (g a b, der (uncurry g) (a,b))            -- |uncurry| on functions
+==  D (\ (a,b) -> (g a b, at b . der g a ||| der (g a) b)   -- \corRef{deriv-uncurry}
+\end{code}
+Now we have a problem with solving the defining homomorphism above .
+Although we can extract |g| and |der g| from |adh g|, we cannot extract |der (g a)|.
+Or rather we can, but not computably.
+
+\subsectionl{Eval}
+
+We don't need to work out both |uncurry| and |eval|, since each can be defined in terms of the other:\out{\footnote{The pattern |g *** id| is also called ``|first g|'', because it applies |g| to the first element of a pair while leaving the second element unchanged.}}
+\begin{code}
+eval = uncurry id
+uncurry g  = eval . (g *** id)
+           = eval . first g
+\end{code}
+Since we got stuck on |uncurry|, let's try |eval| as well to see if we learn anything new.
+
+The corresponding homomorphism equation has a particularly simple form:
+\begin{code}
+eval = adh eval
+\end{code}
+It might appear that we are done at the start, taking the equation to be a definition for |eval|.
+Recall, however, that |adh| is noncomputable, being defined via |der| (differentiation itself).
+Let us press forward undeterred, opening up the definition of |adh| to see if we can transform away the (noncomputable) |der|:
+\begin{code}
+    adh eval
+==  D (eval &&& der eval)                        -- definition of |adh|
+==  D (\ (f,a) -> (eval (f,a), der eval (f,a))   -- |(&&&) on functions|
+==  D (\ (f,a) -> (f a, der eval (f,a))          -- |eval| on functions
+\end{code}
+Now we do not need the general |der|, but rather the specific |der eval|.
+If |eval| were linear, we could apply \thmRef{linear}, or if |eval| were bilinear, we could apply 
+but alas it is not.
+No matter, as we can instead use the technique of partial derivatives.\notefoot{Move this calculation into a proof of a theorem stated in \secref{Pair-Valued Domains}}.
+\begin{code}
+    der eval (f,a)
+==  derl eval (f,a) ||| derr eval (f,a)          -- method of partial derivatives
+==  der (eval . (,a)) f ||| der (eval . (f,)) a  -- |derl| and |derr| alternative definitions
+==  der (at a) f ||| der f          a            -- |eval| on functions
+==  at a ||| der f a                             -- linearity of |at a|
+==  \ (df,dx) -> df a + der f a dx               -- |(###) on linear maps|; |at| definition
+\end{code}
+Now we can complete the calculation of |eval| for |D|:
+\begin{code}
+    eval
+==  adh eval
+==  D (eval &&& der eval)                       -- definition of |adh|
+==  D (\ (f,a) -> (eval (f,a), der eval (f,a))  -- |(&&&) on functions|
+==  D (\ (f,a) -> (f a, der eval (f,a))         -- |eval| on functions
+==  D (\ (f,a) -> (f a, at a ||| der f a)       -- above
+\end{code}
+Although this final form is well-defined, it uses the noncomputable |der| and so is not a computable recipe, leaving us in a pickle.
+Let's look for some wiggle room.
+
 
 \workingHere \note{Postpone the following class/interface discussion to \secref{Object Mapping}}. \vspace{5ex}
 
@@ -384,49 +460,10 @@ from which it follows that
 ==  f c + g d
 \end{code}
 
+\workingHere
+
 Just as the |Category| and |Cartesian| instances for |D| arose from solving corresponding homomorphism equations about |adh|, let's now try the same with |CartesianClosed|.
-First note that we do not really have to define all three methods, since |eval| and |uncurry| can each be defined in terms of the other:\out{\footnote{The pattern |g *** id| is also called ``|first g|'', because it applies |g| to the first element of a pair while leaving the second element unchanged.}}
-\begin{code}
-eval = uncurry id
-uncurry g  = eval . (g *** id)
-           = eval . first g
-\end{code}
-Since |eval| looks simpler, start there.
-The corresponding homomorphism equation has a particularly simple form:
-\begin{code}
-eval = adh eval
-\end{code}
-It might appear that we are done at the start, taking the equation to be a definition for |eval|.
-Recall, however, that |adh| is noncomputable, being defined via |der| (differentiation itself).
-Let us press forward undeterred, opening up the definition of |adh| to see if we can transform away the (noncomputable) |der|:
-\begin{code}
-    adh eval
-==  D (eval &&& der eval)                        -- definition of |adh|
-==  D (\ (f,a) -> (eval (f,a), der eval (f,a))   -- |(&&&) on functions|
-==  D (\ (f,a) -> (f a, der eval (f,a))          -- |eval| on functions
-\end{code}
-Now we do not need the general |der|, but rather the specific |der eval|.
-If |eval| were linear, we could apply \thmRef{linear}, but alas it is not.
-No matter, as we can instead use the technique of partial derivatives.\notefoot{Move this calculation into a proof of a theorem stated in \secref{Pair-Valued Domains}}.
-\begin{code}
-    der eval (f,a)
-==  derl eval (f,a) ||| derr eval (f,a)          -- method of partial derivatives
-==  der (eval . (,a)) f ||| der (eval . (f,)) a  -- |derl| and |derr| alternative definitions
-==  der (at a) f ||| der f          a            -- |eval| on functions
-==  at a ||| der f a                             -- linearity of |at a|
-==  \ (df,dx) -> df a + der f a dx               -- |(###) on linear maps|; |at| definition
-\end{code}
-Now we can complete the calculation of |eval| for |D|:
-\begin{code}
-    eval
-==  adh eval
-==  D (eval &&& der eval)                       -- definition of |adh|
-==  D (\ (f,a) -> (eval (f,a), der eval (f,a))  -- |(&&&) on functions|
-==  D (\ (f,a) -> (f a, der eval (f,a))         -- |eval| on functions
-==  D (\ (f,a) -> (f a, at a ||| der f a)       -- above
-\end{code}
-Although this final form is well-defined, it uses the noncomputable |der| and so is not a computable recipe, leaving us in a pickle.
-Let's look for some wiggle room.
+%% First note that we do not really have to define all three methods, \note
 
 \sectionl{Object Mapping}
 
