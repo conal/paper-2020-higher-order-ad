@@ -146,7 +146,7 @@ Differentiation itself (i.e., |der|) is linear.
 
 One half of the |curry|/|uncurry| isomorphism involves functions of pair-valued domains.
 The notion of partial derivatives is helpful for differentiating such functions.\notefoot{I'm leaning toward eliminating |derl| and |derr| in favor of their meanings.
-Whenever I use the names below, I then immediate inline them.}\footnote{Recall that, on linear maps, |(f !!! g) (a,b) = f a + g b|.}
+Whenever I use the names below, I then immediate inline them.}\footnote{Recall that, on linear maps, |(f !!! g) (a,b) = f a + g b|, |inl a = (a,0)|, and |inr b = (0,b)|}
 \begin{theorem}[\provedIn{thm:deriv-pair-domain}]\thmLabel{deriv-pair-domain}
 Given a function |f :: a :* b -> c|, $$
 |der f (a,b) == derl f (a,b) !!! derr f (a,b)|
@@ -268,7 +268,7 @@ Thus a sufficient condition for our homomorphic specification (|curry (adh f) ==
 curry (D ff') = D (\ a -> ((\ b -> f (a,b)), forkF (\ b -> f' (a,b) . inl)))
   where (f,f') = unfork ff'
 \end{code}
-The |unfork| function is half of an isomorphism that holds for all cartesian categories.
+The |unfork| function is half of an isomorphism that holds for all cartesian categories:
 \begin{code}
 fork :: Cartesian k => (a `k` c) :* (a `k` d) -> (a `k` (c :* d))
 fork = uncurry (&&&)
@@ -347,108 +347,15 @@ eval = adh eval
 \end{code}
 It might appear that we are done at the start, taking the equation to be a definition for |eval|.
 Recall, however, that |adh| is noncomputable, being defined via |der| (differentiation itself).
-Let us press forward undeterred, opening up the definition of |adh| to see if we can transform away the (noncomputable) |der|:
+Simplifying the RHS,
 \begin{code}
     adh eval
-==  D (eval &&& der eval)                        -- definition of |adh|
-==  D (\ (f,a) -> (eval (f,a), der eval (f,a))   -- |(&&&) on functions|
-==  D (\ (f,a) -> (f a, der eval (f,a))          -- |eval| on functions
+==  D (eval &&& der eval)                        -- |adh| definition
+==  D (\ (f,a) -> (eval (f,a), der eval (f,a)))  -- |(&&&)| on functions
+==  D (\ (f,a) -> (f a, der eval (f,a)))         -- |eval| on functions
 ==  D (\ (f,a) -> (f a, at a !!! der f a))       -- \corRef{deriv-eval}
 \end{code}
-Although this final form is well-defined, it uses the noncomputable |der| and so is not a computable recipe.
-
-
-\workingHere \note{Postpone the following class/interface discussion to \secref{Object Mapping}}. \vspace{5ex}
-
-These three operations come with every \emph{cartesian closed} category:
-\begin{code}
-class Cartesian k => CartesianClosed k where
-  type ExpOp k :: Type -> Type -> Type
-  eval     :: (Prod k ((Exp k a b)) a) `k` b
-  curry    :: ((Prod k a b) `k` c) -> (a `k` (Exp k b c))
-  uncurry  :: (a `k` (Exp k b c)) -> ((Prod k a b) `k` c)
-\end{code}
-where |Exp k a b| is a type of ``exponential objects'' (first class functions/arrows) from |a| to |b| for the category |k|.
-These operations support higher-order programming and arise during translation from a typed lambda calculus (e.g., Haskell) to categorical vocabulary \citep{Elliott-2017-compiling-to-categories}.
-
-Similarly, monoidal and cartesian categories have category-associated categorical \emph{products}:
-%format MonoidalP = Monoidal
-%format MonoidalC = Monoidal'
-\begin{code}
-class Category k => MonoidalP k where
-  type ProdOp k :: Type -> Type -> Type
-  (***) :: (a `k` c) -> (b `k` d) -> ((Prod k a b) `k` (Prod k c d))  -- product bifunctor
-
-class Monoidal k => Cartesian k where
-  exl  :: (Prod k a b) `k` a
-  exr  :: (Prod k a b) `k` b
-  dup  :: a `k` (Prod k a a)
-\end{code}
-A particularly important related operation:
-\begin{code}
-(&&&) :: Cartesian k => (a `k` c) -> (a `k` d) -> (a `k` (Prod k c d))
-f &&& g = (f *** g) . dup
-\end{code}
-For functions and linear maps, the categorical product is the usual cartesian product, and product operations defined as follows:\footnote{These method definitions are written as if linear maps were represented by functions that happen to be linear. Other representations will be useful as well, with method definitions specified again via simple, regular homomorphism equations \citep{Elliott-2018-ad-icfp}.}
-\begin{code}
-(f *** g) (a,b) = (f a, g b)
-exl  (a,b) = a
-exr  (a,b) = b
-dup a = (a,a)
-\end{code}
-Hence
-\begin{code}
-    (f &&& g) a
-==  ((f *** g) . dup) a
-==  (f *** g) (dup a)
-==  (f *** g) (a,a)
-==  (f a, g a)
-\end{code}
-
-Dually, we have monoidal and cocartesian categories with associated categorical ``coproducts'':
-\begin{code}
-class Category k => MonoidalC k where
-  type CoprodOp k :: Type -> Type -> Type
-  (+++) :: (a `k` c) -> (b `k` d) -> ((Coprod k a b) `k` (Coprod k c d))  -- coproduct bifunctor
-
-class MonoidalC k => Cocartesian k where
-  inl  :: a `k` (Coprod k a b)
-  inr  :: b `k` (Coprod k a b)
-  jam  :: (Coprod k a a) `k` a
-
-(!!!) :: Cocartesian k => (c `k` a) -> (d `k` a) -> ((Coprod k c d) `k` a)
-f !!! g = jam . (f +++ g)
-\end{code}
-In this paper we will be working in the setting of \emph{biproducts}, where products and coproducts coincide.\footnote{More precisely, linear maps (in all representations) form a biproduct category, but we will not use coproducts with functions or (computably) differentiable functions.
-Coproducts are useful in defining a simple, dualized linear map category that yields reverse mode AD when used with the single, general AD algorithm.}
-The corresponding bifunctor operations |(:+)| and |(:*)| thus also coincide:
-\begin{code}
-class MonoidalP k => Cocartesian k where
-  inl  :: a `k` (Prod k a b)
-  inr  :: b `k` (Prod k a b)
-  jam  :: (Prod k a a) `k` a
-
-(!!!) :: (c `k` a) -> (d `k` a) -> ((Prod k c d) `k` a)
-f !!! g = jam . (f *** g)
-\end{code}
-For the category of linear maps and vector spaces (or semimodules) over a specified scalar type,
-\begin{code}
-inl  a = (a,0)
-inr  b = (0,b)
-jam (a,a') = a + a'
-\end{code}
-from which it follows that
-\begin{code}
-    (f !!! g) (c,d)
-==  jam ((f *** g) (c,d))
-==  jam (f c, c d)
-==  f c + g d
-\end{code}
-
-\workingHere
-
-Just as the |Category| and |Cartesian| instances for |D| arose from solving corresponding homomorphism equations about |adh|, let's now try the same with |CartesianClosed|.
-%% First note that we do not really have to define all three methods, \note
+As with uncurrying (\secref{Uncurry}), the final form is well-defined but is not a computable recipe.
 
 \sectionl{Object Mapping}
 
