@@ -408,6 +408,8 @@ The RHS |curry| (on functions) has type |(a :* b -> c) -> (a -> b -> c)|, while 
 ==  D (Exp D (O a :* O b) (O c)) (Exp D (O a) (Exp D (O b) (O c)))
 \end{code}
 
+\note{Oops. I wanted |eval|, note |curry|}
+
 \workingHere
 
 To make |eval| on |D| computable, choose |Exp D u v = D u v| as mentioned above.
