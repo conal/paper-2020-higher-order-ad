@@ -49,6 +49,7 @@ Conal Elliott
 %% ...
 %% \end{abstract}
 
+
 \sectionl{Introduction}
 
 This note picks up where \cite{Elliott-2018-ad-icfp} left off, and I assume the reader to be familiar with that paper and have it close at hand.
@@ -126,6 +127,7 @@ For all linear functions |f|, $$|der f a == f|$$
 \end{quotation}
 \noindent
 In addition to these three theorems, we need a collection of facts about the derivatives of various mathematical operations, e.g., |adh sin x = scale (cos x)|, where |scale :: a -> a :-* a| is uncurried scalar multiplication (so |scale s| is linear for all |s|).
+
 
 \sectionl{Some Additional Properties of Differentiation}
 
@@ -246,7 +248,7 @@ eval == adh eval
 \end{code}
 As usual, we'll want to solve each homomorphism equation for its single unknown, which is a categorical operation on |D| (on the LHS).
 
-\subsectionl{Currying}
+\subsectionl{Curry}
 
 Start with |curry|, simplifying the LHS:
 \begin{code}
@@ -325,7 +327,7 @@ Then the RHS:
 ==  D (uncurry g &&& der (uncurry g))                       -- |adh| definition
 ==  D (\ (a,b) -> (uncurry g (a,b), der (uncurry g) (a,b))  -- |(&&&)| definition
 ==  D (\ (a,b) -> (g a b, der (uncurry g) (a,b))            -- |uncurry| on functions
-==  D (\ (a,b) -> (g a b, at b . der g a !!! der (g a) b)   -- \corRef{deriv-uncurry}
+==  D (\ (a,b) -> (g a b, at b . der g a !!! der (g a) b))  -- \corRef{deriv-uncurry}
 \end{code}
 Now we have a problem with solving the defining homomorphism above .
 Although we can extract |g| and |der g| from |adh g|, we cannot extract |der (g a)|.
@@ -355,35 +357,59 @@ Simplifying the RHS,
 ==  D (\ (f,a) -> (f a, der eval (f,a)))         -- |eval| on functions
 ==  D (\ (f,a) -> (f a, at a !!! der f a))       -- \corRef{deriv-eval}
 \end{code}
-As with uncurrying (\secref{Uncurry}), the final form is well-defined but is not a computable recipe.
+As with uncurrying (\secref{Uncurry}), the final form is well-defined but is not a computable recipe, leaving us in a pickle.
+Let's look for some wiggle room.
+
 
 \sectionl{Object Mapping}
 
-The choice of category-associated products and exponentials is a degree of freedom not exercised in the development of AD in \cite{Elliott-2018-ad-icfp} and one that is tied closely to another such choice available in the general notion of \emph{cartesian closed functor} in category theory.
+The choice of category-associated products and exponentials is a degree of freedom not exercised in the development of AD in \cite{Elliott-2018-ad-icfp} (or above) and is tied closely to another such choice available in the general notion of \emph{cartesian closed functor} in category theory.
 In general, a functor has two aspects:
 \begin{itemize}
 \item a mapping from arrows to arrows, and
 \item a mapping from objects to objects.
 \end{itemize}
-The functor |adh| defined (noncomputably) above implicitly chooses an \emph{identity object mapping}, as evident in its type signature |adh :: (a -> b) -> D a b|.\out{\notefoot{Rewrite this section more clearly.}}
-
-Recall the types of |eval| and |adh|:
-\begin{code}
-eval :: CartesianClosed k => (Prod k ((Exp k a b)) a) `k` b
-\end{code}
-This type of |adh| plus the requirement that it be a cartesian \emph{closed} functor implies that the object mapping aspect of |adh| is the identity, and in particular |Exp D u v = u -> v|.
-It is this final conclusion that puts us in the pickle noted above, namely the need to compute the noncomputable.
-We can, however, make this impossible task trivial by building the needed derivative into |Exp D u v|, say by choosing |Exp D u v = D u v|.
-In this case, we must alter |adh| as well.
-Letting |O| be the object mapping aspect of the new functor |ado|,\notefoot{Experiment with different notation for |O a|, e.g., ``$\bar{a}$''.}
+The functor |adh| defined (noncomputably) above implicitly chooses an \emph{identity object mapping}, as evident in its type signature |adh :: (a -> b) -> D a b|.
+The type of |adh| plus the requirement that it be a cartesian \emph{closed} functor implies that the object mapping aspect of |adh| is the identity.
+More generally, we can define an object mapping |O :: Type -> Type| for a new functor |ado|:\notefoot{Experiment with different notation for |O a|, e.g., ``$\bar{a}$''.}
 \begin{code}
 ado :: (a -> b) -> D (O a) (O b)
 \end{code}
+Each cartesian category |k| has its own notion of categorical product |Prod k a b| (satisfying a universality property), and similarly for cocartesian categories (with categorical products and coproducts coinciding for biproduct categories).
+Likewise, each cartesian \emph{closed} category |k| has its own notion of \emph{exponential} objects |Exp k a b|.
+
+The generalized interface for cartesian closed categories with per-category exponentials is as follows:\footnote{These operations support higher-order programming and arise during translation from a typed lambda calculus (e.g., Haskell) to categorical vocabulary \citep{Elliott-2017-compiling-to-categories}.}
+\begin{code}
+class Cartesian k => CartesianClosed k where
+  infixrQ 1 (ExpOp k)
+  type (ExpOp k) :: Type -> Type -> Type
+  curry    :: ((Prod k a b) `k` c) -> (a `k` (Exp k b c))
+  uncurry  :: (a `k` (Exp k b c)) -> ((Prod k a b) `k` c)
+  eval     :: (Prod k ((Exp k a b)) a) `k` b
+\end{code}
+where |Exp k a b| is a type of ``exponential objects'' (first class functions/arrows) from |a| to |b| for the category |k|.
+
 The property of being a closed cartesian functor requires |O| to preserve categorical products and exponentials, i.e.,
 \begin{code}
 O (a  :*  b) == Prod D  (O a)  (O b)
 O (a  ->  b) == Exp  D  (O a)  (O b)
 \end{code}
+
+The usual notion of cartesian products are working fine, so we'll continue to choose |Prod D a b = a :* b|.
+\out{The ability to choose |Exp D a b|, however, may solve the computability trouble we ran into with |uncurry| and |eval| in \secreftwo{Uncurry}{Eval}.}
+While |adh| being a closed cartesian functor (CCF) from |(->)| to |D| implies an noncomputable |eval| and |uncurry| (\secreftwo{Uncurry}{Eval}), our goal is to define |ExpOp D| and |ado| such that |ado| is a CCF with computable operations.
+
+Consider again the homomorphic specification for |curry| (part of the CCF definition): |curry = ado curry|.
+The RHS |curry| (on functions) has type |(a :* b -> c) -> (a -> b -> c)|, while the RHS |curry| (on |D|) has type
+\begin{code}
+    D (O (a :* b -> c)) (O (a -> b -> c))
+==  D (Exp D (O (a :* b)) (O c)) (Exp D (O a) (O (b -> c)))
+==  D (Exp D (O a :* O b) (O c)) (Exp D (O a) (O (b -> c)))
+==  D (Exp D (O a :* O b) (O c)) (Exp D (O a) (Exp D (O b) (O c)))
+\end{code}
+
+\workingHere
+
 To make |eval| on |D| computable, choose |Exp D u v = D u v| as mentioned above.
 Additionally, map scalars to themselves and cartesian products to cartesian products:
 \begin{code}
@@ -443,8 +469,11 @@ A bit of equational reasoning shows that |wrapO| and |unwrapO| form an isomorphi
 The cartesian category operations already defined |D| \citep{Elliott-2018-ad-icfp} are solutions to homomorphism equations saying that |adh| is a cartesian functor.
 Thanks to the simple, regular structure of |toO| and |unO|, |ado| is a cartesian functor as well (\proofRef{ado-cartesian}).
 
+
 % \sectionl{A cartesian closed category of computably differentiable functions}
 \sectionl{Cartesian Closed}
+
+\note{Rename this section.}
 
 What about exponentials and cartesian \emph{closure}?
 As mentioned above, we'll choose |Exp D u v = D u v|.
