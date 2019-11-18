@@ -236,7 +236,7 @@ $$ |der (curry f) a == forkF (derl f . (a,))| $$
 \end{corollary}
 
 
-\sectionl{Cartesian Closure}
+\sectionl{Cartesian Closure, first attempt}
 
 While |D| is a category and a \emph{cartesian} category at that, as specified by |adh| being a cartesian functor, another question naturally arises.
 Can |adh| also be a cartesian \emph{closed} functor?
@@ -399,20 +399,18 @@ The usual notion of cartesian products are working fine, so we'll continue to ch
 \out{The ability to choose |Exp D a b|, however, may solve the computability trouble we ran into with |uncurry| and |eval| in \secreftwo{Uncurry}{Eval}.}
 While |adh| being a closed cartesian functor (CCF) from |(->)| to |D| implies an noncomputable |eval| and |uncurry| (\secreftwo{Uncurry}{Eval}), our goal is to define |ExpOp D| and |ado| such that |ado| is a CCF with computable operations.
 
-Consider again the homomorphic specification for |curry| (part of the CCF definition): |curry = ado curry|.
-The RHS |curry| (on functions) has type |(a :* b -> c) -> (a -> b -> c)|, while the RHS |curry| (on |D|) has type
+Consider again the homomorphic specification for |curry| (part of the CCF definition): |eval = ado eval|.
+The RHS |eval| (on functions) has type |(a -> b) :* a -> b|, while the RHS |eval| (on |D|) has type
 \begin{code}
-    D (O (a :* b -> c)) (O (a -> b -> c))
-==  D (Exp D (O (a :* b)) (O c)) (Exp D (O a) (O (b -> c)))
-==  D (Exp D (O a :* O b) (O c)) (Exp D (O a) (O (b -> c)))
-==  D (Exp D (O a :* O b) (O c)) (Exp D (O a) (Exp D (O b) (O c)))
+    D (O ((a -> b) :* a)) (O b)
+==  D (O (a -> b) :* O a) (O b)
+==  D ((Exp D (O a) (O b)) :* O a) (O b)
 \end{code}
+The difficulty with our attempt at |eval| in \secref{Eval} was that we were given a function |f|, but we also needed its derivative |der f|.
+Similarly, with |uncurry| in \secref{Uncurry}, we were given |g :: a -> b -> c|, and we needed not only |g a| but also |der (g a)|.
+In both cases the exponential object was a function, but we also needed its (computable) derivative.
 
-\note{Oops. I wanted |eval|, note |curry|}
-
-\workingHere
-
-To make |eval| on |D| computable, choose |Exp D u v = D u v| as mentioned above.
+This analysis suggests that we include a derivative in the exponential object, simply by choosing |ExpOp D| to be |D| itself.
 Additionally, map scalars to themselves and cartesian products to cartesian products:
 \begin{code}
 O R == R
@@ -449,16 +447,19 @@ instance (HasO a, HasO b) => HasO (a :* b) where
   toO  = toO  ***  toO
   unO  = unO  ***  unO
 \end{code}
-The new functor |ado| converts its given |a -> b| to |O a -> O b| and then applies the |adh| functor:
+The new functor |ado| converts its given |a -> b| to |O a -> O b| and then applies the |adh| functor:\notefoot{I've forgotten why I introduced |(+=>)| here.}
 %format wrapO = wrap"_o"
 %format wrapO = wrap
 %format unwrapO = "\inv{"wrapO"}"
 \begin{code}
+(+=>) :: (p' -> p) -> (q -> q') -> ((p -> q) -> (p' -> q'))
+f +=> h = \ g -> h . g . f
+
 wrapO :: (a -> b) -> (O a -> O b)
-wrapO f = toO . f . unO
+wrapO = unO +=> toO
 
 unwrapO :: (O a -> O b) -> (a -> b)
-unwrapO h = unO . h . toO
+unwrapO = toO +=> unO
 
 ado :: (a -> b) -> D (O a) (O b)
 ado = adh . wrapO
@@ -466,41 +467,70 @@ ado = adh . wrapO
 unado :: D (O a) (O b) -> (a -> b)
 unado = unwrapO . unadh
 \end{code}
-A bit of equational reasoning shows that |wrapO| and |unwrapO| form an isomorphism (\proofRef{wrapO-iso}), as do |ado| and |unado| (\proofRef{ado-iso}).
+\begin{theorem}[\provedIn{wrapO-iso}]\thmLabel{wrapO-iso}
+|wrapO| and |unwrapO| form a linear isomorphism.
+\end{theorem}
+\begin{theorem}[\provedIn{ado-iso}]\thmLabel{ado-iso}
+|ado| and |unado| form a linear isomorphism.
+\end{theorem}
+Another useful property:
+\begin{theorem}[\provedIn{wrapO-curry}]\thmLabel{wrapO-curry}
+$$|wrapO (curry f) == curry (wrapO f)|$$
+\end{theorem}
 
-The cartesian category operations already defined |D| \citep{Elliott-2018-ad-icfp} are solutions to homomorphism equations saying that |adh| is a cartesian functor.
-Thanks to the simple, regular structure of |toO| and |unO|, |ado| is a cartesian functor as well (\proofRef{ado-cartesian}).
-
-
-% \sectionl{A cartesian closed category of computably differentiable functions}
-\sectionl{Cartesian Closed}
-
-\note{Rename this section.}
+The cartesian category operations already defined on |D| \citep{Elliott-2018-ad-icfp} are solutions to homomorphism equations saying that |adh| is a cartesian functor.
+Thanks to the simple, regular structure of |toO| and |unO|, |ado| is a cartesian functor as well:
+\begin{theorem}[\provedIn{thm:ado-cartesian}]\thmLabel{ado-cartesian}
+|ado| is a cartesian functor.
+\end{theorem}
 
 What about exponentials and cartesian \emph{closure}?
-As mentioned above, we'll choose |Exp D u v = D u v|.
-Requiring |ado| to be a cartesian closed \emph{functor} necessitates that |O (a -> b) == Exp D (O a) (O b) == D (O a) (O b)|, which suggests using |ado| and |unado| for |toO| and |unO|:
+As mentioned above, |O (a -> b) == Exp D (O a) (O b) == D (O a) (O b)|, which suggests using |ado| and |unado| for |toO| and |unO|:
 \begin{code}
 instance (HasO a, HasO b) => HasO (a -> b) where
   type O (a -> b) = D (O a) (O b)
   toO  = ado
   unO  = unado
 \end{code}
-For a |CartesianClosed| instance, we'll need to define |curry| and |eval|.
-We don't have definitions from \cite{Elliott-2018-ad-icfp} to imitate and verify this time, so we have to discover new ones by solving the homomorphism equations.
-For |eval|, the homomorphism equation is |eval == ado eval|, which is already a definition but not a computable one (since |ado| involves |adh|, which involves |der|, i.e., differentiation).
-The choice of |toO = ado| enables a computable solution (\proofRef{ado-eval}):
+Let's now try to solve the CCF equations for |ado|.
+This time begin with |eval|:
+\begin{theorem}[\provedIn{thm:ado-eval}] \thmLabel{ado-eval}
+With the following (effective) definition of |eval| on |D|, |eval == ado eval|:
 \begin{code}
 eval = D (\ (D h,a) -> let (b,f') = h a in (b, at a . unadh !!! f'))
 \end{code}
+\end{theorem}
+For |uncurry|, this time let's use the standard definition |uncurry g = eval . first g|.
 
-Next consider currying.
-The homomorphism equation is |curry (ado f) == ado (curry f)|, to be solved for the unknown LHS |curry| (on |D|).
+The definition of |curry| in \secref{Curry} worked fine, but we'll need to check again, as we did with the cartesian category operations (\thmRef{ado-cartesian}).
+The homomorphism equation is |curry (ado f) == ado (curry f)|, to be solved for the unknown LHS |curry| (on |D|), with |f :: a :* b -> c|.
+Simplify the LHS:
+\begin{code}
+    curry (ado f)
+==  curry (adh (wrap f))  -- |ado| definition
+==  curry (adh (toO . f . unO))  -- |wrap| definition
+==  curry (adh (toO . f . (unO *** unO)))  -- |unO| for pairs
+==  curry (\ (a,b) -> ((toO . f . (unO *** unO)) (a,b), der (toO . f . (unO *** unO)) (a,b)))
+==  curry (\ (a,b) -> (toO (f (unO a, unO b)), der (toO . f . (unO *** unO)) (a,b)))
+==  curry (\ (a,b) -> (toO (f (unO a, unO b)), der toO (f (unO a, unO b)) . der (f . (unO *** unO)) (a,b)))
+==  curry (\ (a,b) -> (toO (f (unO a, unO b)), toO . der (f . (unO *** unO)) (a,b)))
+==  curry (\ (a,b) -> (toO (f (unO a, unO b)), toO . der f (unO a, unO b) . der (unO *** unO) (a,b)))
+==  curry (\ (a,b) -> (toO (f (unO a, unO b)), toO . der f (unO a, unO b) . (unO *** unO)))
+\end{code}
+\note{Add justifications.}
+\note{I might not need all this detail. For instance, maybe omit |unO = unO *** unO|.}
+Then the RHS:
+\begin{code}
+    ado (curry f)
+==  adh (wrapO (curry f))              -- |ado| definition
+==  adh (toO . curry f . unO)          -- |wrapO| definition
+==  adh (ado . curry f . unO)          -- |toO| on |b -> c|
+==  adh (adh . wrapO . curry f . unO)  -- |ado| definition
+==  adh (adh . curry (wrapO f))        -- see below
+==  ...
+\end{code}
 
-\note{Maybe introduce |curry| earlier before |eval|.
-I think it's computable with |adh|, though |eval| isn't.
-I can get some of the preparatory work done.}
-
+\workingHere
 
 \sectionl{Related Work}
 
@@ -599,7 +629,7 @@ Alternatively, calculate |der eval| via |uncurry|:
 \end{code}
 
 
-\subsection{|wrapO| as Isomorphism}\proofLabel{wrapO-iso}
+\subsection{\thmRef{wrapO-iso}}\proofLabel{wrapO-iso}
 
 The functions |wrapO| and |unwrapO| form an isomorphism:
 \begin{code}
@@ -618,7 +648,14 @@ The functions |wrapO| and |unwrapO| form an isomorphism:
 ==  h                              -- |id| is identity for |(.)|
 \end{code}
 
-\subsection{|ado| as Isomorphism}\proofLabel{ado-iso}
+Linearity of |wrapO| and |unwrapO| follows from two facts:
+\begin{itemize}
+\item |(NOP . f)| is linear for all |f|.
+\item |(g . NOP)| is linear for all \emph{linear} |g|.
+\end{itemize}
+Proof: exercise.
+
+\subsection{\thmRef{ado-iso}}\proofLabel{ado-iso}
 
 The functions |ado| and |unado| form an isomorphism:
 \begin{code}
@@ -633,7 +670,9 @@ The functions |ado| and |unado| form an isomorphism:
 ==  id                             -- |unadh . adh == id|
 \end{code}
 
-\subsection{|ado| as Cartesian Functor}\proofLabel{ado-cartesian}
+Linearity of |ado| and |unado| follows from linearity of |adh| and |unadh| and \thmRef{wrapO-iso}.
+
+\subsection{\thmRef{ado-cartesian}}\proofLabel{thm:ado-cartesian}
 
 Given the cartesian category operations already defined on |D|, |ado| is also a cartesian functor \citep{Elliott-2018-ad-icfp}.
 The proofs mainly exploit the regular structure of |toO| and |unO|:
@@ -688,7 +727,7 @@ The proofs mainly exploit the regular structure of |toO| and |unO|:
 ==  dup                                              -- |adh| is a cartesian functor
 \end{code}
 
-\subsection{|ado| and |eval|}\proofLabel{ado-eval}
+\subsection{|ado| and |eval|}\proofLabel{thm:ado-eval}
 
 The homomorphism equation is |eval == ado eval|.
 Simplifying the RHS,
@@ -729,6 +768,8 @@ Letting |D h = fh|, we have
 h a  == (unadh fh &&& der (unadh fh)) a
      == (unadh fh a, der (unadh fh) a)
 \end{code}
+
+
 A bit of refactoring then replaces |unadh fh a| and (the noncomputable) |der (unadh fh a)|, yielding a \emph{computable} form:
 \begin{code}
     ado eval

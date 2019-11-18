@@ -23,9 +23,7 @@
 
 %format == = =
 
-%format ==> = "\Longrightarrow"
-%format <== = "\Longleftarrow"
-%format <==> = "\Longleftrightarrow"
+%format +=> = "\Rightarrow"
 
 \nc\inv[1]{#1^{\scriptscriptstyle -1}}
 
@@ -41,6 +39,9 @@
 %else
 %format QQ = "\!"
 %endif
+
+%% For parsing tricky infix operators
+%format infixrQ p (op) = infixr p op
 
 %format :-* = "\multimap"
 %format der = "\mathcal{D}"
@@ -71,9 +72,9 @@
 %% %format Prod (k) a b = a "\times\scr{-0.4ex}{k}" b
 %% %format (Exp (k) a b) = a "\Rightarrow\scr{-0.2ex}{k}" b
 
-%format ProdOp k = "(\mathbin{" :* "_{"k"}})"
-%format CoprodOp k = "(\mathbin{" :+ "_{"k"}})"
-%format ExpOp  k = "(\mathbin{" :=> "_{"k"}})"
+%format ProdOp k = "\mathbin{" :* "_{"k"}}"
+%format CoprodOp k = "\mathbin{" :+ "_{"k"}}"
+%format ExpOp  k = "\mathbin{" :=> "_{"k"}}"
 
 %format Prod   k (a) (b) = a "\mathbin{" :*  "_{\!"k"}}" b
 %format Coprod k (a) (b) = a "\mathbin{" :+  "_{\!"k"}}" b

@@ -1,3 +1,5 @@
+% -*- latex -*-
+
 %% Discarded text, saved here in case some is useful later.
 
 \begin{code}
@@ -282,3 +284,22 @@ from which it follows that
 Just as the |Category| and |Cartesian| instances for |D| arose from solving corresponding homomorphism equations about |adh|, let's now try the same with |CartesianClosed|.
 %% First note that we do not really have to define all three methods, \note
 
+
+Recall the types of |eval| and |adh|:
+\begin{code}
+eval :: CartesianClosed k => (Prod k ((Exp k a b)) a) `k` b
+\end{code}
+
+
+The type of |adh| plus the requirement that it be a cartesian \emph{closed} functor implies that the object mapping aspect of |adh| is the identity\out{, and in particular |Exp D u v = u -> v|}.
+
+\begin{code}
+(==>) :: (p' -> p) -> (q -> q') -> ((p -> q) -> (p' -> q'))
+f ==> h = \ g -> h . g . f
+
+wrapO :: (a -> b) -> (O a -> O b)
+wrapO = unO ==> toO
+
+unwrapO :: (O a -> O b) -> (a -> b)
+unwrapO = toO ==> unO
+\end{code}
