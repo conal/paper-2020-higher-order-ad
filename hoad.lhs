@@ -473,16 +473,18 @@ unado = unwrapO . unadh
 \begin{theorem}[\provedIn{ado-iso}]\thmLabel{ado-iso}
 |ado| and |unado| form a linear isomorphism.
 \end{theorem}
-Another useful property:
-\begin{theorem}[\provedIn{wrapO-curry}]\thmLabel{wrapO-curry}
-$$|wrapO (curry f) == curry (wrapO f)|$$
+\begin{theorem}[\provedIn{wrapO-cartesian}]\thmLabel{wrapO-cartesian}
+|wrapO| is a cartesian functor.
 \end{theorem}
+
+\workingHere
 
 The cartesian category operations already defined on |D| \citep{Elliott-2018-ad-icfp} are solutions to homomorphism equations saying that |adh| is a cartesian functor.
 Thanks to the simple, regular structure of |toO| and |unO|, |ado| is a cartesian functor as well:
-\begin{theorem}[\provedIn{thm:ado-cartesian}]\thmLabel{ado-cartesian}
+\begin{theorem}\thmLabel{ado-cartesian}
 |ado| is a cartesian functor.
 \end{theorem}
+Proof: |ado| is a cartesian functor \citep{Elliott-2018-ad-icfp}, as is |wrapO| (\thmRef{wrapO-functor}).
 
 What about exponentials and cartesian \emph{closure}?
 As mentioned above, |O (a -> b) == Exp D (O a) (O b) == D (O a) (O b)|, which suggests using |ado| and |unado| for |toO| and |unO|:
@@ -492,6 +494,12 @@ instance (HasO a, HasO b) => HasO (a -> b) where
   toO  = ado
   unO  = unado
 \end{code}
+
+Another useful property:
+\begin{theorem}[\provedIn{wrapO-curry}]\thmLabel{wrapO-curry}
+$$|wrapO (curry f) == adh . curry (wrapO f)|$$
+\end{theorem}
+
 Let's now try to solve the CCF equations for |ado|.
 This time begin with |eval|:
 \begin{theorem}[\provedIn{thm:ado-eval}] \thmLabel{ado-eval}
@@ -672,60 +680,71 @@ The functions |ado| and |unado| form an isomorphism:
 
 Linearity of |ado| and |unado| follows from linearity of |adh| and |unadh| and \thmRef{wrapO-iso}.
 
-\subsection{\thmRef{ado-cartesian}}\proofLabel{thm:ado-cartesian}
+\subsection{\thmRef{wrapO-cartesian}}\proofLabel{wrapO-cartesian}
 
-Given the cartesian category operations already defined on |D|, |ado| is also a cartesian functor \citep{Elliott-2018-ad-icfp}.
-The proofs mainly exploit the regular structure of |toO| and |unO|:
+The proof that |wrapO| is a cartesian functor mainly exploit the regular structure of |toO| and |unO|:
 
 \begin{code}
-    ado id
-==  adh (wrapO id)                                   -- |ado| definition
-==  adh (toO . id . unO)                             -- |wrapO| definition
-==  adh (toO . unO)                                  -- |id| is identity for |(.)|
-==  adh id                                           -- |toO . unO == id|
-==  id                                               -- |adh| is funtor
+    wrapO id
+==  toO . id . unO                             -- |wrapO| definition
+==  toO . unO                                  -- |id| is identity for |(.)|
+==  id                                         -- |toO . unO == id|
 
-    ado (g . f)
-==  adh (wrapO (g . f))                              -- |ado| definition
-==  adh (toO . g . f . unO)                          -- |wrapO| definition
-==  adh (toO . g . unO . toO . f . unO)              -- |unO . toO == id|
-==  adh (toO . g . unO) . adh (toO . f . unO)        -- |adh| is a functor
-==  adh (wrapO g) . adh (wrapO f)                    -- |wrapO| definition
-==  ado g . ado f                                    -- |ado| definition
+    wrapO (g . f)
+==  toO . g . f . unO                          -- |wrapO| definition
+==  toO . g . unO . toO . f . unO              -- |unO . toO == id|
+==  (toO . g . unO) . (toO . f . unO)          -- |adh| is a functor
+==  wrapO g . wrapO f                          -- |wrapO| definition
 
-    ado (f *** g)
-==  adh (wrapO (f *** g))                            -- |ado| definition
-==  adh (toO . (f *** g) . unO)                      -- |wrapO| definition
-==  adh ((toO *** toO) . (f *** g) . (unO *** unO))  -- |toO| on products
-==  adh (toO . f . unO *** toO . g . unO)            -- monoidal category law
-==  adh (toO . f . unO) *** adh (toO . g . unO)      -- |adh| is a monoidal functor
-==  adh (wrapO f) *** adh (wrapO g)                  -- |wrapO| definition
-==  ado f *** ado g                                  -- |ado| definition
+    wrapO (f *** g)                            -- |ado| definition
+==  toO . (f *** g) . unO                      -- |wrapO| definition
+==  (toO *** toO) . (f *** g) . (unO *** unO)  -- |toO| on products
+==  toO . f . unO *** toO . g . unO            -- monoidal category law
+==  toO . f . unO *** toO . g . unO            -- |adh| is a monoidal functor
+==  wrapO f *** wrapO g                        -- |wrapO| definition
 
-    ado exl
-==  adh (wrapO exl)                                  -- |ado| definition
-==  adh (toO . exl . unO)                            -- |wrapO| definition
-==  adh (toO . exl . (unO *** unO))                  -- |unO| on products
-==  adh (toO . unO . exl)                            -- |exl . (f *** g) == f . exl| for cartesian categories
-==  adh exl                                          -- |toO . unO == id|
-==  exl                                              -- |adh| is a cartesian functor                          
+    wrapO exl                                  -- |ado| definition
+==  toO . exl . unO                            -- |wrapO| definition
+==  toO . exl . (unO *** unO)                  -- |unO| on products
+==  toO . unO . exl                            -- |exl . (f *** g) == f . exl| for cartesian categories
+==  exl                                        -- |toO . unO == id|
 
-    ado exr
-==  adh (wrapO exr)                                  -- |ado| definition
-==  adh (toO . exr . unO)                            -- |wrapO| definition
-==  adh (toO . exr . (unO *** unO))                  -- |unO| on products
-==  adh (toO . unO . exr)                            -- |exr . (f *** g) == g . exr| for cartesian categories
-==  adh exr                                          -- |toO . unO == id|
-==  exr                                              -- |adh| is a cartesian functor
+    wrapO exr                                  -- |ado| definition
+==  toO . exr . unO                            -- |wrapO| definition
+==  toO . exr . (unO *** unO)                  -- |unO| on products
+==  toO . unO . exr                            -- |exr . (f *** g) == g . exr| for cartesian categories
+==  exr                                        -- |toO . unO == id|
 
-    ado dup
-==  adh (wrapO dup)                                  -- |ado| definition
-==  adh (toO . dup . unO)                            -- |wrapO| definition
-==  adh (toO . (unO *** unO) . dup)                  -- |dup . f == (f *** f) . dup| for cartesian categories
-==  adh (toO . unO . dup)                            -- |unO| on products
-==  adh dup                                          -- |toO . unO == id|
-==  dup                                              -- |adh| is a cartesian functor
+    wrapO dup                                  -- |ado| definition
+==  toO . dup . unO                            -- |wrapO| definition
+==  toO . (unO *** unO) . dup                  -- |dup . f == (f *** f) . dup| for cartesian categories
+==  toO . unO . dup                            -- |unO| on products
+==  dup                                        -- |toO . unO == id|
 \end{code}
+
+\subsection{\thmRef{wrapO-curry}}\proofLabel{wrapO-curry}
+
+\begin{code}
+    wrapO (curry f)
+==  toO . curry f . unO          -- |wrapO| definition
+==  ado . curry f . unO          -- |toO| on functions
+==  adh . wrapO . curry f . unO  -- |ado| definition
+==  adh . curry (wrapO f)        -- below
+\end{code}
+
+For this last step,
+\begin{code}
+    wrapO . curry f . unO
+==  \ a -> wrapO (curry f (unO a))          -- $\eta$ expansion
+==  \ a -> toO . curry f (unO a) . unO      -- |wrapO| definition
+==  \ a b -> toO (curry f (unO a) (unO b))  -- $\eta$ expansion
+==  \ a b -> toO (f (unO a, unO b))         -- |curry| on functions
+==  \ a b -> toO (f (unO (a,b)))            -- |unO| on pairs
+==  \ a b -> wrapO f (a,b)                  -- |wrapO| definition
+==  curry (wrapO f)                         -- |curry| on functions
+\end{code}
+
+Equivalently, |curry (wrap f) == unadh . wrap (curry f)|.\notefoot{Maybe this form will help simplify another proof.}
 
 \subsection{|ado| and |eval|}\proofLabel{thm:ado-eval}
 
