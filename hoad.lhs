@@ -170,13 +170,14 @@ If |f :: a :* b -> c| is bilinear then $$
 |der f (a,b) == f . (,b) !!! f . (a,)|
 $$
 \end{corollary}
-Proof:
+\begin{proof}~
 \begin{code}
     der f (a,b)
 ==  derl f (a,b) !!! derr f (a,b)          -- \thmRef{deriv-pair-domain}
 ==  der (f . (,b)) a !!! der (f . (a,)) b  -- |derl| and |derr| definitions
 ==  f . (,b) !!! f . (a,)                  -- linearity
 \end{code}
+\end{proof}
 For instance, the derivative of uncurried multiplication is given by the Leibniz product rule:
 \begin{code}
     der (uncurry (*)) (a,b)
@@ -499,6 +500,12 @@ Another useful property:
 \begin{theorem}[\provedIn{wrapO-curry}]\thmLabel{wrapO-curry}
 $$|wrapO (curry f) == adh . curry (wrapO f)|$$
 \end{theorem}
+\begin{corollary}\corLabel{curry-wrapO}
+$$|curry (wrapO f) == unadh . wrapO (curry f)|$$
+\end{corollary}
+\begin{proof}
+Left-compose |unadh| with both sides of \thmRef{wrapO-curry}, and reverse the equation.
+\end{proof}
 
 Let's now try to solve the CCF equations for |ado|.
 This time begin with |eval|:
@@ -530,13 +537,16 @@ Simplify the LHS:
 Then the RHS:
 \begin{code}
     ado (curry f)
-==  adh (wrapO (curry f))              -- |ado| definition
-==  adh (toO . curry f . unO)          -- |wrapO| definition
-==  adh (ado . curry f . unO)          -- |toO| on |b -> c|
-==  adh (adh . wrapO . curry f . unO)  -- |ado| definition
-==  adh (adh . curry (wrapO f))        -- see below
-==  ...
+==  adh (wrapO (curry f))                                                                      -- |ado| definition
+==  adh (adh . curry (wrapO f))                                                                -- \thmRef{wrapO-curry}
+==  D ((adh . curry (wrapO f)) &&& der (adh . curry (wrapO f)))                                -- |adh| definition
+==  D (\ a -> adh (curry (wrapO f) a), der (adh . curry (wrapO f)) a)                          -- |(&&&)| definition
+==  D (\ a -> adh (curry (wrapO f) a), der adh (curry (wrapO f) a) . der (curry (wrapO f)) a)  -- chain rule
+==  D (\ a -> adh (curry (wrapO f) a), adh . der (curry (wrapO f)) a)                          -- linearity of |adh|
 \end{code}
+
+\note{State, prove, and use a lemma about |adh (g . f) a| for linear |g| and another for linear |f|.
+Maybe also |ado (g . f) a| for linear |g| or |f|.}
 
 \workingHere
 
