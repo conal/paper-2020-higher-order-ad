@@ -447,9 +447,9 @@ instance (HasO a, HasO b) => HasO (a :* b) where
   toO  = toO  ***  toO
   unO  = unO  ***  unO
 \end{code}
-The new functor |ado| converts its given |a -> b| to |O a -> O b| and then applies the |adh| functor:\notefoot{I've forgotten why I introduced |(+=>)| here.}
-%format wrapO = wrap"_o"
-%format wrapO = wrap
+The new functor |ado| converts its given |a -> b| to |O a -> O b| and then applies the |adh| functor:\notefoot{Consider dropping the |(+=>)| definition and uses here.}
+%format wrapO = wrap"_{\!o}"
+%% %format wrapO = wrap
 %format unwrapO = "\inv{"wrapO"}"
 \begin{code}
 (+=>) :: (p' -> p) -> (q -> q') -> ((p -> q) -> (p' -> q'))
@@ -515,8 +515,8 @@ The homomorphism equation is |curry (ado f) == ado (curry f)|, to be solved for 
 Simplify the LHS:
 \begin{code}
     curry (ado f)
-==  curry (adh (wrap f))  -- |ado| definition
-==  curry (adh (toO . f . unO))  -- |wrap| definition
+==  curry (adh (wrapO f))                  -- |ado| definition
+==  curry (adh (toO . f . unO))            -- |wrapO| definition
 ==  curry (adh (toO . f . (unO *** unO)))  -- |unO| for pairs
 ==  curry (\ (a,b) -> ((toO . f . (unO *** unO)) (a,b), der (toO . f . (unO *** unO)) (a,b)))
 ==  curry (\ (a,b) -> (toO (f (unO a, unO b)), der (toO . f . (unO *** unO)) (a,b)))
@@ -744,7 +744,7 @@ For this last step,
 ==  curry (wrapO f)                         -- |curry| on functions
 \end{code}
 
-Equivalently, |curry (wrap f) == unadh . wrap (curry f)|.\notefoot{Maybe this form will help simplify another proof.}
+Equivalently, |curry (wrapO f) == unadh . wrapO (curry f)|.\notefoot{Maybe this form will help simplify another proof.}
 
 \subsection{|ado| and |eval|}\proofLabel{thm:ado-eval}
 
