@@ -153,7 +153,6 @@ Whenever I use the names below, I then immediate inline them.}\footnote{Recall t
 Given a function |f :: a :* b -> c|, $$
 |der f (a,b) == derl f (a,b) !!! derr f (a,b)|
 $$ where |derl| and |derr| construct the (``first'' and ``second'', or ``left'' and ``right'') ``partial derivatives'' of |f| at |(a,b)|, defined as follows:
-\end{theorem}
 \begin{code}
 derl :: (a :* b -> c) -> a :* b -> (a :-* c)
 derl f (a,b) = der (f . (,b)) a
@@ -162,6 +161,17 @@ derr :: (a :* b -> c) -> a :* b -> (b :-* c)
 derr f (a,b) = der (f . (a,)) b
 \end{code}
 The notation ``|(a,)|'' and ``|(b,)|'' refers to right and left ``sections'' of pairing: |(,b) a == (a,) b == (a,b)|.
+Equivalently,
+\begin{code}
+derl  f (a,b) = der f (a,b) . inl
+derr  f (a,b) = der f (a,b) . inr
+\end{code}
+\end{theorem}
+Note also that |f . (a,) = curry f a| and |f . (,b) = curry' f b|, where
+\begin{code}
+curry   f a b = f (a,b)
+curry'  f b a = f (a,b)
+\end{code}
 
 As an example of how this decomposition of |der f| helps construct derivatives, suppose that |f| is \emph{bilinear}, which is to say that |f| is linear in each argument, while holding the other constant.
 More formally |bilinearity| of |f| means that |f . (a,)| and |f . (b,)| are both linear for all |a| and |b|.
@@ -206,9 +216,8 @@ For cartesian closure, we'll need the derivative of another function with a pair
 eval :: (a -> b) :* a -> b
 eval f a = f a  -- on functions
 \end{code}
-Since |eval| is neither linear nor bilinear, we cannot apply \thmRef{deriv-linear} or \corRef{deriv-bilinear}, and if |eval| were bilinear, we could apply \corRef{deriv-bilinear}, but alas, |eval| is neither.
-
-We'll also need one more linear map operation, which is curried, reverse function application:\footnote{Linearity of |at a| follows from the usual definition of addition and scaling on functions.}
+(Note that |eval| is neither linear nor bilinear, so \thmRef{deriv-linear} and \corRef{deriv-bilinear} are both inapplicable.)
+We'll need one more linear map operation, which is curried, reverse function application:\footnote{Linearity of |at a| follows from the usual definition of addition and scaling on functions.}
 \begin{code}
 at :: a -> (a -> b) :-* b
 at a df = df a
@@ -478,7 +487,7 @@ unado = unwrapO . unadh
 |wrapO| is a cartesian functor.
 \end{theorem}
 
-\workingHere
+\note{To do: reconsider theorems vs lemmas vs corollaries. I think more lemmas.}
 
 The cartesian category operations already defined on |D| \citep{Elliott-2018-ad-icfp} are solutions to homomorphism equations saying that |adh| is a cartesian functor.
 Thanks to the simple, regular structure of |toO| and |unO|, |ado| is a cartesian functor as well:
@@ -496,7 +505,7 @@ instance (HasO a, HasO b) => HasO (a -> b) where
   unO  = unado
 \end{code}
 
-Another useful property:
+A useful consequence:
 \begin{theorem}[\provedIn{wrapO-curry}]\thmLabel{wrapO-curry}
 $$|wrapO (curry f) == adh . curry (wrapO f)|$$
 \end{theorem}
@@ -519,34 +528,40 @@ For |uncurry|, this time let's use the standard definition |uncurry g = eval . f
 
 The definition of |curry| in \secref{Curry} worked fine, but we'll need to check again, as we did with the cartesian category operations (\thmRef{ado-cartesian}).
 The homomorphism equation is |curry (ado f) == ado (curry f)|, to be solved for the unknown LHS |curry| (on |D|), with |f :: a :* b -> c|.
+First let |h = wrapO f|.
 Simplify the LHS:
 \begin{code}
     curry (ado f)
 ==  curry (adh (wrapO f))                  -- |ado| definition
-==  curry (adh (toO . f . unO))            -- |wrapO| definition
-==  curry (adh (toO . f . (unO *** unO)))  -- |unO| for pairs
-==  curry (\ (a,b) -> ((toO . f . (unO *** unO)) (a,b), der (toO . f . (unO *** unO)) (a,b)))
-==  curry (\ (a,b) -> (toO (f (unO a, unO b)), der (toO . f . (unO *** unO)) (a,b)))
-==  curry (\ (a,b) -> (toO (f (unO a, unO b)), der toO (f (unO a, unO b)) . der (f . (unO *** unO)) (a,b)))
-==  curry (\ (a,b) -> (toO (f (unO a, unO b)), toO . der (f . (unO *** unO)) (a,b)))
-==  curry (\ (a,b) -> (toO (f (unO a, unO b)), toO . der f (unO a, unO b) . der (unO *** unO) (a,b)))
-==  curry (\ (a,b) -> (toO (f (unO a, unO b)), toO . der f (unO a, unO b) . (unO *** unO)))
+==  curry (adh h)                          -- |h| definition
 \end{code}
 \note{Add justifications.}
 \note{I might not need all this detail. For instance, maybe omit |unO = unO *** unO|.}
-Then the RHS:
+Then the RHS:\notefoot{State, prove, and use a lemma about |adh (g . f) a| for linear |g| and another for linear |f|.
+Maybe also |ado (g . f) a| for linear |g| or |f|.}
 \begin{code}
     ado (curry f)
-==  adh (wrapO (curry f))                                                                      -- |ado| definition
-==  adh (adh . curry (wrapO f))                                                                -- \thmRef{wrapO-curry}
-==  D ((adh . curry (wrapO f)) &&& der (adh . curry (wrapO f)))                                -- |adh| definition
-==  D (\ a -> adh (curry (wrapO f) a), der (adh . curry (wrapO f)) a)                          -- |(&&&)| definition
-==  D (\ a -> adh (curry (wrapO f) a), der adh (curry (wrapO f) a) . der (curry (wrapO f)) a)  -- chain rule
-==  D (\ a -> adh (curry (wrapO f) a), adh . der (curry (wrapO f)) a)                          -- linearity of |adh|
+==  adh (wrapO (curry f))                                              -- |ado| definition
+==  adh (adh . curry (wrapO f))                                        -- \thmRef{wrapO-curry}
+==  adh (adh . curry h)                                                -- |h| definition
+==  D ((adh . curry h) &&& der (adh . curry h))                        -- |adh| definition
+==  D (\ a -> adh (curry h a), der (adh . curry h) a)                  -- |(&&&)| definition
+==  D (\ a -> adh (curry h a), adh . der (curry h) a)                  -- chain rule; linearity of |adh|
+==  D (\ a -> adh (curry h a), adh . forkF (derl h . (a,)))            -- \corRef{deriv-curry}
 \end{code}
 
-\note{State, prove, and use a lemma about |adh (g . f) a| for linear |g| and another for linear |f|.
-Maybe also |ado (g . f) a| for linear |g| or |f|.}
+Now, separately simplify the two main parts of this last form.
+\begin{code}
+    adh (curry h a)
+==  adh (h . (a,))
+==  D (\ b -> (h (a,b), der (h . (a,)) b))
+==  D (\ b -> (h (a,b), der h (a,b) . der (a,) b))
+==  D (\ b -> (h (a,b), der h (a,b) . inr))
+\end{code}
+\begin{code}
+    adh . forkF (derl h . (a,))
+==  ...
+\end{code}
 
 \workingHere
 
