@@ -459,6 +459,7 @@ instance (HasO a, HasO b) => HasO (a :* b) where
 \end{code}
 The new functor |ado| converts its given |a -> b| to |O a -> O b| and then applies the |adh| functor:\notefoot{Consider dropping the |(+=>)| definition and uses here.}
 %format wrapO = wrap"_{\!o}"
+%format wrapO = "\subo{"wrap"}"
 %% %format wrapO = wrap
 %format unwrapO = "\inv{"wrapO"}"
 \begin{code}
@@ -526,44 +527,64 @@ eval = D (\ (D h,a) -> let (b,f') = h a in (b, at a . unadh !!! f'))
 \end{theorem}
 For |uncurry|, this time let's use the standard definition |uncurry g = eval . first g|.
 
+%format fw = "\subo{f}"
 The definition of |curry| in \secref{Curry} worked fine, but we'll need to check again, as we did with the cartesian category operations (\thmRef{ado-cartesian}).
 The homomorphism equation is |curry (ado f) == ado (curry f)|, to be solved for the unknown LHS |curry| (on |D|), with |f :: a :* b -> c|.
-First let |h = wrapO f|.
+First let |fw = wrapO f|.
 Simplify the LHS:
 \begin{code}
     curry (ado f)
 ==  curry (adh (wrapO f))                  -- |ado| definition
-==  curry (adh h)                          -- |h| definition
+==  curry (adh fw)                         -- |fw| definition
+==  curry (D (fw &&& der fw))              -- |adh| definition
 \end{code}
-\note{Add justifications.}
-\note{I might not need all this detail. For instance, maybe omit |unO = unO *** unO|.}
 Then the RHS:\notefoot{State, prove, and use a lemma about |adh (g . f) a| for linear |g| and another for linear |f|.
 Maybe also |ado (g . f) a| for linear |g| or |f|.}
 \begin{code}
     ado (curry f)
-==  adh (wrapO (curry f))                                              -- |ado| definition
-==  adh (adh . curry (wrapO f))                                        -- \thmRef{wrapO-curry}
-==  adh (adh . curry h)                                                -- |h| definition
-==  D ((adh . curry h) &&& der (adh . curry h))                        -- |adh| definition
-==  D (\ a -> adh (curry h a), der (adh . curry h) a)                  -- |(&&&)| definition
-==  D (\ a -> adh (curry h a), adh . der (curry h) a)                  -- chain rule; linearity of |adh|
-==  D (\ a -> adh (curry h a), adh . forkF (derl h . (a,)))            -- \corRef{deriv-curry}
+==  adh (wrapO (curry f))                                      -- |ado| definition
+==  adh (adh . curry (wrapO f))                                -- \thmRef{wrapO-curry}
+==  adh (adh . curry fw)                                       -- |fw| definition
+==  D ((adh . curry fw) &&& der (adh . curry fw))              -- |adh| definition
+==  D (\ a -> adh (curry fw a), der (adh . curry fw) a)        -- |(&&&)| definition
+==  D (\ a -> adh (curry fw a), adh . der (curry fw) a)        -- chain rule; linearity of |adh|
+==  D (\ a -> adh (curry fw a), adh . forkF (derl fw . (a,)))  -- \corRef{deriv-curry}
 \end{code}
 
 Now, separately simplify the two main parts of this last form.
 \begin{code}
-    adh (curry h a)
-==  adh (h . (a,))
-==  D (\ b -> (h (a,b), der (h . (a,)) b))
-==  D (\ b -> (h (a,b), der h (a,b) . der (a,) b))
-==  D (\ b -> (h (a,b), der h (a,b) . inr))
-\end{code}
-\begin{code}
-    adh . forkF (derl h . (a,))
-==  ...
+    adh (curry fw a)
+==  D (\ b -> (fw (a,b), derr fw (a,b)))       -- |adh| definition and \thmRef{deriv-pair-domain}
 \end{code}
 
-\workingHere
+\begin{code}
+    adh . forkF (derl fw . (a,))
+==  adh . (\ da b -> (derl fw . (a,)) b da)                                         -- |forkF| definition
+==  adh . (\ da b -> derl fw (a,b) da)                                              -- |(.)| on functions
+==  \da -> adh (\ b -> derl fw (a,b) da)                                            -- |(.)| on functions
+==  \da -> adh (\ b -> at da (derl fw (a,b)))                                       -- |at| definition
+==  \da -> adh (at da . derl fw . (a,))                                             -- |(.)| on functions
+==  \da -> D (\ b -> ((at da . derl fw . (a,)) b, der (at da . derl fw . (a,)) b))  -- |adh| definition 
+==  \da -> D (\ b -> (derl fw (a,b) da, der (at da . derl fw . (a,)) b))            -- |(.)| on functions
+\end{code}
+Now simplify the remaining differentiated composition:
+\begin{code}
+    der (at da . derl fw . (a,)) b
+==  at da . der (derl fw . (a,)) b            -- chain rule; linearity of |at da|
+==  at da . der (derl fw) (a,b) . der (a,) b  -- chain rule
+==  at da . der (derl fw) (a,b) . inr         -- \note{need a lemma}
+==  at da . derr (derl fw) (a,b)              -- |derr| definition
+\end{code}
+Put the RHS pieces back together alongside the simplified LHS, we get a simplified specification for |curry| on |D|:
+\begin{code}
+    curry (D (fw &&& der fw))
+==  D  (\ a ->  (D (\ b -> (fw (a,b), derr fw (a,b)))
+                ,  \da -> D (\ b -> (derl fw (a,b) da, at da . derr (derl fw) (a,b)))))
+\end{code}
+The RHS uses |fw (a,b)| and |der fw (a,b)| (via its components |derl fw (a,b)| and |derr fw (a,b)|), but it also uses a \emph{second} partial derivative |derr (derl fw) (a,b)|, which is not available from |D (fw &&& der fw)|.
+
+\note{Reflect on what we've learned so far.}
+
 
 \sectionl{Related Work}
 
