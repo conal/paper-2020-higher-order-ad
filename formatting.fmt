@@ -53,9 +53,12 @@
 %% Why doesn't the following definition work?
 %format adh = hat(der)
 
+\nc\subo[1]{#1_{\!o}}
+
 %format adh = "\hat{"der"}"
 %format ado = der"^\circ"
 %format ado = der"_{\!o}"
+%format ado = "\subo{"der"}"
 
 %format unadh = "\inv{"adh"}"
 %format unado = "\inv{"ado"}"
