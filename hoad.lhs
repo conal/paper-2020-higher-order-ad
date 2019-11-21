@@ -174,7 +174,7 @@ curry'  f b a = f (a,b)
 \end{code}
 
 As an example of how this decomposition of |der f| helps construct derivatives, suppose that |f| is \emph{bilinear}, which is to say that |f| is linear in each argument, while holding the other constant.
-More formally |bilinearity| of |f| means that |f . (a,)| and |f . (b,)| are both linear for all |a| and |b|.
+More formally |bilinearity| of |f| means that |f . (a,)| and |f . (b,)| (equivalently, |curry f a| and |curry' f b|) are both linear for all |a| and |b|.
 \begin{corollary}\corLabel{deriv-bilinear}
 If |f :: a :* b -> c| is bilinear then $$
 |der f (a,b) == f . (,b) !!! f . (a,)|
@@ -230,7 +230,7 @@ $$ |der eval (f,a) == at a !!! der f a| $$
 
 It will also be useful to calculate derivatives of functions with higher-order codomains.\notefoot{The previous section and this one provide ``adjoint'' techniques in a sense that currying is an adjunction from functions from products to functions to functions.
 Is there something else interesting to say here?}
-We'll need anoter linear map operation, which is the indexed variant of |(&&&)|:
+We'll need another linear map operation, which is the indexed variant of |(&&&)|:
 \begin{code}
 forkF :: (b -> a :-* c) -> (a :-* b -> c)
 forkF h = \ da b -> h b da
@@ -309,10 +309,10 @@ Proof: Exercise.
 
 These two isomorphism pairs were used by \cite{Elliott-2018-ad-icfp} to construct a correct-by-construction implementation of reverse-mode AD, by merely altering the representation of linear maps used in the simple, general AD algorithm.
 
-Although |fork|/|unfork| form an isomorphism and hence preserve information, |unfork| can result in a loss of efficiency, due to computation that can be (and often is) shared between a function |f| and its derivative |der f|.
+Although |fork|/|unfork| form an isomorphism and hence preserve information, |unfork| can result in a loss of efficiency, due to computation that can be (and often is) in common to a function |f| and its derivative |der f|.
 Indeed, the definition of |unfork h| above shows that |h| gets replicated.
 It's unclear how to avoid this redundancy problem in practice with currying when |D| is used to represent computably differentiable functions.
-My own experience with compiling to categories \cite{Elliott-2017-compiling-to-categories} suggests that most uses of |curry| generated during translation from the $\lambda$ calculus (e.g., Haskell) are in fact transformed away at compile time using various equational CCC laws.
+Personal experience with compiling to categories \cite{Elliott-2017-compiling-to-categories} suggests that most uses of |curry| generated during translation from the $\lambda$ calculus (e.g., Haskell) are in fact transformed away at compile time using various equational CCC laws.
 Still, it does seem an important question to explore.
 
 Intriguingly, curried functions can also help eliminate redundant computation suggested by uncurried counterparts functions.
@@ -339,7 +339,7 @@ Then the RHS:
 ==  D (\ (a,b) -> (g a b, der (uncurry g) (a,b))            -- |uncurry| on functions
 ==  D (\ (a,b) -> (g a b, at b . der g a !!! der (g a) b))  -- \corRef{deriv-uncurry}
 \end{code}
-Now we have a problem with solving the defining homomorphism above .
+Now we have a problem with solving the defining homomorphism above.
 Although we can extract |g| and |der g| from |adh g|, we cannot extract |der (g a)|.
 Or rather we can, but not computably.
 
@@ -389,9 +389,9 @@ Each cartesian category |k| has its own notion of categorical product |Prod k a 
 Likewise, each cartesian \emph{closed} category |k| has its own notion of \emph{exponential} objects |Exp k a b|.
 
 The generalized interface for cartesian closed categories with per-category exponentials is as follows:\footnote{These operations support higher-order programming and arise during translation from a typed lambda calculus (e.g., Haskell) to categorical vocabulary \citep{Elliott-2017-compiling-to-categories}.}
+%  infixrQ 1 (ExpOp k)
 \begin{code}
 class Cartesian k => CartesianClosed k where
-  infixrQ 1 (ExpOp k)
   type (ExpOp k) :: Type -> Type -> Type
   curry    :: ((Prod k a b) `k` c) -> (a `k` (Exp k b c))
   uncurry  :: (a `k` (Exp k b c)) -> ((Prod k a b) `k` c)
