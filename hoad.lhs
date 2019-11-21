@@ -495,7 +495,7 @@ Thanks to the simple, regular structure of |toO| and |unO|, |ado| is a cartesian
 \begin{theorem}\thmLabel{ado-cartesian}
 |ado| is a cartesian functor.
 \end{theorem}
-Proof: |ado| is a cartesian functor \citep{Elliott-2018-ad-icfp}, as is |wrapO| (\thmRef{wrapO-functor}).
+Proof: |ado| is a cartesian functor \citep{Elliott-2018-ad-icfp}, as is |wrapO| (\thmRef{wrapO-cartesian}).
 
 What about exponentials and cartesian \emph{closure}?
 As mentioned above, |O (a -> b) == Exp D (O a) (O b) == D (O a) (O b)|, which suggests using |ado| and |unado| for |toO| and |unO|:
@@ -514,7 +514,7 @@ $$|wrapO (curry f) == adh . curry (wrapO f)|$$
 $$|curry (wrapO f) == unadh . wrapO (curry f)|$$
 \end{corollary}
 \begin{proof}
-Left-compose |unadh| with both sides of \thmRef{wrapO-curry}, and reverse the equation.
+Left-compose |unadh| with both sides of \thmRef{wrapO-curry}; then simplify and reverse the resulting equation.
 \end{proof}
 
 Let's now try to solve the CCF equations for |ado|.
@@ -525,7 +525,7 @@ With the following (effective) definition of |eval| on |D|, |eval == ado eval|:
 eval = D (\ (D h,a) -> let (b,f') = h a in (b, at a . unadh !!! f'))
 \end{code}
 \end{theorem}
-For |uncurry|, this time let's use the standard definition |uncurry g = eval . first g|.
+For |uncurry|, use the standard definition |uncurry g = eval . first g|.
 
 %format fw = "\subo{f}"
 The definition of |curry| in \secref{Curry} worked fine, but we'll need to check again, as we did with the cartesian category operations (\thmRef{ado-cartesian}).
@@ -571,19 +571,34 @@ Now simplify the remaining differentiated composition:
 \begin{code}
     der (at da . derl fw . (a,)) b
 ==  at da . der (derl fw . (a,)) b            -- chain rule; linearity of |at da|
-==  at da . der (derl fw) (a,b) . der (a,) b  -- chain rule
-==  at da . der (derl fw) (a,b) . inr         -- \note{need a lemma}
-==  at da . derr (derl fw) (a,b)              -- |derr| definition
+==  at da . derr (derl fw) (a,b)              -- \thmRef{deriv-pair-domain}
 \end{code}
-Put the RHS pieces back together alongside the simplified LHS, we get a simplified specification for |curry| on |D|:
+Putting the pieces back together, we get a simplified specification for |curry| on |D|:
 \begin{code}
     curry (D (fw &&& der fw))
 ==  D  (\ a ->  (D (\ b -> (fw (a,b), derr fw (a,b)))
                 ,  \da -> D (\ b -> (derl fw (a,b) da, at da . derr (derl fw) (a,b)))))
 \end{code}
-The RHS uses |fw (a,b)| and |der fw (a,b)| (via its components |derl fw (a,b)| and |derr fw (a,b)|), but it also uses a \emph{second} partial derivative |derr (derl fw) (a,b)|, which is not available from |D (fw &&& der fw)|.
+The RHS uses |fw (a,b)| and |der fw (a,b)| (via its components |derl fw (a,b)| and |derr fw (a,b)|), but it also uses a \emph{second} partial derivative |derr (derl fw) (a,b)|, which is not available from the |curry| argument |D (fw &&& der fw)|.
 
-\note{Reflect on what we've learned so far.}
+\sectionl{Where Are We?}
+
+Let's now reflect on what we've learned so far:
+\begin{itemize}
+
+\item The cartesian functor (CF) |adh :: (a -> b) -> D a b| also forms a cartesian \emph{closed} functor (CCF) with suitable definitions of |curry|, |uncurry|, and |eval|, but not computably (\secref{Cartesian Closure, first attempt}).
+More specifically, |curry| is computable, but |uncurry| and |eval| are not, since they need to synthesize derivatives of regular computable functions.
+
+\item General categorical functors can remap objects (here, types) as well as morphisms (here, functions).
+Exploiting this degree of freedom, define |ado :: (a -> b) -> D (O a) (O b)|, where |O :: Type -> Type| that replaces regular functions with computably differentiable functions, i.e., |O (u -> v) = D (O u) (O v)|.
+This new function is defined in terms of the old one, |ado = adh . wrapO|, and indeed |ado| is a CF as well.
+In the absence of higher-order functions, |O| is the identity mapping, and |ado| coincides with |adh|.
+
+\item Computably satisfying the required homomorphism properties of |ado| for |uncurry| and |eval| becomes easy, since the operations are \emph{given} the required derivatives rather than having to synthesize them.
+Unfortunately, now |curry| becomes noncomputable because it has to synthesize partial \emph{second} derivatives.
+
+\end{itemize}
+
 
 
 \sectionl{Related Work}
