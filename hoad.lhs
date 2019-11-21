@@ -431,7 +431,7 @@ O (a  ->  b) == Exp  D  (O a)  (O b)  == D (O a) (O b)
 %% \nc\toO{\Varid{obj}}
 %format toO = "\toO"
 %format unO = "\inv{\toO}"
-We will need to convert between |a| and |O a| , which we can do with a family of \emph{isomorphisms}\footnote{An implicit requirement for all |HasO| instances is thus that |toO . unO == id| and |unO . toO == id|.} indexed by |a|:\notefoot{It may be more elegant to combine the functions |toO| and |unO| into a single \emph{isomorphism}.}
+We will need to convert between |a| and |O a| , which we can do with a family of \emph{linear isomorphisms}\footnote{The implicit requirements for all |HasO| instances are thus that |toO . unO == id|, |unO . toO == id|, and |to| and |unO| are linear.} indexed by |a|:\notefoot{It may be more elegant to combine the functions |toO| and |unO| into a single \emph{isomorphism}.}
 \begin{code}
 class HasO t where
   type O t
@@ -491,11 +491,11 @@ unado = unwrapO . unadh
 \note{To do: reconsider theorems vs lemmas vs corollaries. I think more lemmas.}
 
 The cartesian category operations already defined on |D| \citep{Elliott-2018-ad-icfp} are solutions to homomorphism equations saying that |adh| is a cartesian functor.
-Thanks to the simple, regular structure of |toO| and |unO|, |ado| is a cartesian functor as well:
+Thanks to the simple, regular structure of |toO| and |unO|,
 \begin{theorem}\thmLabel{ado-cartesian}
 |ado| is a cartesian functor.
 \end{theorem}
-Proof: |ado| is a cartesian functor \citep{Elliott-2018-ad-icfp}, as is |wrapO| (\thmRef{wrapO-cartesian}).
+Proof: |adh| is a cartesian functor \citep{Elliott-2018-ad-icfp}, as is |wrapO| (\thmRef{wrapO-cartesian}), so |ado = adh . wrapO| is also.
 
 What about exponentials and cartesian \emph{closure}?
 As mentioned above, |O (a -> b) == Exp D (O a) (O b) == D (O a) (O b)|, which suggests using |ado| and |unado| for |toO| and |unO|:
