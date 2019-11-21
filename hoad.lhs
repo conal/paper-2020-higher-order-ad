@@ -599,7 +599,12 @@ Unfortunately, now |curry| becomes noncomputable because it has to synthesize pa
 
 \end{itemize}
 
+\sectionl{Higher-Order Derivatives}
 
+Where can we go from here?
+An obvious next step is to add second order derivatives to the representation of computably differentiable functions.
+It seem likely, however, the CCF specification would reveal that |curry| needs at least third order derivatives, and so on.
+Let us then consider the task of constructing \emph{all} orders of derivatives.
 
 \sectionl{Related Work}
 
