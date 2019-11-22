@@ -288,11 +288,10 @@ fork = uncurry (&&&)
 unfork :: Cartesian k => (a `k` (c :* d)) -> (a `k` c) :* (a `k` d)
 unfork h = (exl . h, exr . h)
 \end{code}
-\begin{lemma}
+\begin{lemma}\lemLabel{fork-iso}
 The pair of functions |fork| and |unfork| form a linear isomorphism.
 \end{lemma}
 Proof: Exercise.
-
 Another such linear isomorphism can be found in cocartesian categories.
 The following types are specialized to biproduct categories (such as linear maps):
 \begin{code}
@@ -302,9 +301,18 @@ join = uncurry (!!!)
 unjoin :: Cocartesian k => (a `k` (c :* d)) -> (a `k` c) :* (a `k` d)
 unjoin h = (h . inl, h . inr)
 \end{code}
-\begin{lemma}
+\begin{lemma}\lemLabel{join-iso}
 The pair of functions |join| and |unjoin| form a linear isomorphism.
 \end{lemma}
+Proof: Exercise.
+Another useful operation is the \emph{uncurried} version of the monoidal |(***)|:
+\begin{code}
+cross :: Monoidal k => (a `k` c) :* (b `k` d) -> ((a :* b) `k` (c :* d))
+cross = uncurry (***)
+\end{code}
+\begin{corollary}
+The |cross| function is linear.
+\end{corollary}
 Proof: Exercise.
 
 These two isomorphism pairs were used by \cite{Elliott-2018-ad-icfp} to construct a correct-by-construction implementation of reverse-mode AD, by merely altering the representation of linear maps used in the simple, general AD algorithm.
@@ -572,7 +580,32 @@ Unfortunately, now |curry| becomes noncomputable because it has to synthesize pa
 Where can we go from here?
 An obvious next step is to add second order derivatives to the representation of computably differentiable functions.
 It seem likely, however, the CCF specification would reveal that |curry| needs at least third order derivatives, and so on.
-Let us then consider the task of constructing \emph{all} orders of derivatives.
+In other words, differentiation of higher-order functions requires higher-order derivatives of functions.
+
+In order to construct higher-order derivatives, it will help to examine the linearity properties of our familiar categorical vocabulary, which turns out to be mostly linear with a bit of bilinearity.
+As noted in \cite{Elliott-2018-ad-icfp}, the categorical operation |id|; the cartesian operations |exl|, |exr|, |dup|; and the cocartesian operations |inl|, |inr|, and |jam| are all linear.
+\lemRefTwo{fork-iso}{join-iso} have already noted that the functions |fork| and |join| (uncurried versions of |(&&&)| and |(!!!)| (\secref{Curry}) are linear (as well as isomorphisms).
+Next, let |comp| be uncurried composition:
+\begin{code}
+comp :: Category k => (b `k` c) :* (a `k` b) -> (a `k` c)
+comp = uncurry (.)
+\end{code}
+\begin{lemma}[\provedIn{compose-linear}]\lemLabel{compose-linear}
+Function composition has the following linearity properties:
+\begin{enumerate}
+\renewcommand{\theenumi}{\roman{enumi}}
+\item |(NOP . f)| is linear for all functions |f|.
+\item |(g . NOP)| is linear for all linear functions |g|.
+\item |comp| on linear maps is bilinear.
+%% \item |(.)| is linear.
+\end{enumerate}
+\end{lemma}
+
+%format dern f (n) = f"^{("n")}"
+Let us now consider the task of constructing \emph{all} orders of derivatives.
+The |D| category encapsulates a function |f| and its first derivative, i.e., the zeroth and first derivatives of |f|, which we might write as ``|dern f 0 &&& dern f 1|''.
+Our new category will encapsulate \emph{all} derivatives of |f|, i.e., |dern f 0 &&& dern f 1 &&& dern f 2 &&& cdots|.
+
 
 \sectionl{Related Work}
 
@@ -894,5 +927,58 @@ Putting the pieces back together,
 ado (curry f) ==  D  (\ a ->  (D (\ b -> (fw (a,b), derr fw (a,b)))
                      ,  \da -> D (\ b -> (derl fw (a,b) da, at da . derr (derl fw) (a,b)))))
 \end{code}
+
+\subsection{\lemRef{compose-linear}}\proofLabel{compose-linear}
+
+\begin{enumerate}
+\renewcommand{\theenumi}{\roman{enumi}}
+
+\item |(NOP . f)| is linear for all functions |f|:
+
+\begin{code}
+    (NOP . f) (g + g')
+==  (g + g') . f                          -- left section definition
+==  \ a -> (g + g') (f a)                 -- $\eta$ expand
+==  \ a -> g (f a) + g' (f a)             -- addition on functions
+==  (\ a -> g (f a)) + (\ a -> g' (f a))  -- addition on functions
+==  (g . f) + (g' . f)                    -- |(.)| on functions
+==  (NOP . f) g + (NOP . f) g'            -- left section definition
+
+    s *. (NOP . f) g
+==  s *. (g . f)                          -- left section definition
+==  \ a -> s *. g (f a)                   -- scaling on functions
+==  \ a -> (s *. g) (f a                  -- scaling on functions
+==  (s *. g) . f                          -- |(.)| on functions
+==  (NOP . f) (s *. g)                    -- left section definition
+\end{code}
+
+\item |(g . NOP)| is linear for all linear functions |g|.
+
+\begin{code}
+    (g . NOP) (f + f')
+==  g . (f + f')                          -- right section definition
+==  \ a -> g ((f + f') a)                 -- $\eta$ expand
+==  \ a -> g (f a + f' a)                 -- addition on functions
+==  \ a -> g (f a) + g (f' a)             -- linearity of |g|
+==  (\ a -> g (f a)) + (\ a -> g (f' a))  -- addition on functions
+==  (g . f) + (g . f')                    -- |(.)| on functions
+==  (g . NOP) f + (g . NOP) f'            -- right section definition
+
+    s *. (g . NOP) f
+==  s *. (g . f)                          -- right section definition
+==  \ a -> s *. g (f a)                   -- scaling on functions
+==  \ a -> g (s *. f a)                   -- linearity of |g|
+==  \ a -> g ((s *. f) a)                 -- scaling on functions
+==  g . (s *. f)                          -- |(.)| on functions
+==  (g . NOP) (s *. f)                    -- right section definition
+\end{code}
+
+\item |comp = uncurry (.)| on linear maps is bilinear.
+
+Follows from i and ii.
+
+%% \item |(.)| is linear.
+
+\end{enumerate}
 
 \end{document}
