@@ -25,6 +25,9 @@
 
 %format +=> = "\Rightarrow"
 
+%format ldots = "\ldots"
+%format cdots = "\cdots"
+
 \nc\inv[1]{#1^{\scriptscriptstyle -1}}
 
 %format (inv a) = "\inv{"a"}"
@@ -97,3 +100,5 @@
 
 %format unfork = "\inv{"fork"}"
 %format unjoin = "\inv{"join"}"
+
+%format *. = "\cdot"
