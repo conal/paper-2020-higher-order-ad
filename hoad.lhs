@@ -601,11 +601,36 @@ Function composition has the following linearity properties:
 \end{enumerate}
 \end{lemma}
 
-These linearity properties will help re-express \thmRefTwo{deriv-compose}{deriv-cross} and related facts in a form more amenable to constructing higher derivatives:
+%format .@ = "\mathbin{\bullet}"
+%format **** = "\mathbin{\times\hspace{-1.5ex}\times}"
+%format **** = "\mathbin{\times\hspace{-2.15ex}\times\hspace{-2.15ex}\times}"
+%format &&&& = "\mathbin{\blacktriangle}"
+
+%% \note{Test: |g .@ f|, |f **** g|, |f &&&& g|.}
+
+These linearity properties will help re-express \thmRefTwo{deriv-compose}{deriv-cross} and related facts in a form more amenable to constructing higher derivatives.
+For convenience, define a few short-hands:\footnote{These types can be generalized somewhat.}
+%format g'f = g'"\hspace{-3pt}"f
+\begin{code}
+(.@) :: (a -> b :-* c) -> (a -> a :-* b) -> (a -> a :-* c)
+g'f .@ f' = comp . (g'f &&& f')
+
+(****) :: (a -> a :-* c) -> (b -> b :-* d) -> (a :* b :-* a :* b :-* c :* d)
+f' **** g' = cross . (f' *** g')
+
+(&&&&) :: (a -> a :-* c) -> (a -> a :-* d) -> (a :-* a :-* c :* d)
+f' &&&& g' = fork . (f' &&& g')
+\end{code}
 \begin{lemma}[\provedIn{deriv-pointfree}]\lemLabel{deriv-pointfree}~
+%if True
+$$|der (g . f) == (der g . f) .@ der f|$$
+$$|der (f *** g) == der f **** der g|$$
+$$|der (f &&& g) == der f &&&& der g|$$
+%else
 $$|der (g . f) == comp . (der g . f &&& der f)|$$
 $$|der (f *** g) == cross . (der f *** der g)|$$
 $$|der (f &&& g) == fork . (der f &&& der g)|$$
+%endif
 \end{lemma}
 
 %% %format dern (n) f = f"^{("n")}"
@@ -613,7 +638,7 @@ $$|der (f &&& g) == fork . (der f &&& der g)|$$
 
 Let us now consider the task of constructing \emph{all} orders of derivatives.
 The |D| category encapsulates a function |f| and its first derivative, i.e., the zeroth and first derivatives of |f|, which we might write as ``|adh f = dern 0 f &&& dern 1 f|''.
-Our new category will encapsulate \emph{all} derivatives of |f|, i.e.,
+Our new category will encapsulate \emph{all} derivatives of |f|, i.e.,\footnote{Take |&&&| to be \emph{right}-associative.}
 \begin{code}
 ders f = dern 0 f &&& dern 1 f &&& dern 2 f &&& cdots
 \end{code}
@@ -631,14 +656,69 @@ Then
 ==  f &&& ders (der f)
 \end{code}
 which we can take as a recursive definition of |ders|.
+Define a corresponding type of infinitely differentiable functions:\footnote{For notational simplicity, we'll drop the |newtype| isomorphisms.}
+%format Ds = D"^{\ast}"
+\begin{code}
+type Ds a b = a -> T a b
+
+type T a b = b :* T a (a :-* b)
+
+ders :: (a -> b) -> Ds a b
+ders f = f &&& ders (der f)
+\end{code}
+We will want to find cartesian category operations for |Ds| such that |ders| is a cartesian functor (CF).
+
+Start with the constant-zero function\footnote{As usual, types are restricted to vector spaces over a common field, which we can take to be |R|}: |zero :: a -> b|:
+\begin{code}
+    ders zero
+==  zero &&& ders (der zero)  -- |ders| definition
+==  zero &&& ders zero        -- |der zero == const zero == zero|
+==  zero &&& zero             -- coinduction
+==  zero                      -- Zero on pairs
+\end{code}
+Then constant functions more generally:
+\begin{code}
+    ders (const b)
+==  const b &&& ders (der (const b))  -- |ders| definition
+==  const b &&& ders zero             -- |der (const b) == zero|
+==  const b &&& zero                  -- above
+\end{code}
+Next, linear functions |f|:
+\begin{code}
+    ders f
+==  f &&& ders (der f)      -- |ders| definition
+==  f &&& ders (const f)    -- |f| linearity
+==  f &&& const f &&& zero  -- above
+\end{code}
+Then function compositions:
+\begin{code}
+    ders (g . f)
+==  g . f &&& ders (der (g . f))         -- |ders| definition
+==  g . f &&& ders (der g . f) .@ der f  -- \lemRef{deriv-pointfree}
+\end{code}
+Finally, |f &&& g|:
+\begin{code}
+    ders (f &&& g)
+==  (f &&& g) &&& ders (der (f &&& g))     -- |ders| definition
+==  (f &&& g) &&& ders (der f &&&& der g)  -- \lemRef{deriv-pointfree}
+\end{code}
 
 \workingHere
 
-%format &&&& = "\mathbin{\blacktriangle}"
+\sectionl{Deep Zipping}
 
-Consider also the following alternative definition:
+Consider the following alternative definition to |ders| from \secref{Higher-Order Derivatives}:
 \begin{code}
 ders' f = f &&& der (ders' f)
+
+    ders' f
+==  f &&& der (ders' f)
+==  f &&& der (f &&& der (ders' f))
+==  f &&& der f &&&& der (der (ders' f))
+
+ders' f  = f &&& der (f &&& der (f &&& ...))
+         = f &&& der f &&&& der (der (f &&& ...))
+
 
 der (f &&& g) = fork . (der f &&& der g) = der f &&&& der g
 
@@ -1058,6 +1138,7 @@ Follows from i and ii.
 ==  \ a -> comp ((der g . f) a, der f a)         -- |comp| definition
 ==  comp . (\ a -> ((der g . f) a, der f a))     -- |(.)| on functions
 ==  comp . (der g . f &&& der f)                 -- |(&&&)| definition
+==  (der g . f) &&&& der f                       -- |(&&&&)| definition
 \end{code}
 
 \begin{code}
@@ -1068,6 +1149,7 @@ Follows from i and ii.
 ==  \ (a,b) -> cross (der f a, der g b)          -- |cross| definition
 ==  \ (a,b) -> cross ((der f *** der g) (a,b))   -- |(***)| on functions
 ==  cross . (der f *** der g)                    -- |(.)| on functions
+==  der f **** der g                             -- |(****)| definition
 \end{code}
 
 \begin{code}
@@ -1080,6 +1162,7 @@ Follows from i and ii.
 ==  \ a -> der f a *** der g a . dup          -- |dup| linearity
 ==  \ a -> der f a &&& der g a                -- cartesian law
 ==  fork . (der f &&& der g)                  -- |fork| definition
+==  der f &&&& der g                          -- |(&&&&)| definition
 \end{code}
 
 \end{document}
