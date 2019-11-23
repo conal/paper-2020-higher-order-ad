@@ -601,10 +601,75 @@ Function composition has the following linearity properties:
 \end{enumerate}
 \end{lemma}
 
-%format dern f (n) = f"^{("n")}"
+These linearity properties will help re-express \thmRefTwo{deriv-compose}{deriv-cross} and related facts in a form more amenable to constructing higher derivatives:
+\begin{lemma}[\provedIn{deriv-pointfree}]\lemLabel{deriv-pointfree}~
+$$|der (g . f) == comp . (der g . f &&& der f)|$$
+$$|der (f *** g) == cross . (der f *** der g)|$$
+$$|der (f &&& g) == fork . (der f &&& der g)|$$
+\end{lemma}
+
+%% %format dern (n) f = f"^{("n")}"
+%format dern (n) = der"^{"n"}"
+
 Let us now consider the task of constructing \emph{all} orders of derivatives.
-The |D| category encapsulates a function |f| and its first derivative, i.e., the zeroth and first derivatives of |f|, which we might write as ``|dern f 0 &&& dern f 1|''.
-Our new category will encapsulate \emph{all} derivatives of |f|, i.e., |dern f 0 &&& dern f 1 &&& dern f 2 &&& cdots|.
+The |D| category encapsulates a function |f| and its first derivative, i.e., the zeroth and first derivatives of |f|, which we might write as ``|adh f = dern 0 f &&& dern 1 f|''.
+Our new category will encapsulate \emph{all} derivatives of |f|, i.e.,
+\begin{code}
+ders f = dern 0 f &&& dern 1 f &&& dern 2 f &&& cdots
+\end{code}
+where
+\begin{code}
+dern 0      f = f
+dern (n+1)  f = dern n (der f)
+\end{code}
+Then
+\begin{code}
+    ders f
+==  dern 0 f &&& dern 1 f &&& dern 2 f &&& dern 3 f &&& cdots
+==  f &&& dern 1 f &&& dern 2 f &&& dern 3 f &&& cdots
+==  f &&& dern 0 (der f) &&& dern 1 (der f) &&& dern 2 (der f) &&& cdots
+==  f &&& ders (der f)
+\end{code}
+which we can take as a recursive definition of |ders|.
+
+\workingHere
+
+%format &&&& = "\mathbin{\blacktriangle}"
+
+Consider also the following alternative definition:
+\begin{code}
+ders' f = f &&& der (ders' f)
+
+der (f &&& g) = fork . (der f &&& der g) = der f &&&& der g
+
+f :: a -> b
+
+ders f :: a -> T a b
+
+der f :: a -> a :-* b
+
+ders (der f) ::
+
+ders f :: a -> T a b
+
+der (ders f) :: a -> a :-* T a b
+
+
+
+
+der f &&& der (der f)
+
+f :: a -> b
+der f :: a -> a :-* b
+der (der f) :: a -> a :-* a :-* b
+
+der f &&& der (der f) :: a -> (a :-* b) :* (a :-* a :-* b)
+fork . (der f &&& der (der f)) :: a -> a :-* b :* (a :-* b)
+
+\end{code}
+
+
+
 
 
 \sectionl{Related Work}
@@ -980,5 +1045,41 @@ Follows from i and ii.
 %% \item |(.)| is linear.
 
 \end{enumerate}
+
+\subsection{\lemRef{deriv-pointfree}}\proofLabel{deriv-pointfree}
+
+\begin{code}
+    der (g . f)
+==  \ a -> der (g . f) a                         -- $\eta$ expand
+==  \ a -> der g (f a) . der f a                 -- chain rule (\thmRef{deriv-compose})
+==  \ a -> (der g . f) a . der f a               -- |(.)| on functions
+==  \ a -> (.) ((der g . f) a) (der f a)         -- alternative notation
+==  \ a -> uncurry (.) ((der g . f) a, der f a)  -- |uncurry| on functions
+==  \ a -> comp ((der g . f) a, der f a)         -- |comp| definition
+==  comp . (\ a -> ((der g . f) a, der f a))     -- |(.)| on functions
+==  comp . (der g . f &&& der f)                 -- |(&&&)| definition
+\end{code}
+
+\begin{code}
+    der (f *** g)
+==  \ (a,b) -> der (f *** g) (a,b)               -- $\eta$ expand
+==  \ (a,b) -> der f a *** der g b               -- cross rule (\thmRef{deriv-cross})
+==  \ (a,b) -> uncurry (***) (der f a, der g b)  -- |uncurry| on functions
+==  \ (a,b) -> cross (der f a, der g b)          -- |cross| definition
+==  \ (a,b) -> cross ((der f *** der g) (a,b))   -- |(***)| on functions
+==  cross . (der f *** der g)                    -- |(.)| on functions
+\end{code}
+
+\begin{code}
+    der (f &&& g)
+==  der ((f *** g) . dup)                     -- cartesian law
+==  \ a -> der ((f *** g) . dup) a            -- $\eta$ expand
+==  \ a -> der (f *** g) (dup a) . der dup a  -- chain rule (\thmRef{deriv-compose})
+==  \ a -> der (f *** g) (a,a) . der dup a    -- |dup| for functions
+==  \ a -> der f a *** der g a . der dup a    -- cross rule (\thmRef{deriv-cross})
+==  \ a -> der f a *** der g a . dup          -- |dup| linearity
+==  \ a -> der f a &&& der g a                -- cartesian law
+==  fork . (der f &&& der g)                  -- |fork| definition
+\end{code}
 
 \end{document}

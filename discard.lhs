@@ -303,3 +303,39 @@ wrapO = unO ==> toO
 unwrapO :: (O a -> O b) -> (a -> b)
 unwrapO = toO ==> unO
 \end{code}
+
+
+\begin{code}
+    der (f &&& g)
+==  \ a -> der (f &&& g) a                    -- $\eta$ expand
+==  \ a -> der f a &&& der g a                -- fork rule (below)
+==  \ a -> uncurry (&&&) (der f a, der g a)   -- |uncurry| on functions
+==  \ a -> fork (der f a, der g a)            -- |fork| definition
+==  \ a -> fork ((der f &&& der g) a)         -- |(&&&)| on functions
+==  fork . (der f &&& der g)                  -- |(.)| on functions
+\end{code}
+Alternative proof:
+\begin{code}
+    der (f &&& g)
+==  der ((f *** g) . dup)                     -- cartesian law
+==  \ a -> der ((f *** g) . dup) a            -- $\eta$ expand
+==  \ a -> der (f *** g) (dup a) . der dup a  -- chain rule (\thmRef{deriv-compose})
+==  \ a -> der (f *** g) (a,a) . der dup a    -- |dup| for functions
+==  \ a -> der f a *** der g a . der dup a    -- cross rule (\thmRef{deriv-cross})
+==  \ a -> der f a *** der g a . dup          -- |dup| linearity
+==  \ a -> der f a &&& der g a                -- cartesian law
+==  fork . (der f &&& der g)                  -- |fork| definition
+\end{code}
+
+Proof of the ``fork rule'':
+\begin{code}
+    der (f &&& g) a
+==  der ((f *** g) . dup) a            -- cartesian law
+==  der ((f *** g) . dup) a            -- $\eta$ expand
+==  der (f *** g) (dup a) . der dup a  -- chain rule (\thmRef{deriv-compose})
+==  der (f *** g) (a,a) . der dup a    -- |dup| for functions
+==  der f a *** der g a . der dup a    -- cross rule (\thmRef{deriv-cross})
+==  der f a *** der g a . dup          -- |dup| linearity
+==  der f a &&& der g a                -- cartesian law
+\end{code}
+
