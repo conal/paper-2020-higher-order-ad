@@ -41,6 +41,9 @@ Conal Elliott
 \nc\provedIn[1]{\textnormal{Proved in \proofRef{#1}}}
 \nc\proofLabel[1]{\label{proof:#1}}
 
+%% \renewcommand{\theenumi}{\roman{enumi}}
+\renewcommand{\theenumi}{\alph{enumi}}
+
 \begin{document}
 
 \maketitle
@@ -593,7 +596,6 @@ comp = uncurry (.)
 \begin{lemma}[\provedIn{compose-linear}]\lemLabel{compose-linear}
 Function composition has the following linearity properties:
 \begin{enumerate}
-\renewcommand{\theenumi}{\roman{enumi}}
 \item |(NOP . f)| is linear for all functions |f|.
 \item |(g . NOP)| is linear for all linear functions |g|.
 \item |comp| on linear maps is bilinear.
@@ -605,6 +607,7 @@ Function composition has the following linearity properties:
 %format **** = "\mathbin{\times\hspace{-1.5ex}\times}"
 %format **** = "\mathbin{\times\hspace{-2.15ex}\times\hspace{-2.15ex}\times}"
 %format &&&& = "\mathbin{\blacktriangle}"
+%format !!!! = "\mathbin{\blacktriangledown}"
 
 %% \note{Test: |g .@ f|, |f **** g|, |f &&&& g|.}
 
@@ -620,17 +623,24 @@ f' **** g' = cross . (f' *** g')
 
 (&&&&) :: (a -> a :-* c) -> (a -> a :-* d) -> (a :-* a :-* c :* d)
 f' &&&& g' = fork . (f' &&& g')
+
+(!!!!) :: (a -> a :-* c) -> (a -> b :-* c) -> (a :* b :-* a :* b :-* c)
+f' !!!! g' = join . (f' &&& g')
 \end{code}
 \begin{lemma}[\provedIn{deriv-pointfree}]\lemLabel{deriv-pointfree}~
-%if True
-$$|der (g . f) == (der g . f) .@ der f|$$
-$$|der (f *** g) == der f **** der g|$$
-$$|der (f &&& g) == der f &&&& der g|$$
-%else
-$$|der (g . f) == comp . (der g . f &&& der f)|$$
-$$|der (f *** g) == cross . (der f *** der g)|$$
-$$|der (f &&& g) == fork . (der f &&& der g)|$$
-%endif
+\begin{enumerate}
+\item |der (g . f) == (der g . f) .@ der f|.
+
+\item |der (f *** g) == der f **** der g|.
+
+\item |der (f &&& g) == der f &&&& der g|.
+
+\item For a \emph{linear} function |f|, |der f = const f|.
+
+\item For any function |f :: a :* b -> c|, |der f == derl f !!!! derr f|.
+
+\item For a \emph{bilinear} function |f :: a :* b -> c|, |der f == (curry' f !!!! curry f) . swap|.
+\end{enumerate}
 \end{lemma}
 
 %% %format dern (n) f = f"^{("n")}"
@@ -689,6 +699,12 @@ Next, linear functions |f|:
 ==  f &&& ders (der f)      -- |ders| definition
 ==  f &&& ders (const f)    -- |f| linearity
 ==  f &&& const f &&& zero  -- above
+\end{code}
+Then \emph{bilinear} functions |g|:
+\begin{code}
+    ders g
+==  g &&& ders (der g) -- |ders| definition
+==  ...
 \end{code}
 Then function compositions:
 \begin{code}
@@ -794,7 +810,7 @@ Likewise, |der f (a,b) . inr = der (f . (a,)) b|.
     der (uncurry g) (a,b)
 ==  derl (uncurry g) (a,b) !!! derr (uncurry g) (a,b)      -- \thmRef{deriv-pair-domain}
 ==  der (uncurry g . (,b)) a !!! der (uncurry g . (a,)) b  -- |derl| and |derr| definitions
-==  der (\ a' -> uncurry g (a',b)) a !!!                   -- $\eta$ expand and simplification
+==  der (\ a' -> uncurry g (a',b)) a !!!                   -- $\eta$ expansion and simplification
     der (\ b' -> uncurry g (a,b')) b
 ==  der (\ a' -> g a' b) a !!! der (\ b' -> g a b') b      -- |uncurry| on functions
 ==  der (at b . g) a !!! der (g a) b                       -- |at| definition and $\eta$ reduction
@@ -1076,14 +1092,13 @@ ado (curry f) ==  D  (\ a ->  (D (\ b -> (fw (a,b), derr fw (a,b)))
 \subsection{\lemRef{compose-linear}}\proofLabel{compose-linear}
 
 \begin{enumerate}
-\renewcommand{\theenumi}{\roman{enumi}}
 
 \item |(NOP . f)| is linear for all functions |f|:
 
 \begin{code}
     (NOP . f) (g + g')
 ==  (g + g') . f                          -- left section definition
-==  \ a -> (g + g') (f a)                 -- $\eta$ expand
+==  \ a -> (g + g') (f a)                 -- $\eta$ expansion
 ==  \ a -> g (f a) + g' (f a)             -- addition on functions
 ==  (\ a -> g (f a)) + (\ a -> g' (f a))  -- addition on functions
 ==  (g . f) + (g' . f)                    -- |(.)| on functions
@@ -1102,7 +1117,7 @@ ado (curry f) ==  D  (\ a ->  (D (\ b -> (fw (a,b), derr fw (a,b)))
 \begin{code}
     (g . NOP) (f + f')
 ==  g . (f + f')                          -- right section definition
-==  \ a -> g ((f + f') a)                 -- $\eta$ expand
+==  \ a -> g ((f + f') a)                 -- $\eta$ expansion
 ==  \ a -> g (f a + f' a)                 -- addition on functions
 ==  \ a -> g (f a) + g (f' a)             -- linearity of |g|
 ==  (\ a -> g (f a)) + (\ a -> g (f' a))  -- addition on functions
@@ -1130,7 +1145,7 @@ Follows from i and ii.
 
 \begin{code}
     der (g . f)
-==  \ a -> der (g . f) a                         -- $\eta$ expand
+==  \ a -> der (g . f) a                         -- $\eta$ expansion
 ==  \ a -> der g (f a) . der f a                 -- chain rule (\thmRef{deriv-compose})
 ==  \ a -> (der g . f) a . der f a               -- |(.)| on functions
 ==  \ a -> (.) ((der g . f) a) (der f a)         -- alternative notation
@@ -1143,7 +1158,7 @@ Follows from i and ii.
 
 \begin{code}
     der (f *** g)
-==  \ (a,b) -> der (f *** g) (a,b)               -- $\eta$ expand
+==  \ (a,b) -> der (f *** g) (a,b)               -- $\eta$ expansion
 ==  \ (a,b) -> der f a *** der g b               -- cross rule (\thmRef{deriv-cross})
 ==  \ (a,b) -> uncurry (***) (der f a, der g b)  -- |uncurry| on functions
 ==  \ (a,b) -> cross (der f a, der g b)          -- |cross| definition
@@ -1155,7 +1170,7 @@ Follows from i and ii.
 \begin{code}
     der (f &&& g)
 ==  der ((f *** g) . dup)                     -- cartesian law
-==  \ a -> der ((f *** g) . dup) a            -- $\eta$ expand
+==  \ a -> der ((f *** g) . dup) a            -- $\eta$ expansion
 ==  \ a -> der (f *** g) (dup a) . der dup a  -- chain rule (\thmRef{deriv-compose})
 ==  \ a -> der (f *** g) (a,a) . der dup a    -- |dup| for functions
 ==  \ a -> der f a *** der g a . der dup a    -- cross rule (\thmRef{deriv-cross})
@@ -1163,6 +1178,36 @@ Follows from i and ii.
 ==  \ a -> der f a &&& der g a                -- cartesian law
 ==  fork . (der f &&& der g)                  -- |fork| definition
 ==  der f &&&& der g                          -- |(&&&&)| definition
+\end{code}
+
+For a linear function |f|,
+\begin{code}
+    der f
+==  \ a -> der f a  -- $\eta$ expansion
+==  \ a -> f        -- \thmRef{deriv-linear}
+==  const f         -- |const| definition
+\end{code}
+
+For any function |f :: a :* b -> c|,
+\begin{code}
+    der f
+==  \ (a,b) -> der f (a,b)                    -- $\eta$ expansion
+==  \ (a,b) -> derl f (a,b) !!! derr f (a,b)  -- \thmRef{deriv-pair-domain}
+==  join . (derl f &&& derr f)                -- |join| definition
+==  derl f !!!! derr f                        -- |(!!!!)| definition
+\end{code}
+
+For a \emph{bilinear} function |f :: a :* b -> c|,
+\begin{code}
+    der f
+==  \ (a,b) -> der f (a,b)
+==  \ (a,b) -> f . (, b) !!! f . (a,)
+==  \ (a,b) -> curry' f b !!! curry f a
+==  \ (a,b) -> join (curry' f b, curry f a)
+==  \ (a,b) -> join ((curry' f &&& curry f) (b,a))
+==  (\ (b,a) -> join ((curry' f &&& curry f) (b,a))) . swap
+==  join . (curry' f &&& curry f) . swap
+==  (curry' f !!!! curry f) . swap
 \end{code}
 
 \end{document}
