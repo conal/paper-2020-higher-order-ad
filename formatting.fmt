@@ -70,7 +70,7 @@
 %format derr = der"_r"
 
 %format ders  = der"^\ast"
-%format ders' = der"_\ast"
+%format ders' = der"_{\!\ast}"
 
 %% %format :=> = "\mapsto"
 %format :=> = =>
