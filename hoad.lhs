@@ -233,7 +233,7 @@ $$ |der eval (f,a) == at a !!! der f a| $$
 
 It will also be useful to calculate derivatives of functions with higher-order codomains.\notefoot{The previous section and this one provide ``adjoint'' techniques in a sense that currying is an adjunction from functions from products to functions to functions.
 Is there something else interesting to say here?}
-We'll need another linear map operation, which is the indexed variant of |(&&&)|:
+We'll need another linear map operation, which is the indexed variant of |(&&&)| (and a specialization of Haskell's |flip| function):
 \begin{code}
 forkF :: (b -> a :-* c) -> (a :-* b -> c)
 forkF h = \ da b -> h b da
@@ -569,7 +569,7 @@ Let's now reflect on what we've learned so far:
 More specifically, |curry| is computable, but |uncurry| and |eval| are not, since they need to synthesize derivatives of regular computable functions.
 
 \item General categorical functors can remap objects (here, types) as well as morphisms (here, functions).
-Exploiting this degree of freedom, define |ado :: (a -> b) -> D (O a) (O b)|, where |O :: Type -> Type| that replaces regular functions with computably differentiable functions, i.e., |O (u -> v) = D (O u) (O v)|.
+Exploiting this degree of freedom, define |ado :: (a -> b) -> D (O a) (O b)|, where |O :: Type -> Type| replaces regular functions with computably differentiable functions, i.e., |O (u -> v) = D (O u) (O v)|.
 This new function is defined in terms of the old one, |ado = adh . wrapO|, and indeed |ado| is a CF as well.
 In the absence of higher-order functions, |O| is the identity mapping, and |ado| coincides with |adh|.
 
@@ -582,10 +582,10 @@ Unfortunately, now |curry| becomes noncomputable because it has to synthesize pa
 
 Where can we go from here?
 An obvious next step is to add second order derivatives to the representation of computably differentiable functions.
-It seem likely, however, the CCF specification would reveal that |curry| needs at least third order derivatives, and so on.
-In other words, differentiation of higher-order functions requires higher-order derivatives of functions.
+It seem likely, however, that the CCF specification would reveal that |curry| needs at least third order derivatives, and so on.
+In other words, differentiation of higher-order functions requires all higher-order derivatives of functions.
 
-In order to construct higher-order derivatives, it will help to examine the linearity properties of our familiar categorical vocabulary, which turns out to be mostly linear with a bit of bilinearity.
+In order to construct higher-order derivatives, it will help to examine the linearity properties of our familiar categorical vocabulary, which turns out to be mostly linear with just a bit of bilinearity.
 As noted in \cite{Elliott-2018-ad-icfp}, the categorical operation |id|; the cartesian operations |exl|, |exr|, |dup|; and the cocartesian operations |inl|, |inr|, and |jam| are all linear.
 \lemRefTwo{fork-iso}{join-iso} have already noted that the functions |fork| and |join| (uncurried versions of |(&&&)| and |(!!!)| (\secref{Curry}) are linear (as well as isomorphisms).
 Next, let |comp| be uncurried composition:
@@ -629,19 +629,27 @@ f' !!!! g' = join . (f' &&& g')
 \end{code}
 \begin{lemma}[\provedIn{deriv-pointfree}]\lemLabel{deriv-pointfree}~
 \begin{enumerate}
-\item |der (g . f) == (der g . f) .@ der f|.
+\item \label{deriv-pointfree-compose}
+  |der (g . f) == (der g . f) .@ der f|.
 
-\item |der (f *** g) == der f **** der g|.
+\item \label{deriv-pointfree-cross}
+  |der (f *** g) == der f **** der g|.
 
-\item |der (f &&& g) == der f &&&& der g|.
+\item \label{deriv-pointfree-fork}
+  |der (f &&& g) == der f &&&& der g|.
 
-\item For a \emph{linear} function |f|, |der f = const f|.
+\item \label{deriv-pointfree-linear}
+  For a \emph{linear} function |f|, |der f = const f|.
 
-\item For any function |f :: a :* b -> c|, |der f == derl f !!!! derr f|.
+\item \label{deriv-pointfree-pair-domain}
+  For any function |f :: a :* b -> c|, |der f == derl f !!!! derr f|.
 
-\item For a \emph{bilinear} function |f :: a :* b -> c|, |der f == (curry' f !!!! curry f) . swap|.
+\item \label{deriv-pointfree-bilinear}
+  For a \emph{bilinear} function |f :: a :* b -> c|, |der f == (curry' f !!!! curry f) . swap|.
 \end{enumerate}
 \end{lemma}
+
+\nc\lemRefPF[1]{\lemRef{deriv-pointfree}-\ref{deriv-pointfree-#1}}
 
 %% %format dern (n) f = f"^{("n")}"
 %format dern (n) = der"^{"n"}"
@@ -700,17 +708,19 @@ Next, linear functions |f|:
 ==  f &&& ders (const f)    -- |f| linearity
 ==  f &&& const f &&& zero  -- above
 \end{code}
-Then \emph{bilinear} functions |g|:
+Then \emph{bilinear} functions |f|:
 \begin{code}
-    ders g
-==  g &&& ders (der g) -- |ders| definition
-==  ...
+    ders f
+==  f &&& ders (der f)                                 -- |ders| definition
+==  f &&& ders ((curry' f !!!! curry f) . swap)        -- \lemRefPF{bilinear}
+==  f &&& ders (join . (curry' f &&& curry f) . swap)  -- |(!!!!)| definition
 \end{code}
 Then function compositions:
 \begin{code}
     ders (g . f)
-==  g . f &&& ders (der (g . f))         -- |ders| definition
-==  g . f &&& ders (der g . f) .@ der f  -- \lemRef{deriv-pointfree}
+==  g . f &&& ders (der (g . f))                   -- |ders| definition
+==  g . f &&& ders ((der g . f) .@ der f)          -- \lemRefPF{compose}
+==  g . f &&& ders (comp . (der g . f &&& der f))  -- |(.@)| definition
 \end{code}
 Finally, |f &&& g|:
 \begin{code}

@@ -46,8 +46,10 @@
 %% For parsing tricky infix operators
 %format infixrQ p (op) = infixr p op
 
+\nc\der{\mathcal{D}}
+
 %format :-* = "\multimap"
-%format der = "\mathcal{D}"
+%format der = "\der"
 %format ad = der QQ "^+\!"
 %format ad0 = der QQ"_{\scriptscriptstyle 0}\!\!^+\!"
 
@@ -58,19 +60,19 @@
 
 \nc\subo[1]{#1_{\!o}}
 
-%format adh = "\hat{"der"}"
-%format ado = der"^\circ"
-%format ado = der"_{\!o}"
-%format ado = "\subo{"der"}"
+%format adh = "\hat{\der}"
+%format ado = "\der^\circ"
+%format ado = "\der_{\!o}"
+%format ado = "\subo{\der}"
 
 %format unadh = "\inv{"adh"}"
 %format unado = "\inv{"ado"}"
 
-%format derl = der"_l"
-%format derr = der"_r"
+%format derl = "\der_l"
+%format derr = "\der_r"
 
-%format ders  = der"^\ast"
-%format ders' = der"_{\!\ast}"
+%format ders  = "\der^\ast"
+%format ders' = "\der_{\!\ast}"
 
 %% %format :=> = "\mapsto"
 %format :=> = =>
