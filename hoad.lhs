@@ -625,7 +625,7 @@ f' **** g' = cross . (f' *** g')
 f' &&&& g' = fork . (f' &&& g')
 
 (!!!!) :: (a -> a :-* c) -> (a -> b :-* c) -> (a :* b :-* a :* b :-* c)
-f' !!!! g' = join . (f' &&& g')
+f' !!!! g' = join . (f' *** g')
 \end{code}
 \begin{lemma}[\provedIn{deriv-pointfree}]\lemLabel{deriv-pointfree}~
 \begin{enumerate}
@@ -645,7 +645,8 @@ f' !!!! g' = join . (f' &&& g')
   For any function |f :: a :* b -> c|, |der f == derl f !!!! derr f|.
 
 \item \label{deriv-pointfree-bilinear}
-  For a \emph{bilinear} function |f :: a :* b -> c|, |der f == (curry' f !!!! curry f) . swap|.
+  For a \emph{bilinear} function |f :: a :* b -> c|, ...
+%% |der f == (curry' f !!!! curry f) . swap|.
 \end{enumerate}
 \end{lemma}
 
@@ -711,22 +712,31 @@ Next, linear functions |f|:
 Then \emph{bilinear} functions |f|:
 \begin{code}
     ders f
-==  f &&& ders (der f)                                 -- |ders| definition
-==  f &&& ders ((curry' f !!!! curry f) . swap)        -- \lemRefPF{bilinear}
-==  f &&& ders (join . (curry' f &&& curry f) . swap)  -- |(!!!!)| definition
+==  f &&& ders (der f)                      -- |ders| definition
+==  f &&& der f &&& const (der f) &&& zero  -- |der f| is linear
+==  f &&& f' &&& const f' &&& zero          -- \lemRefPF{bilinear}
+     where f' = (curry' f' !!!! curry f) . swap
 \end{code}
 Then function compositions:
 \begin{code}
     ders (g . f)
-==  g . f &&& ders (der (g . f))                   -- |ders| definition
-==  g . f &&& ders ((der g . f) .@ der f)          -- \lemRefPF{compose}
-==  g . f &&& ders (comp . (der g . f &&& der f))  -- |(.@)| definition
+==  g . f &&& ders (der (g . f))                                   -- |ders| definition
+==  g . f &&& ders ((der g . f) .@ der f)                          -- \lemRefPF{compose}
+==  g . f &&& ders (comp . (der g . f &&& der f))                  -- |(.@)| definition
+==  g . f &&& ders comp . ders (der g) . ders f &&& ders (der f))  -- coinduction
+==  g . f &&& comp' . ders (der g) . ders f &&& ders (der f))      -- \lemRef{compose-linear}
+     where comp' = (curry' comp !!!! curry comp) . swap
+==  g . f &&& comp' . ders (der g) . ders f &&& ders (der f))      -- |comp = uncurry (.)|
+     where comp' = (flip (.) !!!! (.)) . swap
+==  g . f &&& comp' . ders (der g) . ders f &&& ders (der f))      -- |comp = uncurry (.)|
+     where comp' = (flip (.) !!!! (.)) . swap
 \end{code}
 Finally, |f &&& g|:
 \begin{code}
     ders (f &&& g)
-==  (f &&& g) &&& ders (der (f &&& g))     -- |ders| definition
-==  (f &&& g) &&& ders (der f &&&& der g)  -- \lemRef{deriv-pointfree}
+==  (f &&& g) &&& ders (der (f &&& g))             -- |ders| definition
+==  (f &&& g) &&& ders (der f &&&& der g)          -- \lemRef{deriv-pointfree}
+==  (f &&& g) &&& ders (fork . (der f &&& der g))  -- |(&&&&)| definition
 \end{code}
 
 \workingHere
@@ -1210,14 +1220,14 @@ For any function |f :: a :* b -> c|,
 For a \emph{bilinear} function |f :: a :* b -> c|,
 \begin{code}
     der f
-==  \ (a,b) -> der f (a,b)
-==  \ (a,b) -> f . (, b) !!! f . (a,)
-==  \ (a,b) -> curry' f b !!! curry f a
-==  \ (a,b) -> join (curry' f b, curry f a)
-==  \ (a,b) -> join ((curry' f &&& curry f) (b,a))
-==  (\ (b,a) -> join ((curry' f &&& curry f) (b,a))) . swap
-==  join . (curry' f &&& curry f) . swap
-==  (curry' f !!!! curry f) . swap
+==  \ (a,b) -> der f (a,b)                                 -- $\eta$ expansion
+==  \ (a,b) -> f . (, b) !!! f . (a,)                      -- \corRef{deriv-bilinear}
+==  \ (a,b) -> curry' f b !!! curry f a                    -- section definitions
+==  \ (a,b) -> join (curry' f b, curry f a)                -- |join = uncurry (!!!)|
+==  \ (a,b) -> join ((curry' f *** curry f) (b,a))         -- |(***)| on functions
+==  \ (a,b) -> join ((curry' f *** curry f) (swap (a,b)))  -- |swap| on functions
+==  join . (curry' f *** curry f) . swap                   -- |(.)| on functions
+==  ...
 \end{code}
 
 \end{document}
