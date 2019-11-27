@@ -217,7 +217,7 @@ which agrees with the calculation above.
 For cartesian closure, we'll need the derivative of another function with a pair-valued domain:
 \begin{code}
 eval :: (a -> b) :* a -> b
-eval f a = f a  -- on functions
+eval (f,a) = f a  -- on functions
 \end{code}
 (Note that |eval| is neither linear nor bilinear, so \thmRef{deriv-linear} and \corRef{deriv-bilinear} are both inapplicable.)
 We'll need one more linear map operation, which is curried, reverse function application:\footnote{Linearity of |at a| follows from the usual definition of addition and scaling on functions.}
@@ -291,10 +291,11 @@ fork = uncurry (&&&)
 unfork :: Cartesian k => (a `k` (c :* d)) -> (a `k` c) :* (a `k` d)
 unfork h = (exl . h, exr . h)
 \end{code}
-\begin{lemma}\lemLabel{fork-iso}
+\begin{lemma}\lemLabel{fork-iso-linear}
 The pair of functions |fork| and |unfork| form a linear isomorphism.
+(Proof: Exercise.)
 \end{lemma}
-Proof: Exercise.
+
 Another such linear isomorphism can be found in cocartesian categories.
 The following types are specialized to biproduct categories (such as linear maps):
 \begin{code}
@@ -304,19 +305,19 @@ join = uncurry (!!!)
 unjoin :: Cocartesian k => (a `k` (c :* d)) -> (a `k` c) :* (a `k` d)
 unjoin h = (h . inl, h . inr)
 \end{code}
-\begin{lemma}\lemLabel{join-iso}
+\begin{lemma}\lemLabel{join-iso-linear}
 The pair of functions |join| and |unjoin| form a linear isomorphism.
+(Proof: Exercise.)
 \end{lemma}
-Proof: Exercise.
 Another useful operation is the \emph{uncurried} version of the monoidal |(***)|:
 \begin{code}
 cross :: Monoidal k => (a `k` c) :* (b `k` d) -> ((a :* b) `k` (c :* d))
 cross = uncurry (***)
 \end{code}
-\begin{corollary}
+\begin{lemma}\lemLabel{cross-linear}
 The |cross| function is linear.
-\end{corollary}
-Proof: Exercise.
+(Proof: Exercise.)
+\end{lemma}
 
 These two isomorphism pairs were used by \cite{Elliott-2018-ad-icfp} to construct a correct-by-construction implementation of reverse-mode AD, by merely altering the representation of linear maps used in the simple, general AD algorithm.
 
@@ -379,7 +380,7 @@ Simplifying the RHS,
 ==  D (\ (f,a) -> (f a, at a !!! der f a))       -- \corRef{deriv-eval}
 \end{code}
 As with uncurrying (\secref{Uncurry}), the final form is well-defined but is not a computable recipe, leaving us in a pickle.
-Let's look for some wiggle room.
+Next, let's look for some wiggle room.
 
 
 \sectionl{Object Mapping}
@@ -587,7 +588,7 @@ In other words, differentiation of higher-order functions requires all higher-or
 
 In order to construct higher-order derivatives, it will help to examine the linearity properties of our familiar categorical vocabulary, which turns out to be mostly linear with just a bit of bilinearity.
 As noted in \cite{Elliott-2018-ad-icfp}, the categorical operation |id|; the cartesian operations |exl|, |exr|, |dup|; and the cocartesian operations |inl|, |inr|, and |jam| are all linear.
-\lemRefTwo{fork-iso}{join-iso} have already noted that the functions |fork| and |join| (uncurried versions of |(&&&)| and |(!!!)| (\secref{Curry}) are linear (as well as isomorphisms).
+\lemRefTwo{fork-iso-linear}{join-iso-linear} have already noted that the functions |fork| and |join| (uncurried versions of |(&&&)| and |(!!!)| (\secref{Curry}) are linear (as well as isomorphisms).
 Next, let |comp| be uncurried composition:\notefoot{Maybe define |comp| only for linear maps.}
 \begin{code}
 comp :: Category k => (b `k` c) :* (a `k` b) -> (a `k` c)
@@ -755,7 +756,7 @@ Finally, |f &&& g|:
 ==  (f &&& g) &&& ders (der (f &&& g))                           -- |ders| definition
 ==  (f &&& g) &&& ders (fork . (der f &&& der g))                -- \lemRefPF{fork}
 ==  (f &&& g) &&& ders fork . (ders (der f) &&& ders (der g))    -- coinduction
-==  (f &&& g) &&& linear fork . (ders (der f) &&& ders (der g))  -- |fork| linearity (\lemRef{fork-iso})
+==  (f &&& g) &&& linear fork . (ders (der f) &&& ders (der g))  -- |fork| linearity (\lemRef{fork-iso-linear})
 \end{code}
 Again, the components here (|f|, |g|, |ders (der f)|, and |ders (der g)|) are all available from |ders f| and |ders g|, so we have a computable recipe for |(&&&)| on |Ds|.
 
