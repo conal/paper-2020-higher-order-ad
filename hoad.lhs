@@ -850,8 +850,9 @@ Referring to \cite{Elliott-2018-ad-icfp}, the authors write
 \begin{quotation} \noindent
 However, Elliot's approach is still restricted to first-order programs (i.e., computational graphs): as far as we understand, the functor D is cartesian but not cartesian closed, so the higher-order primitives ($\lambda$-abstraction and application) lack a satisfactory treatment. This is implicit in Sect. 4.4 of \cite{Elliott-2018-ad-icfp}, where the author states that he only uses biproduct categories: it is well-known that non-trivial cartesian closed biproduct categories do not exist.
 \end{quotation}
-The confusion here---which was mistakenly encouraged by \cite{Elliott-2018-ad-icfp}---is the idea that the category of differentiable functions itself is a biproduct category.
-Rather, all that was needed is that the various representations linear maps (derivatives) are biproduct categories, which is easily satisfied.
+The confusion here---which was mistakenly encouraged by \cite{Elliott-2018-ad-icfp}---is the idea that the category of differentiable functions itself is (or need be) a biproduct category.
+Rather, all that was needed is that the various representations \emph{linear maps} (derivatives) are biproduct categories.
+This requirement is satisfied by construction, since the various representations are all calculated from their denotation (linear functions, itself a biproduct category) via simple cocartesian functors.
 
 \bibliography{bib}
 
