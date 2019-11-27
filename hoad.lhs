@@ -11,6 +11,9 @@
 
 \author{Conal Elliott}
 
+\usepackage{datetime}
+\usdate
+
 \nc\tit{Higher-Order, Higher-Order Automatic Differentiation}
 
 \usepackage{fancyhdr}
@@ -31,9 +34,11 @@ Conal Elliott
 \usepackage[round]{natbib}  % square
 \bibliographystyle{plainnat}
 
-\title{\tit \emph{\\[1.5ex] \Large (early draft---comments invited\notefoot{Add GitHub link here for latest version, and welcome issues and even pull requests.})}}
+\title{\tit \emph{\\[1.5ex] \Large (early, incomplete draft---comments invited\notefoot{Add GitHub link here for latest version, and welcome issues and even pull requests.})}}
 
-\date{\today}
+\date{Draft of \today{} \currenttime}
+
+%% \date{\today}
 
 \setlength{\blanklineskip}{2ex} % blank lines in code environment
 
