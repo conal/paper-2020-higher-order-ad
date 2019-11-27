@@ -594,11 +594,12 @@ comp :: Category k => (b `k` c) :* (a `k` b) -> (a `k` c)
 comp = uncurry (.)
 \end{code}
 \begin{lemma}[\provedIn{compose-linear}]\lemLabel{compose-linear}
-Function composition has the following linearity properties:
+Function composition has the following properties:
 \begin{enumerate}
 \item |(NOP . f)| is linear for all functions |f|.
 \item |(g . NOP)| is linear for all linear functions |g|.
 \item |comp| on linear maps is bilinear.
+\item |der comp (g,f) = (NOP . f) !!! (g . NOP)|
 %% \item |(.)| is linear.
 \end{enumerate}
 \end{lemma}
@@ -612,7 +613,7 @@ Function composition has the following linearity properties:
 %% \note{Test: |g .@ f|, |f **** g|, |f &&&& g|.}
 
 These linearity properties will help re-express \thmRefTwo{deriv-compose}{deriv-cross} and related facts in a form more amenable to constructing higher derivatives.
-For convenience, define a few short-hands:\footnote{These types can be generalized somewhat.}
+For convenience, define a few short-hands:\notefoot{I think I'll drop these definitions.}\footnote{These types can be generalized somewhat.}
 %format g'f = g'"\hspace{-3pt}"f
 \begin{code}
 (.@) :: (a -> b :-* c) -> (a -> a :-* b) -> (a -> a :-* c)
@@ -712,10 +713,10 @@ Next, linear functions |f|:
 Then \emph{bilinear} functions |f|:
 \begin{code}
     ders f
-==  f &&& ders (der f)                      -- |ders| definition
-==  f &&& der f &&& const (der f) &&& zero  -- |der f| is linear
-==  f &&& f' &&& const f' &&& zero          -- \lemRefPF{bilinear}
-     where f' = (curry' f' !!!! curry f) . swap
+==  f &&& ders (der f)                           -- |ders| definition
+==  f &&& der f &&& const (der f) &&& zero       -- |der f| is linear
+==  f &&& f' &&& const f' &&& zero
+     where f' = (curry' f' !!!! curry f) . swap  -- \lemRefPF{bilinear}
 \end{code}
 Then function compositions:
 \begin{code}
@@ -724,12 +725,10 @@ Then function compositions:
 ==  g . f &&& ders ((der g . f) .@ der f)                          -- \lemRefPF{compose}
 ==  g . f &&& ders (comp . (der g . f &&& der f))                  -- |(.@)| definition
 ==  g . f &&& ders comp . ders (der g) . ders f &&& ders (der f))  -- coinduction
-==  g . f &&& comp' . ders (der g) . ders f &&& ders (der f))      -- \lemRef{compose-linear}
-     where comp' = (curry' comp !!!! curry comp) . swap
-==  g . f &&& comp' . ders (der g) . ders f &&& ders (der f))      -- |comp = uncurry (.)|
-     where comp' = (flip (.) !!!! (.)) . swap
-==  g . f &&& comp' . ders (der g) . ders f &&& ders (der f))      -- |comp = uncurry (.)|
-     where comp' = (flip (.) !!!! (.)) . swap
+==  g . f &&& comp' . ders (der g) . ders f &&& ders (der f))
+     where comp' = (curry' comp !!!! curry comp) . swap            -- \lemRef{compose-linear}
+==  g . f &&& comp' . ders (der g) . ders f &&& ders (der f))
+     where comp' = (flip (.) !!!! (.)) . swap                      -- |comp = uncurry (.)|
 \end{code}
 Finally, |f &&& g|:
 \begin{code}
@@ -1156,6 +1155,14 @@ ado (curry f) ==  D  (\ a ->  (D (\ b -> (fw (a,b), derr fw (a,b)))
 \item |comp = uncurry (.)| on linear maps is bilinear.
 
 Follows from i and ii.
+
+\item |der comp (g,f) = (. f) !!! (g .)|.
+
+\begin{code}
+    der comp (g,f)
+==  comp . (,f) !!! comp . (g,)  -- thmRef{deriv-bilinear}
+==  (NOP . f) !!! (g . NOP)      -- |comp| and section definitions
+\end{code}
 
 %% \item |(.)| is linear.
 
