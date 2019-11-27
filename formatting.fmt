@@ -71,6 +71,9 @@
 %format derl = "\der_l"
 %format derr = "\der_r"
 
+%format Ds = D"^{\ast}"
+%format Ds' = D"_{\ast}"
+
 %format ders  = "\der^\ast"
 %format ders' = "\der_{\!\ast}"
 
