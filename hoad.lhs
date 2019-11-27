@@ -605,15 +605,17 @@ Given any bilinear function |h|:
 \item |curry h a| is linear for all |a|.
 \item |curry' h b| is linear for all |b|.
 \item |curry h| and |curry' h| are linear.
+\item |der h| is linear.
 \end{enumerate}
 \end{lemma}
 
-\begin{corollary}
+\begin{corollary}\corLabel{comp-props}
 On linear maps,
 \begin{enumerate}
 \item |(g . NOP)| is linear for all |g|.
 \item |(NOP . f)| is linear for all |f|.
 \item |(.)| and |flip (.)| are linear.
+\item |der comp| is linear.
 \end{enumerate}
 \end{corollary}
 %if False
@@ -680,7 +682,6 @@ Then
 \end{code}
 which we can take as a recursive definition of |ders|.
 Define a corresponding type of infinitely differentiable functions:\footnote{For notational simplicity, we'll drop the |newtype| isomorphisms.}
-%format Ds = D"^{\ast}"
 \begin{code}
 type Ds a b = a -> T a b
 
@@ -718,17 +719,15 @@ We will have several uses of this formula, so name it:
 linear :: (a :-* b) -> Ds a b
 linear f = f &&& const f &&& zero
 \end{code}
-%if False
-Then \emph{bilinear} functions |f|:
+For instance, the following definitions of |id|, |exl| and |exr| satisfy the associated homomorphism (cartesian functor) properties:
 \begin{code}
-    ders f
-==  f &&& ders (der f)                           -- |ders| definition
-==  f &&& der f &&& const (der f) &&& zero       -- |der f| is linear
-==  f &&& f' &&& const f' &&& zero
-     where f' = (curry' f' !!!! curry f) . swap  -- \lemRefPF{bilinear}
+id   == linear id
+exl  == linear exl
+exr  == linear exr
 \end{code}
-%endif
-Then uncurried linear map composition:
+
+\noindent
+Next, uncurried linear map composition:
 \begin{code}
     ders comp
 ==  comp &&& ders (der comp)                            -- |ders| definition
@@ -743,25 +742,26 @@ Then function compositions:
 \begin{code}
     ders (g . f)
 ==  g . f &&& ders (der (g . f))                                   -- |ders| definition
-==  g . f &&& ders (\ a -> der (g . f) a)                          -- $\eta$ expansion
-==  g . f &&& ders (\ a -> der g (f a) . der f a)                  -- chain rule
-==  g . f &&& ders (comp . (der g . f &&& der f))                  -- |comp| and |(&&&)| definitions
+==  g . f &&& ders (comp . (der g . f &&& der f))                  -- \lemRefPF{compose}
 ==  g . f &&& ders comp . ders (der g) . ders f &&& ders (der f))  -- coinduction
 ==  g . f &&& comp' . ders (der g) . ders f &&& ders (der f))      -- above
 \end{code}
 Note that all of the components here (|g|, |f| |ders (der g)|, |ders f|, and |ders (der f)|) are available in |ders g| and |ders f|, so we have a computable recipe for |(.)| on |Ds|.
 \note{Fill in the details.}
+
 Finally, |f &&& g|:
 \begin{code}
     ders (f &&& g)
 ==  (f &&& g) &&& ders (der (f &&& g))                           -- |ders| definition
-==  (f &&& g) &&& ders (fork . (der f &&& der g))                -- \lemRef{deriv-pointfree}
+==  (f &&& g) &&& ders (fork . (der f &&& der g))                -- \lemRefPF{fork}
 ==  (f &&& g) &&& ders fork . (ders (der f) &&& ders (der g))    -- coinduction
 ==  (f &&& g) &&& linear fork . (ders (der f) &&& ders (der g))  -- |fork| linearity (\lemRef{fork-iso})
 \end{code}
 Again, the components here (|f|, |g|, |ders (der f)|, and |ders (der g)|) are all available from |ders f| and |ders g|, so we have a computable recipe for |(&&&)| on |Ds|.
 
 \workingHere
+
+%if False
 
 \sectionl{Deep Zipping}
 
@@ -806,7 +806,16 @@ fork . (der f &&& der (der f)) :: a -> a :-* b :* (a :-* b)
 
 \end{code}
 
+%endif
 
+\sectionl{What's Next?}
+
+\note{Yet to come:}
+\begin{itemize}
+\item Spell out the |Category| and |Cartesian| instances that result from solving the cartesian functor equations as in \secref{Higher-Order Derivatives}.
+\item Cartesian \emph{closure} (|curry| and |eval|) for |Ds|, exploiting higher-order derivatives.
+\item Variation |Ds'| of |Ds|, using |ders' f = f &&& der (ders' f)|.
+\end{itemize}
 
 
 
@@ -1229,6 +1238,22 @@ Similarly for |curry' h|.
 ==  (NOP . f) !!! (g . NOP)      -- |comp| and section definitions
 \end{code}
 %endif
+
+\item |der h| is linear.
+
+\begin{code}
+    der h ((a,b) + (a',b'))
+==  der h (a+a',b+b')                                         -- |(+)| on functions
+==  h . (, b+b') !!! h . (a+a')                               -- \corRef{deriv-bilinear}
+==  \ (da,db) -> h (da,b+b') + h (a+a',db)                    -- |(!!!)| on functions
+==  \ (da,db) -> h (da,b) + h (da,b') + h (a,db) + h (a',db)  -- bilinearity of |h|
+==  \ (da,db) -> h (da,b) + h (a,db) + h (da,b') + h (a',db)  -- commutativity of |(+)|
+==  (\ (da,db) -> h (da,b) + h (a,db)) +
+    (\ (da,db) -> h (da,b') + h (a',db))                      -- |(+)| on functions
+==  der h (a,b) + der h (a',b')                               -- \corRef{deriv-bilinear}
+\end{code}
+
+Similarly for scaling.
 
 \end{enumerate}
 
