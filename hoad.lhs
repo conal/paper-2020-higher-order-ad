@@ -588,69 +588,72 @@ In other words, differentiation of higher-order functions requires all higher-or
 In order to construct higher-order derivatives, it will help to examine the linearity properties of our familiar categorical vocabulary, which turns out to be mostly linear with just a bit of bilinearity.
 As noted in \cite{Elliott-2018-ad-icfp}, the categorical operation |id|; the cartesian operations |exl|, |exr|, |dup|; and the cocartesian operations |inl|, |inr|, and |jam| are all linear.
 \lemRefTwo{fork-iso}{join-iso} have already noted that the functions |fork| and |join| (uncurried versions of |(&&&)| and |(!!!)| (\secref{Curry}) are linear (as well as isomorphisms).
-Next, let |comp| be uncurried composition:
+Next, let |comp| be uncurried composition:\notefoot{Maybe define |comp| only for linear maps.}
 \begin{code}
 comp :: Category k => (b `k` c) :* (a `k` b) -> (a `k` c)
 comp = uncurry (.)
 \end{code}
+
+\begin{lemma}[\provedIn{comp-bilinear}]\lemLabel{comp-bilinear}
+|comp| is bilinear.
+\end{lemma}
+
+%% The bilinearity of |comp| gives it several useful properties:
+\begin{lemma}[\provedIn{bilinear-props}]\lemLabel{bilinear-props}
+Given any bilinear function |h|:
+\begin{enumerate}
+\item |curry h a| is linear for all |a|.
+\item |curry' h b| is linear for all |b|.
+\item |curry h| and |curry' h| are linear.
+\end{enumerate}
+\end{lemma}
+
+\begin{corollary}
+On linear maps,
+\begin{enumerate}
+\item |(g . NOP)| is linear for all |g|.
+\item |(NOP . f)| is linear for all |f|.
+\item |(.)| and |flip (.)| are linear.
+\end{enumerate}
+\end{corollary}
+%if False
 \begin{lemma}[\provedIn{compose-linear}]\lemLabel{compose-linear}
 Function composition has the following properties:
 \begin{enumerate}
 \item |(NOP . f)| is linear for all functions |f|.
 \item |(g . NOP)| is linear for all linear functions |g|.
+\item |(.)| and |flip (.)| are linear.
 \item |comp| on linear maps is bilinear.
 \item |der comp (g,f) = (NOP . f) !!! (g . NOP)|
-%% \item |(.)| is linear.
 \end{enumerate}
 \end{lemma}
+%endif
 
-%format .@ = "\mathbin{\bullet}"
-%format **** = "\mathbin{\times\hspace{-1.5ex}\times}"
-%format **** = "\mathbin{\times\hspace{-2.15ex}\times\hspace{-2.15ex}\times}"
-%format &&&& = "\mathbin{\blacktriangle}"
-%format !!!! = "\mathbin{\blacktriangledown}"
-
-%% \note{Test: |g .@ f|, |f **** g|, |f &&&& g|.}
-
-These linearity properties will help re-express \thmRefTwo{deriv-compose}{deriv-cross} and related facts in a form more amenable to constructing higher derivatives.
-For convenience, define a few short-hands:\notefoot{I think I'll drop these definitions.}\footnote{These types can be generalized somewhat.}
-%format g'f = g'"\hspace{-3pt}"f
-\begin{code}
-(.@) :: (a -> b :-* c) -> (a -> a :-* b) -> (a -> a :-* c)
-g'f .@ f' = comp . (g'f &&& f')
-
-(****) :: (a -> a :-* c) -> (b -> b :-* d) -> (a :* b :-* a :* b :-* c :* d)
-f' **** g' = cross . (f' *** g')
-
-(&&&&) :: (a -> a :-* c) -> (a -> a :-* d) -> (a :-* a :-* c :* d)
-f' &&&& g' = fork . (f' &&& g')
-
-(!!!!) :: (a -> a :-* c) -> (a -> b :-* c) -> (a :* b :-* a :* b :-* c)
-f' !!!! g' = join . (f' *** g')
-\end{code}
+These properties will help re-express \thmRefTwo{deriv-compose}{deriv-cross} and related facts in a form more amenable to constructing higher derivatives.
 \begin{lemma}[\provedIn{deriv-pointfree}]\lemLabel{deriv-pointfree}~
 \begin{enumerate}
 \item \label{deriv-pointfree-compose}
-  |der (g . f) == (der g . f) .@ der f|.
+  |der (g . f) == comp . (der g . f &&& der f)|.
 
 \item \label{deriv-pointfree-cross}
-  |der (f *** g) == der f **** der g|.
+  |der (f *** g) == cross . (der f *** der g)|.
 
 \item \label{deriv-pointfree-fork}
-  |der (f &&& g) == der f &&&& der g|.
+  |der (f &&& g) == fork . (der f &&& der g)|.
 
 \item \label{deriv-pointfree-linear}
-  For a \emph{linear} function |f|, |der f = const f|.
+  For a \emph{linear} function |f|, |der f == const f|.
 
 \item \label{deriv-pointfree-pair-domain}
-  For any function |f :: a :* b -> c|, |der f == derl f !!!! derr f|.
+  For any function |f :: a :* b -> c|, |der f == join . (derl f *** derr f)|.
 
 \item \label{deriv-pointfree-bilinear}
-  For a \emph{bilinear} function |f :: a :* b -> c|, ...
-%% |der f == (curry' f !!!! curry f) . swap|.
+  For a \emph{bilinear} function |f :: a :* b -> c|, |der f == join . (curry' f *** curry f) . swap|.
+
+\item \label{deriv-pointfree-comp}
+  On linear maps, |der comp == join . (flip (.) *** (.)) . swap|.
 \end{enumerate}
 \end{lemma}
-
 \nc\lemRefPF[1]{\lemRef{deriv-pointfree}-\ref{deriv-pointfree-#1}}
 
 %% %format dern (n) f = f"^{("n")}"
@@ -686,7 +689,7 @@ type T a b = b :* T a (a :-* b)
 ders :: (a -> b) -> Ds a b
 ders f = f &&& ders (der f)
 \end{code}
-We will want to find cartesian category operations for |Ds| such that |ders| is a cartesian functor (CF).
+We will want to find cartesian category operations for |Ds| such that |ders| is a cartesian functor (CF), which will be coinductively assumed at several points below.
 
 Start with the constant-zero function\footnote{As usual, types are restricted to vector spaces over a common field, which we can take to be |R|}: |zero :: a -> b|:
 \begin{code}
@@ -710,6 +713,12 @@ Next, linear functions |f|:
 ==  f &&& ders (const f)    -- |f| linearity
 ==  f &&& const f &&& zero  -- above
 \end{code}
+We will have several uses of this formula, so name it:
+\begin{code}
+linear :: (a :-* b) -> Ds a b
+linear f = f &&& const f &&& zero
+\end{code}
+%if False
 Then \emph{bilinear} functions |f|:
 \begin{code}
     ders f
@@ -718,25 +727,39 @@ Then \emph{bilinear} functions |f|:
 ==  f &&& f' &&& const f' &&& zero
      where f' = (curry' f' !!!! curry f) . swap  -- \lemRefPF{bilinear}
 \end{code}
+%endif
+Then uncurried linear map composition:
+\begin{code}
+    ders comp
+==  comp &&& ders (der comp)                            -- |ders| definition
+==  comp &&& linear (der comp)                          -- derivative of bilinear is linear
+==  comp &&& linear (join . (flip (.) *** (.)) . swap)  -- \lemRefPF{comp}
+\end{code}
+Name |ders comp| for future use:
+\begin{code}
+comp' = comp &&& linear (join . (flip (.) *** (.)) . swap)
+\end{code}
 Then function compositions:
 \begin{code}
     ders (g . f)
 ==  g . f &&& ders (der (g . f))                                   -- |ders| definition
-==  g . f &&& ders ((der g . f) .@ der f)                          -- \lemRefPF{compose}
-==  g . f &&& ders (comp . (der g . f &&& der f))                  -- |(.@)| definition
+==  g . f &&& ders (\ a -> der (g . f) a)                          -- $\eta$ expansion
+==  g . f &&& ders (\ a -> der g (f a) . der f a)                  -- chain rule
+==  g . f &&& ders (comp . (der g . f &&& der f))                  -- |comp| and |(&&&)| definitions
 ==  g . f &&& ders comp . ders (der g) . ders f &&& ders (der f))  -- coinduction
-==  g . f &&& comp' . ders (der g) . ders f &&& ders (der f))
-     where comp' = (curry' comp !!!! curry comp) . swap            -- \lemRef{compose-linear}
-==  g . f &&& comp' . ders (der g) . ders f &&& ders (der f))
-     where comp' = (flip (.) !!!! (.)) . swap                      -- |comp = uncurry (.)|
+==  g . f &&& comp' . ders (der g) . ders f &&& ders (der f))      -- above
 \end{code}
+Note that all of the components here (|g|, |f| |ders (der g)|, |ders f|, and |ders (der f)|) are available in |ders g| and |ders f|, so we have a computable recipe for |(.)| on |Ds|.
+\note{Fill in the details.}
 Finally, |f &&& g|:
 \begin{code}
     ders (f &&& g)
-==  (f &&& g) &&& ders (der (f &&& g))             -- |ders| definition
-==  (f &&& g) &&& ders (der f &&&& der g)          -- \lemRef{deriv-pointfree}
-==  (f &&& g) &&& ders (fork . (der f &&& der g))  -- |(&&&&)| definition
+==  (f &&& g) &&& ders (der (f &&& g))                           -- |ders| definition
+==  (f &&& g) &&& ders (fork . (der f &&& der g))                -- \lemRef{deriv-pointfree}
+==  (f &&& g) &&& ders fork . (ders (der f) &&& ders (der g))    -- coinduction
+==  (f &&& g) &&& linear fork . (ders (der f) &&& ders (der g))  -- |fork| linearity (\lemRef{fork-iso})
 \end{code}
+Again, the components here (|f|, |g|, |ders (der f)|, and |ders (der g)|) are all available from |ders f| and |ders g|, so we have a computable recipe for |(&&&)| on |Ds|.
 
 \workingHere
 
@@ -1108,12 +1131,11 @@ ado (curry f) ==  D  (\ a ->  (D (\ b -> (fw (a,b), derr fw (a,b)))
                      ,  \da -> D (\ b -> (derl fw (a,b) da, at da . derr (derl fw) (a,b)))))
 \end{code}
 
-\subsection{\lemRef{compose-linear}}\proofLabel{compose-linear}
+\subsection{\lemRef{comp-bilinear}}\proofLabel{comp-bilinear}
 
-\begin{enumerate}
+To show that |comp = uncurry (.)| is bilinear, we can show that it is linear in each argument, which is to say |curry comp g = (g .)| and |curry' comp f = (. f)| are linear for all |g| and |f|.
 
-\item |(NOP . f)| is linear for all functions |f|:
-
+First, |(NOP . f)| is linear for all functions |f| (not just linear):
 \begin{code}
     (NOP . f) (g + g')
 ==  (g + g') . f                          -- left section definition
@@ -1131,8 +1153,7 @@ ado (curry f) ==  D  (\ a ->  (D (\ b -> (fw (a,b), derr fw (a,b)))
 ==  (NOP . f) (s *. g)                    -- left section definition
 \end{code}
 
-\item |(g . NOP)| is linear for all linear functions |g|.
-
+Second, |(g . NOP)| is linear for all linear functions |g|.
 \begin{code}
     (g . NOP) (f + f')
 ==  g . (f + f')                          -- right section definition
@@ -1152,19 +1173,62 @@ ado (curry f) ==  D  (\ a ->  (D (\ b -> (fw (a,b), derr fw (a,b)))
 ==  (g . NOP) (s *. f)                    -- right section definition
 \end{code}
 
-\item |comp = uncurry (.)| on linear maps is bilinear.
 
-Follows from i and ii.
+\begin{code}
+    comp (
+\end{code}
 
+\subsection{\lemRef{bilinear-props}}\proofLabel{bilinear-props}
+
+Given any bilinear function |h|,
+
+\begin{enumerate}
+
+\item |curry h a| is linear for all linear functions |g|.
+
+\begin{code}
+    curry h a (b + b')
+==  h (a,b + b')                -- |curry| on functions
+==  h (a,b) + h (a,b')          -- bilinearity of |h|
+==  curry h a b + curry h a b'  -- |curry| on functions
+
+    curry h a (s *. b)
+==  h (a,s *. b)                -- |curry| on functions
+==  s *. h (a,b)                -- bilinearity of |h|
+\end{code}
+
+\item |curry' h b| is linear for all functions |b|.
+Proof similar to |curry h a|.
+
+\item |curry h| and |curry' h| are linear.
+
+\begin{code}
+    curry h (a + a')
+==  \ b -> curry h (a + a') b             -- $\eta$ expansion
+==  \ b -> h (a+a',b)                     -- |curry| on functions
+==  \ b -> h (a,b) + h (a',b)             -- bilinearity of |h|
+==  (\ b -> h (a,b)) + (\ b -> h (a',b))  -- addition on functions
+==  curry h a + curry h a'                -- |curry| on functions
+
+    curry h (s *. a)
+==  \ b -> curry h (s *. a) b             -- $\eta$ expansion
+==  \ b -> h (s *. a',b)                  -- |curry| on functions
+==  \ b -> s *. h (a,b)                   -- bilinearity of |h|
+==  s *. (\ b -> h (a,b))                 -- scaling on functions
+==  s *. curry h a                        -- |curry| on functions
+\end{code}
+
+Similarly for |curry' h|.
+
+%if False
 \item |der comp (g,f) = (. f) !!! (g .)|.
 
 \begin{code}
     der comp (g,f)
-==  comp . (,f) !!! comp . (g,)  -- thmRef{deriv-bilinear}
+==  comp . (,f) !!! comp . (g,)  -- \thmRef{deriv-bilinear}
 ==  (NOP . f) !!! (g . NOP)      -- |comp| and section definitions
 \end{code}
-
-%% \item |(.)| is linear.
+%endif
 
 \end{enumerate}
 
@@ -1180,7 +1244,6 @@ Follows from i and ii.
 ==  \ a -> comp ((der g . f) a, der f a)         -- |comp| definition
 ==  comp . (\ a -> ((der g . f) a, der f a))     -- |(.)| on functions
 ==  comp . (der g . f &&& der f)                 -- |(&&&)| definition
-==  (der g . f) &&&& der f                       -- |(&&&&)| definition
 \end{code}
 
 \begin{code}
@@ -1191,7 +1254,6 @@ Follows from i and ii.
 ==  \ (a,b) -> cross (der f a, der g b)          -- |cross| definition
 ==  \ (a,b) -> cross ((der f *** der g) (a,b))   -- |(***)| on functions
 ==  cross . (der f *** der g)                    -- |(.)| on functions
-==  der f **** der g                             -- |(****)| definition
 \end{code}
 
 \begin{code}
@@ -1204,7 +1266,6 @@ Follows from i and ii.
 ==  \ a -> der f a *** der g a . dup          -- |dup| linearity
 ==  \ a -> der f a &&& der g a                -- cartesian law
 ==  fork . (der f &&& der g)                  -- |fork| definition
-==  der f &&&& der g                          -- |(&&&&)| definition
 \end{code}
 
 For a linear function |f|,
@@ -1221,7 +1282,6 @@ For any function |f :: a :* b -> c|,
 ==  \ (a,b) -> der f (a,b)                    -- $\eta$ expansion
 ==  \ (a,b) -> derl f (a,b) !!! derr f (a,b)  -- \thmRef{deriv-pair-domain}
 ==  join . (derl f &&& derr f)                -- |join| definition
-==  derl f !!!! derr f                        -- |(!!!!)| definition
 \end{code}
 
 For a \emph{bilinear} function |f :: a :* b -> c|,
@@ -1234,7 +1294,13 @@ For a \emph{bilinear} function |f :: a :* b -> c|,
 ==  \ (a,b) -> join ((curry' f *** curry f) (b,a))         -- |(***)| on functions
 ==  \ (a,b) -> join ((curry' f *** curry f) (swap (a,b)))  -- |swap| on functions
 ==  join . (curry' f *** curry f) . swap                   -- |(.)| on functions
-==  ...
+\end{code}
+
+For uncurried composition on linear maps,
+\begin{code}
+    der comp
+==  join . (curry' comp *** curry comp) . swap  -- previous (|comp| is bilinear)
+==  join . (flip (.) *** (.)) . swap            -- |comp| definition
 \end{code}
 
 \end{document}
