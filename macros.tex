@@ -29,10 +29,8 @@
 \nc\needcite{\indraft{ \note{ref}}}
 
 \nc\seclabel[1]{\label{sec:#1}}
-\nc\secref[1]{Section \ref{sec:#1}}
-\nc\secreftwo[2]{Sections \ref{sec:#1} and \ref{sec:#2}}
-
-\nc\appref[1]{Appendix \ref{sec:#1}}
+\nc\secref[1]{\autoref{sec:#1}}
+\nc\secreftwo[2]{\autoref{sec:#1} and \autoref{sec:#2}}
 
 \nc\sectionl[1]{\section{#1}\seclabel{#1}}
 \nc\subsectionl[1]{\subsection{#1}\seclabel{#1}}
@@ -41,10 +39,11 @@
 
 \usepackage{subcaption}
 
-\nc\figlabel[1]{\label{fig:#1}}
-\nc\figref[1]{Figure \ref{fig:#1}}
-\nc\figreftwo[2]{Figures \ref{fig:#1} and \ref{fig:#2}}
-\nc\figrefthree[3]{Figures \ref{fig:#1}, \ref{fig:#2}, and \ref{fig:#3}}
+%% %% TODO: convert to autoref
+%% \nc\figlabel[1]{\label{fig:#1}}
+%% \nc\figref[1]{Figure \ref{fig:#1}}
+%% \nc\figreftwo[2]{Figures \ref{fig:#1} and \ref{fig:#2}}
+%% \nc\figrefthree[3]{Figures \ref{fig:#1}, \ref{fig:#2}, and \ref{fig:#3}}
 
 \nc\incpic[1]{\includegraphics[width=\linewidth]{Figures/#1}}
 
@@ -92,25 +91,22 @@
 %% Drop vertical spacing before & after.
 %% \theoremstyle{remark}
 
+\nc\propRef[1]{\autoref{prop:#1}}
+\nc\propRefTwo[2]{\autoref{prop:#1} and \autoref{prop:#2}}
+
 \newtheorem{theorem}{Theorem}%[section]
 \nc\thmLabel[1]{\label{prop:#1}}
-
-\nc\thmRef[1]{\autoref{prop:#1}}
-\nc\thmRefTwo[2]{\autoref{prop:#1} and \autoref{prop:#2}}
 
 \newtheorem{corollary}{Corollary}[theorem]
 \nc\corLabel[1]{\label{prop:#1}}
 \def\corollaryautorefname{Corollary}
-\nc\corRef[1]{\autoref{prop:#1}}
-%% \nc\corRefTwo[2]{Corollaries \ref{prop:#1} and \ref{prop:#2}}
-%% \nc\corRefs[2]{Corollaries \ref{prop:#1} through \ref{prop:#2}}
 
 \newtheorem{lemma}[theorem]{Lemma}
 \nc\lemLabel[1]{\label{prop:#1}}
 \def\lemmaautorefname{Lemma}
-\nc\lemRef[1]{\autoref{prop:#1}}
-\nc\lemRefTwo[2]{\autoref{prop:#1} and \autoref{prop:#2}}
-%% \nc\lemRefs[2]{Lemmas \ref{prop:#1} through \ref{prop:#2}}
+
+\nc\proofEx{\textnormal{(Proof: Exercise.)}}
+%% \nc\proofEx{\noindent\textnormal{Proof: Exercise.}}
 
 \definecolor{codesep}{gray}{0.85}
 \nc\codesep[1]{
