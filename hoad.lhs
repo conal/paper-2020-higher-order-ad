@@ -9,7 +9,8 @@
 
 \input{macros}
 
-\author{Conal Elliott}
+\author{Conal Elliott\\[0.5ex]conal@@conal.net}
+
 
 \usepackage{datetime}
 \usdate
@@ -34,7 +35,7 @@ Conal Elliott
 \usepackage[round]{natbib}  % square
 \bibliographystyle{plainnat}
 
-\title{\tit \emph{\\[1.5ex] \Large (early, incomplete draft---comments invited\footnote{Latest version, questions, suggestions, bugs, etc: \url{https://github.com/conal/hoad}. Email: conal@@conal.net.})}}
+\title{\tit \emph{\\[1.5ex] \Large (early, incomplete draft---comments invited\footnote{Latest version and repository location for questions, suggestions, bugs, etc: \url{http://conal.net/papers/higher-order-ad}.})}}
 
 \date{Draft of \today{} \currenttime}
 
