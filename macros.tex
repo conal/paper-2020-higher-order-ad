@@ -86,11 +86,11 @@
 \nc\isFootnote{\ifx\footnote\nextToken\notefootsep{}\fi}
 
 % \nc\qed{\ensuremath{\blacksquare}}
-\nc\qed{\ensuremath{\square}}
+%% \nc\qed{\ensuremath{\square}}
 
 \usepackage{amsthm}
-%% Roman font, and drop vertical spacing before & after.
-\theoremstyle{remark}
+%% Drop vertical spacing before & after.
+%% \theoremstyle{remark}
 
 \newtheorem{theorem}{Theorem}%[section]
 \nc\thmLabel[1]{\label{prop:#1}}
@@ -98,31 +98,19 @@
 \nc\thmRef[1]{\autoref{prop:#1}}
 \nc\thmRefTwo[2]{\autoref{prop:#1} and \autoref{prop:#2}}
 
-%% \nc\thmRef[1]{Theorem \ref{theorem:#1}}
-%% \nc\thmRefTwo[2]{Theorems \ref{theorem:#1} and \ref{theorem:#2}}
-%% \nc\thmRefs[2]{Theorems \ref{theorem:#1} through \ref{theorem:#2}}
-
-\newtheorem{corollary}{Corollary}[section]
+\newtheorem{corollary}{Corollary}[theorem]
 \nc\corLabel[1]{\label{prop:#1}}
 \def\corollaryautorefname{Corollary}
 \nc\corRef[1]{\autoref{prop:#1}}
 %% \nc\corRefTwo[2]{Corollaries \ref{prop:#1} and \ref{prop:#2}}
 %% \nc\corRefs[2]{Corollaries \ref{prop:#1} through \ref{prop:#2}}
 
-%% \nc\corRef[1]{Corollary \ref{corollary:#1}}
-%% \nc\corRefTwo[2]{Corollaries \ref{corollary:#1} and \ref{corollary:#2}}
-%% \nc\corRefs[2]{Corollaries \ref{corollary:#1} through \ref{corollary:#2}}
-
-\newtheorem{lemma}{Lemma}[section]
+\newtheorem{lemma}[theorem]{Lemma}
 \nc\lemLabel[1]{\label{prop:#1}}
 \def\lemmaautorefname{Lemma}
 \nc\lemRef[1]{\autoref{prop:#1}}
 \nc\lemRefTwo[2]{\autoref{prop:#1} and \autoref{prop:#2}}
 %% \nc\lemRefs[2]{Lemmas \ref{prop:#1} through \ref{prop:#2}}
-
-%% \nc\lemRef[1]{Lemma \ref{lemma:#1}}
-%% \nc\lemRefTwo[2]{Lemmas \ref{lemma:#1} and \ref{lemma:#2}}
-%% \nc\lemRefs[2]{Lemmas \ref{lemma:#1} through \ref{lemma:#2}}
 
 \definecolor{codesep}{gray}{0.85}
 \nc\codesep[1]{

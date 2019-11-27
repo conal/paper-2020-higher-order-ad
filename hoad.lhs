@@ -37,7 +37,10 @@ Conal Elliott
 
 \setlength{\blanklineskip}{2ex} % blank lines in code environment
 
-\nc\proofRef[1]{Appendix \ref{proof:#1}}
+% \nc\proofRef[1]{Appendix \ref{proof:#1}}
+\def\subsectionautorefname{Section}
+
+\nc\proofRef[1]{\autoref{proof:#1}}
 \nc\provedIn[1]{\textnormal{Proved in \proofRef{#1}}}
 \nc\proofLabel[1]{\label{proof:#1}}
 
@@ -117,7 +120,7 @@ Reverse mode is distinguished only by using a different linear map representatio
 
 This general AD algorithm is justified by three main theorems about differentiation:
 \begin{quotation}
-\vspace{-3ex}
+\vspace{-6ex}
 \begin{theorem}[compose/``chain'' rule] \thmLabel{deriv-compose}
 $$|der (g . f) a == der g (f a) . der f a|$$
 \end{theorem}
