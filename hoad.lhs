@@ -2,7 +2,7 @@
 
 %% While editing/previewing, use 12pt or 14pt and tiny margin.
 \documentclass[12pt,twoside]{article}  % fleqn,14pt
-\usepackage[margin=0.2in]{geometry}  % 0.12in, 0.9in
+\usepackage[margin=1in]{geometry}  % 0.12in, 0.9in
 
 %% \documentclass{article}
 %% \usepackage{fullpage}
@@ -34,7 +34,7 @@ Conal Elliott
 \usepackage[round]{natbib}  % square
 \bibliographystyle{plainnat}
 
-\title{\tit \emph{\\[1.5ex] \Large (early, incomplete draft---comments invited\notefoot{Add GitHub link here for latest version, and welcome issues and even pull requests.})}}
+\title{\tit \emph{\\[1.5ex] \Large (early, incomplete draft---comments invited\footnote{Latest version, questions, suggestions, bugs, etc: \url{https://github.com/conal/hoad}. Email: conal@@conal.net.})}}
 
 \date{Draft of \today{} \currenttime}
 
