@@ -38,7 +38,6 @@ Conal Elliott
 \setlength{\blanklineskip}{2ex} % blank lines in code environment
 
 % \nc\proofRef[1]{Appendix \ref{proof:#1}}
-\def\subsectionautorefname{Section}
 
 \nc\proofRef[1]{\autoref{proof:#1}}
 \nc\provedIn[1]{\textnormal{proved in \proofRef{#1}}}
@@ -814,23 +813,45 @@ fork . (der f &&& der (der f)) :: a -> a :-* b :* (a :-* b)
 
 \sectionl{What's Next?}
 
-\note{Yet to come:}
+\note{Yet to come:
 \begin{itemize}
 \item Spell out the |Category| and |Cartesian| instances that result from solving the cartesian functor equations as in \secref{Higher-Order Derivatives}.
 \item Cartesian \emph{closure} (|curry| and |eval|) for |Ds|, exploiting higher-order derivatives.
 \item Variation |Ds'| of |Ds|, using |ders' f = f &&& der (ders' f)|.
 \end{itemize}
-
+}
 
 
 \sectionl{Related Work}
 
-\note{Working here.}
-
+The most closely related work I'm aware of is by \cite{Vytiniotis-2019-differentiable-curry}, who also define an algorithm around the language of cartesian closed categories.
+There appear to be some significant shortcomings, however:
 \begin{itemize}
-\item \cite{Vytiniotis-2019-differentiable-curry}
-\item \cite{Brunel2019Backprop}
+\item
+  Although the work is referred to as ``differentiable programming'', it appears to lack a specification and proof that match this claim, i.e., one defined by the mathematical operation of differentiation.
+  As such, it's unclear to me whether the algorithm is about differentiation or something else.
+  In contrast, the specification at the center of \cite{Elliott-2018-ad-icfp} (and the extensions described above) is just (Fréchet) differentiation itself, combined with the original function as needed by the chain rule, or rather the requirement that the function-with-derivative satisfies a standard collection of homomorphism properties.
+  Correctness of the algorithm was defined as faithfulness to this simple specification, and the algorithm is systematically derived from this specification and hence is correct by construction.
+\item
+  Functions are already well-defined as a vector space, and thus linear maps (including derivatives) are as well, but the authors choose a different notion.
+  The authors write
+  \begin{quotation} \noindent
+  [...] what should be the tangent space of a function type?
+  Perhaps surprisingly, a function type itself is not the right answer.
+  We provide two possible implementations for function tangents and differentiable currying, and explain the tradeoffs.
+  \end{quotation}
+They do not, however, say what makes their answers ``right'' and the unsurprising answer wrong.
+\item
+  The algorithm presented is limited to reverse mode rather than a general AD algorithm as in \cite{Elliott-2018-ad-icfp} the work described here.
 \end{itemize}
+
+A second related paper is \cite{Brunel2019Backprop}.
+Referring to \cite{Elliott-2018-ad-icfp}, the authors write
+\begin{quotation} \noindent
+However, Elliot's approach is still restricted to first-order programs (i.e., computational graphs): as far as we understand, the functor D is cartesian but not cartesian closed, so the higher-order primitives ($\lambda$-abstraction and application) lack a satisfactory treatment. This is implicit in Sect. 4.4 of \cite{Elliott-2018-ad-icfp}, where the author states that he only uses biproduct categories: it is well-known that non-trivial cartesian closed biproduct categories do not exist.
+\end{quotation}
+The confusion here---which was mistakenly encouraged by \cite{Elliott-2018-ad-icfp}---is the idea that the category of differentiable functions itself is a biproduct category.
+Rather, all that was needed is that the various representations linear maps (derivatives) are biproduct categories, which is easily satisfied.
 
 \bibliography{bib}
 
