@@ -280,7 +280,7 @@ Then the RHS:
     adh (curry f)
 ==  D (curry f &&& der (curry f))                                    -- |adh| definition
 ==  D (\ a -> (curry f a, der (curry f) a))                          -- |(&&&)| on functions
-==  D (\ a -> ((\ b -> f (a,b)), forkF (derl f . (a,))))             -- |curry| and |(a,)|; \corRef{deriv-curry}
+==  D (\ a -> ((\ b -> f (a,b)), forkF (derl f . (a,))))             -- \corRef{deriv-curry}
 ==  D (\ a -> ((\ b -> f (a,b)), forkF (\ b -> derl f (a,b))))       -- |(.)| on functions
 ==  D (\ a -> ((\ b -> f (a,b)), forkF (\ b -> der f (a,b) . inl)))  -- \proofRef{deriv-pair-domain}
 \end{code}
@@ -561,8 +561,9 @@ Then the RHS:\notefoot{State, prove, and use a lemma about |adh (g . f) a| for l
 Maybe also |ado (g . f) a| for linear |g| or |f|.}
 \begin{lemma}[\provedIn{ado-curry}]\lemLabel{ado-curry}~
 \begin{code}
-ado (curry f) ==  D  (\ a ->  (  D (\ b -> (fw (a,b), derr fw (a,b)))
-                              ,  \da -> D (\ b -> (derl fw (a,b) da, at da . derr (derl fw) (a,b)))))
+ado (curry f) ==
+  D  (\ a ->  (  D (\ b -> (fw (a,b), derr fw (a,b)))
+              ,  \da -> D (\ b -> (derl fw (a,b) da, at da . derr (derl fw) (a,b)))))
 \end{code}
 where |fw = wrapO f|.
 \end{lemma}
@@ -878,7 +879,7 @@ Noting that |inl da = (da,0)| and |inr db = (0,db)|, we can see that the partial
 Next, note that |der f (a,b) . inl = der (f . (,b)) a|, by the following equational reasoning:
 \begin{code}
     der (f . (,b)) a
-==  der f ((,b) a) . der (,b) a                      -- chain rule
+==  der f ((,b) a) . der (,b) a                      -- chain rule (\thmRef{deriv-compose})
 ==  der f (a,b) . der (,b) a                         -- |(,b)| definition
 ==  der f (a,b) . der (inl + const (0,b)) a          -- |inl| on functions, and meaning of |(,b)|
 ==  der f (a,b) . (der inl a + der (const (0,b)) a)  -- linearity of |(+)|
@@ -897,7 +898,7 @@ Likewise, |der f (a,b) . inr = der (f . (a,)) b|.
     der (\ b' -> uncurry g (a,b')) b
 ==  der (\ a' -> g a' b) a !!! der (\ b' -> g a b') b      -- |uncurry| on functions
 ==  der (at b . g) a !!! der (g a) b                       -- |at| definition and $\eta$ reduction
-==  der (at b) (g a) . der g a !!! der (g a) b             -- chain rule
+==  der (at b) (g a) . der g a !!! der (g a) b             -- chain rule (\thmRef{deriv-compose})
 ==  at b . der g a !!! der (g a) b                         -- linearity of |at|
 \end{code}
 
@@ -905,9 +906,9 @@ Likewise, |der f (a,b) . inr = der (f . (a,)) b|.
 
 \begin{code}
     der eval (f,a)
-==  derl eval (f,a) !!! derr eval (f,a)          -- method of partial derivatives
+==  derl eval (f,a) !!! derr eval (f,a)          -- \lemRef{deriv-pair-domain}
 ==  der (eval . (,a)) f !!! der (eval . (f,)) a  -- |derl| and |derr| alternative definitions
-==  der (at a) f !!! der f          a            -- |eval| on functions
+==  der (at a) f !!! der f          a            -- |eval| on functions; |at| definition
 ==  at a !!! der f a                             -- linearity of |at a|
 ==  \ (df,dx) -> df a + der f a dx               -- |(!!!) on linear maps|; |at| definition
 \end{code}
@@ -917,7 +918,7 @@ Alternatively, calculate |der eval| via |uncurry|:
     der eval (f,a)
 ==  der (uncurry id) (f,a)            -- |eval = uncurry id|
 ==  at a . der id a !!! der (id f) a  -- \corRef{deriv-uncurry}
-==  at a . id !!! der f a             -- |id| is linear
+==  at a . id !!! der f a             -- |id| linearity
 ==  at a !!! der f a                  -- |id| as identity
 \end{code}
 
@@ -926,8 +927,8 @@ Alternatively, calculate |der eval| via |uncurry|:
 \begin{code}
     forkF (\ b -> der (at b . g) a)
 ==  \ da b -> der (at b . g) a da              -- |forkF| definition
-==  \ da b -> (der (at b) (g a) . der g a) da  -- chain rule
-==  \ da b -> (at b . der g a) da              -- |at b| is linear
+==  \ da b -> (der (at b) (g a) . der g a) da  -- chain rule (\thmRef{deriv-compose})
+==  \ da b -> (at b . der g a) da              -- |at b| linearity
 ==  \ da b -> at b (der g a da)                -- |(.)| on functions
 ==  \ da b -> der g a da b                     -- |at| definition
 ==  der g a                                    -- $\eta$ reduction (twice)
@@ -1076,7 +1077,7 @@ Simplifying the RHS,
 ==  D (\ (fh,a) -> (uncurry unadh (fh,a), der (uncurry unadh) (fh,a)))      -- |adh| definition
 ==  D (\ (fh,a) -> (unadh fh a, der (uncurry unadh) (fh,a)))                -- |uncurry| on functions
 ==  D (\ (fh,a) -> (unadh fh a, at a . der unadh fh !!! der (unadh fh) a))  -- \proofRef{deriv-uncurry}
-==  D (\ (fh,a) -> (unadh fh a, at a . unadh !!! der (unadh fh) a))         -- |unadh| is linear
+==  D (\ (fh,a) -> (unadh fh a, at a . unadh !!! der (unadh fh) a))         -- |unadh| linearity
 \end{code}
 %if False
 \begin{code}
@@ -1167,8 +1168,9 @@ Now simplify the remaining differentiated composition:
 \end{code}
 Putting the pieces back together,
 \begin{code}
-ado (curry f) ==  D  (\ a ->  (D (\ b -> (fw (a,b), derr fw (a,b)))
-                     ,  \da -> D (\ b -> (derl fw (a,b) da, at da . derr (derl fw) (a,b)))))
+ado (curry f) ==
+  D  (\ a ->  (D (\ b -> (fw (a,b), derr fw (a,b)))
+     ,  \da -> D (\ b -> (derl fw (a,b) da, at da . derr (derl fw) (a,b)))))
 \end{code}
 
 \subsection{\lemRef{comp-bilinear}}\proofLabel{comp-bilinear}
