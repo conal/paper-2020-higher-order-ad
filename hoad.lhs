@@ -76,7 +76,7 @@ Begin with the category of computably differentiable functions from \cite[Sectio
 newtype D a b = D (a -> b :* (a :-* b))
 \end{code}
 where |a :-* b| is the type of linear maps from |a| to |b|.
-The function around which the automatic differentiation (AD) algorithm is organized simply ``zips'' together a function |f :: a -> b| and its derivative |der f :: a -> a :-* b|:\footnote{This paper generally uses Haskell notation but deviates slightly by using a single colon rather than double colon for type signatures. \note{Experimental.}}\footnote{The infix operators for function types (``|->|'') and linear maps (``|:-*|'') both associate to the right and have equal, very low precedence.
+The function around which the automatic differentiation (AD) algorithm is organized simply ``zips'' together a function |f :: a -> b| and its derivative |der f :: a -> a :-* b|:\notefoot{Red bracketed remarks are notes to myself.}\footnote{This paper generally uses Haskell notation but deviates slightly by using a single colon rather than double colon for type signatures. \note{Experimental.}}\footnote{The infix operators for function types (``|->|'') and linear maps (``|:-*|'') both associate to the right and have equal, very low precedence.
 For instance, ``|a -> a :-* b|'' means |a -> (a :-* b)|.}
 \begin{code}
 adh :: (a -> b) -> D a b
