@@ -846,9 +846,9 @@ There appear to be some significant shortcomings, however:
   Perhaps surprisingly, a function type itself is not the right answer.
   We provide two possible implementations for function tangents and differentiable currying, and explain the tradeoffs.
   \end{quotation}
-They do not, however, say what makes their answers ``right'' and the unsurprising answer wrong.
+There is no explanation, however, of what makes their answers ``right'' and the unsurprising answer wrong.
 \item
-  The algorithm presented is limited to reverse mode rather than a general AD algorithm as in \cite{Elliott-2018-ad-icfp} the work described here.
+  The algorithm presented is limited to reverse mode rather than a general AD algorithm as in \cite{Elliott-2018-ad-icfp} and the work described above.
 \end{itemize}
 
 A second related paper is \cite{Brunel2019Backprop}.
@@ -858,7 +858,7 @@ However, Elliot's approach is still restricted to first-order programs (i.e., co
 \end{quotation}
 The confusion here---which was mistakenly encouraged by \cite{Elliott-2018-ad-icfp}---is the idea that the category of differentiable functions itself is (or need be) a biproduct category.
 Rather, all that was needed is that the various representations \emph{linear maps} (derivatives) are biproduct categories.
-This requirement is satisfied by construction, since the various representations are all calculated from their denotation (linear functions, itself a biproduct category) via simple cocartesian functors.
+This requirement is easily satisfied by construction, since the various representations are all calculated from their denotation (linear functions, itself a biproduct category) via simple cocartesian functors.
 
 \bibliography{bib}
 
