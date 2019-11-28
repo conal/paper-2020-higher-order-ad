@@ -159,7 +159,7 @@ Differentiation itself (i.e., |der|) is linear.
 One half of the |curry|/|uncurry| isomorphism involves functions of pair-valued domains.
 The notion of partial derivatives is helpful for differentiating such functions.\out{\notefoot{I'm leaning toward eliminating |derl| and |derr| in favor of their meanings.
 Whenever I use the names below, I then immediate inline them.}}\footnote{Recall that, on linear maps, |(f !!! g) (a,b) = f a + g b|, |inl a = (a,0)|, and |inr b = (0,b)|}
-\begin{lemma}[\provedIn{thm:deriv-pair-domain}]\thmLabel{deriv-pair-domain}
+\begin{lemma}[\provedIn{deriv-pair-domain}]\lemLabel{deriv-pair-domain}
 Given a function |f :: a :* b -> c|, $$
 |der f (a,b) == derl f (a,b) !!! derr f (a,b)|
 $$ where |derl| and |derr| construct the (``first'' and ``second'', or ``left'' and ``right'') ``partial derivatives'' of |f| at |(a,b)|, defined as follows:
@@ -193,7 +193,7 @@ $$
 \begin{proof}~
 \begin{code}
     der f (a,b)
-==  derl f (a,b) !!! derr f (a,b)          -- \propRef{deriv-pair-domain}
+==  derl f (a,b) !!! derr f (a,b)          -- \lemRef{deriv-pair-domain}
 ==  der (f . (,b)) a !!! der (f . (a,)) b  -- |derl| and |derr| definitions
 ==  f . (,b) !!! f . (a,)                  -- linearity
 \end{code}
@@ -208,7 +208,7 @@ For instance, the derivative of uncurried multiplication is given by the Leibniz
 % which is sometimes written ``|d (u v) = u dv + v du|''.
 
 More generally, consider differentiating interacts with uncurrying:
-\begin{corollary}[\provedIn{cor:deriv-uncurry}]\corLabel{deriv-uncurry}
+\begin{corollary}[\provedIn{deriv-uncurry}]\corLabel{deriv-uncurry}
 $$| der (uncurry g) (a,b) == at b . der g a !!! der (g a) b |$$
 \end{corollary}
 
@@ -226,13 +226,13 @@ For cartesian closure, we'll need the derivative of another function with a pair
 eval :: (a -> b) :* a -> b
 eval (f,a) = f a  -- on functions
 \end{code}
-(Note that |eval| is neither linear nor bilinear, so \propRef{deriv-linear} and \propRef{deriv-bilinear} are both inapplicable.)
+(Note that |eval| is neither linear nor bilinear, so \thmRef{deriv-linear} and \corRef{deriv-bilinear} are both inapplicable.)
 We'll need one more linear map operation, which is curried, reverse function application:\footnote{Linearity of |at a| follows from the usual definition of addition and scaling on functions.}
 \begin{code}
 at :: a -> (a -> b) :-* b
 at a df = df a
 \end{code}
-\begin{corollary}[\provedIn{cor:deriv-eval}] \corLabel{deriv-eval}
+\begin{corollary}[\provedIn{deriv-eval}] \corLabel{deriv-eval}
 $$ |der eval (f,a) == at a !!! der f a| $$
 \end{corollary}
 
@@ -245,13 +245,13 @@ We'll need another linear map operation, which is the indexed variant of |(&&&)|
 forkF :: (b -> a :-* c) -> (a :-* b -> c)
 forkF h = \ da b -> h b da
 \end{code}
-\begin{lemma}[\provedIn{thm:deriv-function-codomain}]\thmLabel{deriv-function-codomain}
+\begin{lemma}[\provedIn{deriv-function-codomain}]\lemLabel{deriv-function-codomain}
 Given a function |g :: a -> b -> c|,
 $$|der g a = forkF (\ b -> der (at b . g) a)|.$$
 \end{lemma}
 
 %% Curried functions differentiate as follows:
-\begin{corollary}[\provedIn{cor:deriv-curry}]\corLabel{deriv-curry}
+\begin{corollary}[\provedIn{deriv-curry}]\corLabel{deriv-curry}
 $$ |der (curry f) a == forkF (derl f . (a,))| $$
 \end{corollary}
 
@@ -280,9 +280,9 @@ Then the RHS:
     adh (curry f)
 ==  D (curry f &&& der (curry f))                                    -- |adh| definition
 ==  D (\ a -> (curry f a, der (curry f) a))                          -- |(&&&)| on functions
-==  D (\ a -> ((\ b -> f (a,b)), forkF (derl f . (a,))))             -- |curry| and |(a,)|; \propRef{deriv-curry}
+==  D (\ a -> ((\ b -> f (a,b)), forkF (derl f . (a,))))             -- |curry| and |(a,)|; \corRef{deriv-curry}
 ==  D (\ a -> ((\ b -> f (a,b)), forkF (\ b -> derl f (a,b))))       -- |(.)| on functions
-==  D (\ a -> ((\ b -> f (a,b)), forkF (\ b -> der f (a,b) . inl)))  -- \proofRef{thm:deriv-pair-domain}
+==  D (\ a -> ((\ b -> f (a,b)), forkF (\ b -> der f (a,b) . inl)))  -- \proofRef{deriv-pair-domain}
 \end{code}
 The last form uses |f| and |der f|, which can be extracted from |adh f = D (f &&& der f)|:
 Thus a sufficient condition for our homomorphic specification (|curry (adh f) == adh (curry f)|) is
@@ -356,7 +356,7 @@ Then the RHS:
 ==  D (uncurry g &&& der (uncurry g))                       -- |adh| definition
 ==  D (\ (a,b) -> (uncurry g (a,b), der (uncurry g) (a,b))  -- |(&&&)| definition
 ==  D (\ (a,b) -> (g a b, der (uncurry g) (a,b))            -- |uncurry| on functions
-==  D (\ (a,b) -> (g a b, at b . der g a !!! der (g a) b))  -- \propRef{deriv-uncurry}
+==  D (\ (a,b) -> (g a b, at b . der g a !!! der (g a) b))  -- \corRef{deriv-uncurry}
 \end{code}
 Now we have a problem with solving the defining homomorphism above.
 Although we can extract |g| and |der g| from |adh g|, we cannot extract |der (g a)|.
@@ -384,7 +384,7 @@ Simplifying the RHS,
 ==  D (eval &&& der eval)                        -- |adh| definition
 ==  D (\ (f,a) -> (eval (f,a), der eval (f,a)))  -- |(&&&)| on functions
 ==  D (\ (f,a) -> (f a, der eval (f,a)))         -- |eval| on functions
-==  D (\ (f,a) -> (f a, at a !!! der f a))       -- \propRef{deriv-eval}
+==  D (\ (f,a) -> (f a, at a !!! der f a))       -- \corRef{deriv-eval}
 \end{code}
 As with uncurrying (\secref{Uncurry}), the final form is well-defined but is not a computable recipe, leaving us in a pickle.
 Next, let's look for some wiggle room.
@@ -497,13 +497,13 @@ ado = adh . wrapO
 unado :: D (O a) (O b) -> (a -> b)
 unado = unwrapO . unadh
 \end{code}
-\begin{lemma}[\provedIn{wrapO-iso}]\thmLabel{wrapO-iso}
+\begin{lemma}[\provedIn{wrapO-iso}]\lemLabel{wrapO-iso}
 |wrapO| and |unwrapO| form a linear isomorphism.
 \end{lemma}
-\begin{lemma}[\provedIn{ado-iso}]\thmLabel{ado-iso}
+\begin{lemma}[\provedIn{ado-iso}]\lemLabel{ado-iso}
 |ado| and |unado| form a linear isomorphism.
 \end{lemma}
-\begin{lemma}[\provedIn{wrapO-cartesian}]\thmLabel{wrapO-cartesian}
+\begin{lemma}[\provedIn{wrapO-cartesian}]\lemLabel{wrapO-cartesian}
 |wrapO| is a cartesian functor.
 \end{lemma}
 
@@ -514,7 +514,7 @@ Thanks to the simple, regular structure of |toO| and |unO|,
 \begin{theorem}\thmLabel{ado-cartesian}
 |ado| is a cartesian functor.
 \end{theorem}
-Proof: |adh| is a cartesian functor \citep{Elliott-2018-ad-icfp}, as is |wrapO| (\propRef{wrapO-cartesian}), so |ado = adh . wrapO| is also.
+Proof: |adh| is a cartesian functor \citep{Elliott-2018-ad-icfp}, as is |wrapO| (\lemRef{wrapO-cartesian}), so |ado = adh . wrapO| is also.
 
 What about exponentials and cartesian \emph{closure}?
 As mentioned above, |O (a -> b) == Exp D (O a) (O b) == D (O a) (O b)|, which suggests using |ado| and |unado| for |toO| and |unO|:
@@ -526,19 +526,19 @@ instance (HasO a, HasO b) => HasO (a -> b) where
 \end{code}
 
 A useful consequence:
-\begin{lemma}[\provedIn{wrapO-curry}]\thmLabel{wrapO-curry}
+\begin{lemma}[\provedIn{wrapO-curry}]\lemLabel{wrapO-curry}
 $$|wrapO (curry f) == adh . curry (wrapO f)|$$
 \end{lemma}
 \begin{corollary}\corLabel{curry-wrapO}
 $$|curry (wrapO f) == unadh . wrapO (curry f)|$$
 \end{corollary}
 \begin{proof}
-Left-compose |unadh| with both sides of \propRef{wrapO-curry}; then simplify and reverse the resulting equation.
+Left-compose |unadh| with both sides of \lemRef{wrapO-curry}; then simplify and reverse the resulting equation.
 \end{proof}
 
 Let's now try to solve the CCF equations for |ado|.
 This time begin with |eval|:
-\begin{lemma}[\provedIn{thm:ado-eval}] \thmLabel{ado-eval}
+\begin{lemma}[\provedIn{ado-eval}] \lemLabel{ado-eval}
 With the following (effective) definition of |eval| on |D|, |eval == ado eval|:
 \begin{code}
 eval = D (\ (D h,a) -> let (b,f') = h a in (b, at a . unadh !!! f'))
@@ -547,7 +547,7 @@ eval = D (\ (D h,a) -> let (b,f') = h a in (b, at a . unadh !!! f'))
 For |uncurry|, use the standard definition |uncurry g = eval . first g|.
 
 %format fw = "\subo{f}"
-The definition of |curry| in \secref{Curry} worked fine, but we'll need to check again, as we did with the cartesian category operations (\propRef{ado-cartesian}).
+The definition of |curry| in \secref{Curry} worked fine, but we'll need to check again, as we did with the cartesian category operations (\thmRef{ado-cartesian}).
 The homomorphism equation is |curry (ado f) == ado (curry f)|, to be solved for the unknown LHS |curry| (on |D|), with |f :: a :* b -> c|.
 First let |fw = wrapO f|.
 Simplify the LHS:
@@ -559,7 +559,7 @@ Simplify the LHS:
 \end{code}
 Then the RHS:\notefoot{State, prove, and use a lemma about |adh (g . f) a| for linear |g| and another for linear |f|.
 Maybe also |ado (g . f) a| for linear |g| or |f|.}
-\begin{lemma}[\provedIn{ado-curry}]\thmLabel{ado-curry}~
+\begin{lemma}[\provedIn{ado-curry}]\lemLabel{ado-curry}~
 \begin{code}
 ado (curry f) ==  D  (\ a ->  (  D (\ b -> (fw (a,b), derr fw (a,b)))
                               ,  \da -> D (\ b -> (derl fw (a,b) da, at da . derr (derl fw) (a,b)))))
@@ -595,7 +595,7 @@ In other words, differentiation of higher-order functions requires all higher-or
 
 In order to construct higher-order derivatives, it will help to examine the linearity properties of our familiar categorical vocabulary, which turns out to be mostly linear with just a bit of bilinearity.
 As noted in \cite{Elliott-2018-ad-icfp}, the categorical operation |id|; the cartesian operations |exl|, |exr|, |dup|; and the cocartesian operations |inl|, |inr|, and |jam| are all linear.
-\propRefTwo{fork-iso-linear}{join-iso-linear} have already noted that the functions |fork| and |join| (uncurried versions of |(&&&)| and |(!!!)| (\secref{Curry}) are linear (as well as isomorphisms).
+\lemRefTwo{fork-iso-linear}{join-iso-linear} have already noted that the functions |fork| and |join| (uncurried versions of |(&&&)| and |(!!!)| (\secref{Curry}) are linear (as well as isomorphisms).
 Next, let |comp| be uncurried composition:\notefoot{Maybe define |comp| only for linear maps.}
 \begin{code}
 comp :: Category k => (b `k` c) :* (a `k` b) -> (a `k` c)
@@ -639,7 +639,7 @@ Function composition has the following properties:
 \end{lemma}
 %endif
 
-These properties will help re-express \propRefTwo{deriv-compose}{deriv-cross} and related facts in a form more amenable to constructing higher derivatives.
+These properties will help re-express \thmRefTwo{deriv-compose}{deriv-cross} and related facts in a form more amenable to constructing higher derivatives.
 \begin{lemma}[\provedIn{deriv-pointfree}]\lemLabel{deriv-pointfree}~
 \begin{enumerate}
 \item \label{deriv-pointfree-compose}
@@ -664,7 +664,7 @@ These properties will help re-express \propRefTwo{deriv-compose}{deriv-cross} an
   On linear maps, |der comp == join . (flip (.) *** (.)) . swap|.
 \end{enumerate}
 \end{lemma}
-\nc\propRefPF[1]{\propRef{deriv-pointfree}-\ref{deriv-pointfree-#1}}
+\nc\lemRefPF[1]{\lemRef{deriv-pointfree}-\ref{deriv-pointfree-#1}}
 
 %% %format dern (n) f = f"^{("n")}"
 %format dern (n) = der"^{"n"}"
@@ -740,7 +740,7 @@ Next, uncurried linear map composition:
     ders comp
 ==  comp &&& ders (der comp)                            -- |ders| definition
 ==  comp &&& linear (der comp)                          -- derivative of bilinear is linear
-==  comp &&& linear (join . (flip (.) *** (.)) . swap)  -- \propRefPF{comp}
+==  comp &&& linear (join . (flip (.) *** (.)) . swap)  -- \lemRefPF{comp}
 \end{code}
 Name |ders comp| for future use:
 \begin{code}
@@ -750,7 +750,7 @@ Then function compositions:
 \begin{code}
     ders (g . f)
 ==  g . f &&& ders (der (g . f))                                   -- |ders| definition
-==  g . f &&& ders (comp . (der g . f &&& der f))                  -- \propRefPF{compose}
+==  g . f &&& ders (comp . (der g . f &&& der f))                  -- \lemRefPF{compose}
 ==  g . f &&& ders comp . ders (der g) . ders f &&& ders (der f))  -- coinduction
 ==  g . f &&& comp' . ders (der g) . ders f &&& ders (der f))      -- above
 \end{code}
@@ -761,9 +761,9 @@ Finally, |f &&& g|:
 \begin{code}
     ders (f &&& g)
 ==  (f &&& g) &&& ders (der (f &&& g))                           -- |ders| definition
-==  (f &&& g) &&& ders (fork . (der f &&& der g))                -- \propRefPF{fork}
+==  (f &&& g) &&& ders (fork . (der f &&& der g))                -- \lemRefPF{fork}
 ==  (f &&& g) &&& ders fork . (ders (der f) &&& ders (der g))    -- coinduction
-==  (f &&& g) &&& linear fork . (ders (der f) &&& ders (der g))  -- |fork| linearity (\propRef{fork-iso-linear})
+==  (f &&& g) &&& linear fork . (ders (der f) &&& ders (der g))  -- |fork| linearity (\lemRef{fork-iso-linear})
 \end{code}
 Again, the components here (|f|, |g|, |ders (der f)|, and |ders (der g)|) are all available from |ders f| and |ders g|, so we have a computable recipe for |(&&&)| on |Ds|.
 
@@ -865,7 +865,7 @@ This requirement is satisfied by construction, since the various representations
 
 \sectionl{Proofs}
 
-\subsection{\propRef{deriv-pair-domain}}\proofLabel{thm:deriv-pair-domain}
+\subsection{\lemRef{deriv-pair-domain}}\proofLabel{deriv-pair-domain}
 
 Suppose we have a function |f :: a :* b -> c|, and we want to compute its derivative at a point in its (pair-valued) domain.
 Because linear maps (derivatives) form a cocartesian category,\footnote{The cocartesian law |h = h . inl !!! h . inr| is dual to the cartesian law |h = exl . h &&& exr . h| \citep{Gibbons2002Calculating}.}
@@ -882,15 +882,15 @@ Next, note that |der f (a,b) . inl = der (f . (,b)) a|, by the following equatio
 ==  der f (a,b) . der (inl + const (0,b)) a          -- |inl| on functions, and meaning of |(,b)|
 ==  der f (a,b) . (der inl a + der (const (0,b)) a)  -- linearity of |(+)|
 ==  der f (a,b) . der inl a                          -- |der (const z) a == 0|
-==  der f (a,b) . inl                                -- linearity of |inl|; \propRef{deriv-linear}
+==  der f (a,b) . inl                                -- linearity of |inl|; \thmRef{deriv-linear}
 \end{code}
 Likewise, |der f (a,b) . inr = der (f . (a,)) b|.
 
-\subsection{\propRef{deriv-uncurry}}\proofLabel{cor:deriv-uncurry}
+\subsection{\corRef{deriv-uncurry}}\proofLabel{deriv-uncurry}
 
 \begin{code}
     der (uncurry g) (a,b)
-==  derl (uncurry g) (a,b) !!! derr (uncurry g) (a,b)      -- \propRef{deriv-pair-domain}
+==  derl (uncurry g) (a,b) !!! derr (uncurry g) (a,b)      -- \lemRef{deriv-pair-domain}
 ==  der (uncurry g . (,b)) a !!! der (uncurry g . (a,)) b  -- |derl| and |derr| definitions
 ==  der (\ a' -> uncurry g (a',b)) a !!!                   -- $\eta$ expansion and simplification
     der (\ b' -> uncurry g (a,b')) b
@@ -900,7 +900,7 @@ Likewise, |der f (a,b) . inr = der (f . (a,)) b|.
 ==  at b . der g a !!! der (g a) b                         -- linearity of |at|
 \end{code}
 
-\subsection{\propRef{deriv-eval}}\proofLabel{cor:deriv-eval}
+\subsection{\corRef{deriv-eval}}\proofLabel{deriv-eval}
 
 \begin{code}
     der eval (f,a)
@@ -915,12 +915,12 @@ Alternatively, calculate |der eval| via |uncurry|:
 \begin{code}
     der eval (f,a)
 ==  der (uncurry id) (f,a)            -- |eval = uncurry id|
-==  at a . der id a !!! der (id f) a  -- \propRef{deriv-uncurry}
+==  at a . der id a !!! der (id f) a  -- \corRef{deriv-uncurry}
 ==  at a . id !!! der f a             -- |id| is linear
 ==  at a !!! der f a                  -- |id| as identity
 \end{code}
 
-\subsection{\propRef{deriv-function-codomain}}\proofLabel{thm:deriv-function-codomain}
+\subsection{\lemRef{deriv-function-codomain}}\proofLabel{deriv-function-codomain}
 
 \begin{code}
     forkF (\ b -> der (at b . g) a)
@@ -932,12 +932,11 @@ Alternatively, calculate |der eval| via |uncurry|:
 ==  der g a                                    -- $\eta$ reduction (twice)
 \end{code}
 
-\subsection{\propRef{deriv-curry}}\proofLabel{cor:deriv-curry}
+\subsection{\corRef{deriv-curry}}\proofLabel{deriv-curry}
 
-%% The proof is a simple application of \propRef{deriv-function-codomain}:
 \begin{code}
     der (curry f) a
-==  forkF (\ b -> der (at b . curry f)) a           -- \propRef{deriv-function-codomain}
+==  forkF (\ b -> der (at b . curry f)) a           -- \lemRef{deriv-function-codomain}
 ==  forkF (\ b -> der (\ a -> at b (curry f a))) a  -- |(.)| on functions
 ==  forkF (\ b -> der (\ a -> curry f a b)) a       -- |at| definition
 ==  forkF (\ b -> der (\ a -> f (a,b))) a           -- |curry| on functions
@@ -947,7 +946,7 @@ Alternatively, calculate |der eval| via |uncurry|:
 \end{code}
 
 
-\subsection{\propRef{wrapO-iso}}\proofLabel{wrapO-iso}
+\subsection{\lemRef{wrapO-iso}}\proofLabel{wrapO-iso}
 
 The functions |wrapO| and |unwrapO| form an isomorphism:
 \begin{code}
@@ -973,7 +972,7 @@ Linearity of |wrapO| and |unwrapO| follows from two facts:
 \end{itemize}
 Proof: exercise.
 
-\subsection{\propRef{ado-iso}}\proofLabel{ado-iso}
+\subsection{\lemRef{ado-iso}}\proofLabel{ado-iso}
 
 The functions |ado| and |unado| form an isomorphism:
 \begin{code}
@@ -988,9 +987,9 @@ The functions |ado| and |unado| form an isomorphism:
 ==  id                             -- |unadh . adh == id|
 \end{code}
 
-Linearity of |ado| and |unado| follows from linearity of |adh| and |unadh| and \propRef{wrapO-iso}.
+Linearity of |ado| and |unado| follows from linearity of |adh| and |unadh| and \lemRef{wrapO-iso}.
 
-\subsection{\propRef{wrapO-cartesian}}\proofLabel{wrapO-cartesian}
+\subsection{\lemRef{wrapO-cartesian}}\proofLabel{wrapO-cartesian}
 
 The proof that |wrapO| is a cartesian functor mainly exploit the regular structure of |toO| and |unO|:
 
@@ -1032,7 +1031,7 @@ The proof that |wrapO| is a cartesian functor mainly exploit the regular structu
 ==  dup                                        -- |toO . unO == id|
 \end{code}
 
-\subsection{\propRef{wrapO-curry}}\proofLabel{wrapO-curry}
+\subsection{\lemRef{wrapO-curry}}\proofLabel{wrapO-curry}
 
 \begin{code}
     wrapO (curry f)
@@ -1056,7 +1055,7 @@ For this last step,
 
 Equivalently, |curry (wrapO f) == unadh . wrapO (curry f)|.\notefoot{Maybe this form will help simplify another proof.}
 
-\subsection{|ado| and |eval|}\proofLabel{thm:ado-eval}
+\subsection{|ado| and |eval|}\proofLabel{ado-eval}
 
 The homomorphism equation is |eval == ado eval|.
 Simplifying the RHS,
@@ -1075,7 +1074,7 @@ Simplifying the RHS,
 ==  adh (uncurry unadh)                                                     -- |uncurry| on functions
 ==  D (\ (fh,a) -> (uncurry unadh (fh,a), der (uncurry unadh) (fh,a)))      -- |adh| definition
 ==  D (\ (fh,a) -> (unadh fh a, der (uncurry unadh) (fh,a)))                -- |uncurry| on functions
-==  D (\ (fh,a) -> (unadh fh a, at a . der unadh fh !!! der (unadh fh) a))  -- \proofRef{cor:deriv-uncurry}
+==  D (\ (fh,a) -> (unadh fh a, at a . der unadh fh !!! der (unadh fh) a))  -- \proofRef{deriv-uncurry}
 ==  D (\ (fh,a) -> (unadh fh a, at a . unadh !!! der (unadh fh) a))         -- |unadh| is linear
 \end{code}
 %if False
@@ -1131,23 +1130,23 @@ D (  \ (D h,a) -> ... in   (b,  at a .  unadh !!! f'))  :: D (O ((a -> b) :* a))
 ado  eval  :: D (O ((a -> b) :* a)) (O b)
 \end{code}
 
-\subsection{\propRef{ado-curry}}\proofLabel{ado-curry}
+\subsection{\lemRef{ado-curry}}\proofLabel{ado-curry}
 
 Letting |fw = wrapO f|,
 \begin{code}
     ado (curry f)
 ==  adh (wrapO (curry f))                                      -- |ado| definition
-==  adh (adh . curry (wrapO f))                                -- \propRef{wrapO-curry}
+==  adh (adh . curry (wrapO f))                                -- \lemRef{wrapO-curry}
 ==  adh (adh . curry fw)                                       -- |fw| definition
 ==  D ((adh . curry fw) &&& der (adh . curry fw))              -- |adh| definition
 ==  D (\ a -> adh (curry fw a), der (adh . curry fw) a)        -- |(&&&)| definition
 ==  D (\ a -> adh (curry fw a), adh . der (curry fw) a)        -- chain rule; linearity of |adh|
-==  D (\ a -> adh (curry fw a), adh . forkF (derl fw . (a,)))  -- \propRef{deriv-curry}
+==  D (\ a -> adh (curry fw a), adh . forkF (derl fw . (a,)))  -- \thmRef{deriv-cross}
 \end{code}
 Now, separately simplify the two main parts of this last form.
 \begin{code}
     adh (curry fw a)
-==  D (\ b -> (fw (a,b), derr fw (a,b)))       -- |adh| definition and \propRef{deriv-pair-domain}
+==  D (\ b -> (fw (a,b), derr fw (a,b)))       -- |adh| definition and \lemRef{deriv-pair-domain}
 \end{code}
 \begin{code}
     adh . forkF (derl fw . (a,))
@@ -1163,7 +1162,7 @@ Now simplify the remaining differentiated composition:
 \begin{code}
     der (at da . derl fw . (a,)) b
 ==  at da . der (derl fw . (a,)) b            -- chain rule; linearity of |at da|
-==  at da . derr (derl fw) (a,b)              -- \propRef{deriv-pair-domain}
+==  at da . derr (derl fw) (a,b)              -- \lemRef{deriv-pair-domain}
 \end{code}
 Putting the pieces back together,
 \begin{code}
@@ -1171,7 +1170,7 @@ ado (curry f) ==  D  (\ a ->  (D (\ b -> (fw (a,b), derr fw (a,b)))
                      ,  \da -> D (\ b -> (derl fw (a,b) da, at da . derr (derl fw) (a,b)))))
 \end{code}
 
-\subsection{\propRef{comp-bilinear}}\proofLabel{comp-bilinear}
+\subsection{\lemRef{comp-bilinear}}\proofLabel{comp-bilinear}
 
 To show that |comp = uncurry (.)| is bilinear, we can show that it is linear in each argument, which is to say |curry comp g = (g .)| and |curry' comp f = (. f)| are linear for all |g| and |f|.
 
@@ -1218,7 +1217,7 @@ Second, |(g . NOP)| is linear for all linear functions |g|.
     comp (
 \end{code}
 
-\subsection{\propRef{bilinear-props}}\proofLabel{bilinear-props}
+\subsection{\lemRef{bilinear-props}}\proofLabel{bilinear-props}
 
 Given any bilinear function |h|,
 
@@ -1265,7 +1264,7 @@ Similarly for |curry' h|.
 
 \begin{code}
     der comp (g,f)
-==  comp . (,f) !!! comp . (g,)  -- \propRef{deriv-bilinear}
+==  comp . (,f) !!! comp . (g,)  -- \corRef{deriv-bilinear}
 ==  (NOP . f) !!! (g . NOP)      -- |comp| and section definitions
 \end{code}
 %endif
@@ -1275,25 +1274,25 @@ Similarly for |curry' h|.
 \begin{code}
     der h ((a,b) + (a',b'))
 ==  der h (a+a',b+b')                                         -- |(+)| on functions
-==  h . (, b+b') !!! h . (a+a')                               -- \propRef{deriv-bilinear}
+==  h . (, b+b') !!! h . (a+a')                               -- \corRef{deriv-bilinear}
 ==  \ (da,db) -> h (da,b+b') + h (a+a',db)                    -- |(!!!)| on functions
 ==  \ (da,db) -> h (da,b) + h (da,b') + h (a,db) + h (a',db)  -- bilinearity of |h|
 ==  \ (da,db) -> h (da,b) + h (a,db) + h (da,b') + h (a',db)  -- commutativity of |(+)|
 ==  (\ (da,db) -> h (da,b) + h (a,db)) +
     (\ (da,db) -> h (da,b') + h (a',db))                      -- |(+)| on functions
-==  der h (a,b) + der h (a',b')                               -- \propRef{deriv-bilinear}
+==  der h (a,b) + der h (a',b')                               -- \corRef{deriv-bilinear}
 \end{code}
 
 Similarly for scaling.
 
 \end{enumerate}
 
-\subsection{\propRef{deriv-pointfree}}\proofLabel{deriv-pointfree}
+\subsection{\lemRef{deriv-pointfree}}\proofLabel{deriv-pointfree}
 
 \begin{code}
     der (g . f)
 ==  \ a -> der (g . f) a                         -- $\eta$ expansion
-==  \ a -> der g (f a) . der f a                 -- chain rule (\propRef{deriv-compose})
+==  \ a -> der g (f a) . der f a                 -- chain rule (\thmRef{deriv-compose})
 ==  \ a -> (der g . f) a . der f a               -- |(.)| on functions
 ==  \ a -> (.) ((der g . f) a) (der f a)         -- alternative notation
 ==  \ a -> uncurry (.) ((der g . f) a, der f a)  -- |uncurry| on functions
@@ -1305,7 +1304,7 @@ Similarly for scaling.
 \begin{code}
     der (f *** g)
 ==  \ (a,b) -> der (f *** g) (a,b)               -- $\eta$ expansion
-==  \ (a,b) -> der f a *** der g b               -- cross rule (\propRef{deriv-cross})
+==  \ (a,b) -> der f a *** der g b               -- cross rule (\thmRef{deriv-cross})
 ==  \ (a,b) -> uncurry (***) (der f a, der g b)  -- |uncurry| on functions
 ==  \ (a,b) -> cross (der f a, der g b)          -- |cross| definition
 ==  \ (a,b) -> cross ((der f *** der g) (a,b))   -- |(***)| on functions
@@ -1316,9 +1315,9 @@ Similarly for scaling.
     der (f &&& g)
 ==  der ((f *** g) . dup)                     -- cartesian law
 ==  \ a -> der ((f *** g) . dup) a            -- $\eta$ expansion
-==  \ a -> der (f *** g) (dup a) . der dup a  -- chain rule (\propRef{deriv-compose})
+==  \ a -> der (f *** g) (dup a) . der dup a  -- chain rule (\thmRef{deriv-compose})
 ==  \ a -> der (f *** g) (a,a) . der dup a    -- |dup| for functions
-==  \ a -> der f a *** der g a . der dup a    -- cross rule (\propRef{deriv-cross})
+==  \ a -> der f a *** der g a . der dup a    -- cross rule (\thmRef{deriv-cross})
 ==  \ a -> der f a *** der g a . dup          -- |dup| linearity
 ==  \ a -> der f a &&& der g a                -- cartesian law
 ==  fork . (der f &&& der g)                  -- |fork| definition
@@ -1328,7 +1327,7 @@ For a linear function |f|,
 \begin{code}
     der f
 ==  \ a -> der f a  -- $\eta$ expansion
-==  \ a -> f        -- \propRef{deriv-linear}
+==  \ a -> f        -- \thmRef{deriv-linear}
 ==  const f         -- |const| definition
 \end{code}
 
@@ -1336,7 +1335,7 @@ For any function |f :: a :* b -> c|,
 \begin{code}
     der f
 ==  \ (a,b) -> der f (a,b)                    -- $\eta$ expansion
-==  \ (a,b) -> derl f (a,b) !!! derr f (a,b)  -- \propRef{deriv-pair-domain}
+==  \ (a,b) -> derl f (a,b) !!! derr f (a,b)  -- \lemRef{deriv-pair-domain}
 ==  join . (derl f &&& derr f)                -- |join| definition
 \end{code}
 
@@ -1344,7 +1343,7 @@ For a \emph{bilinear} function |f :: a :* b -> c|,
 \begin{code}
     der f
 ==  \ (a,b) -> der f (a,b)                                 -- $\eta$ expansion
-==  \ (a,b) -> f . (, b) !!! f . (a,)                      -- \propRef{deriv-bilinear}
+==  \ (a,b) -> f . (, b) !!! f . (a,)                      -- \corRef{deriv-bilinear}
 ==  \ (a,b) -> curry' f b !!! curry f a                    -- section definitions
 ==  \ (a,b) -> join (curry' f b, curry f a)                -- |join = uncurry (!!!)|
 ==  \ (a,b) -> join ((curry' f *** curry f) (b,a))         -- |(***)| on functions

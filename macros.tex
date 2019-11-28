@@ -100,19 +100,25 @@
 %% \theoremstyle{remark}
 
 \nc\propLabel[1]{\label{prop:#1}}
-\nc\propRef[1]{\autoref{prop:#1}}
-\nc\propRefTwo[2]{\autoref{prop:#1} and \autoref{prop:#2}}
+%% \nc\propRef[1]{\autoref{prop:#1}}
+%% \nc\propRefTwo[2]{\autoref{prop:#1} and \autoref{prop:#2}}
 
 \newtheorem{theorem}{Theorem}%[section]
-\nc\thmLabel[1]{\label{prop:#1}}
+\nc\thmLabel[1]{\label{thm:#1}}
+\nc\thmRef[1]{\autoref{thm:#1}}
+\nc\thmRefTwo[2]{Theorems \ref{thm:#1} and \ref{thm:#2}}
 
 \newtheorem{corollary}{Corollary}[theorem]
-\nc\corLabel[1]{\label{prop:#1}}
-\def\corollaryautorefname{Corollary}
+\nc\corLabel[1]{\label{cor:#1}}
+%% \def\corollaryautorefname{Corollary}
+\nc\corRef[1]{Corollary \ref{cor:#1}}
+\nc\corRefTwo[2]{Corollaries \ref{cor:#1} and \ref{cor:#2}}
 
 \newtheorem{lemma}[theorem]{Lemma}
-\nc\lemLabel[1]{\label{prop:#1}}
-\def\lemmaautorefname{Lemma}
+\nc\lemLabel[1]{\label{lem:#1}}
+%% \def\lemmaautorefname{Lemma}
+\nc\lemRef[1]{Lemma \ref{lem:#1}}
+\nc\lemRefTwo[2]{Lemmas \ref{lem:#1} and \ref{lem:#2}}
 
 \nc\proofEx{\textnormal{(Proof: Exercise.)}}
 %% \nc\proofEx{\noindent\textnormal{Proof: Exercise.}}
