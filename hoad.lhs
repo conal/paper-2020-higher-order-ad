@@ -744,6 +744,7 @@ Next, uncurried linear map composition:
 \end{code}
 Name |ders comp| for future use:
 \begin{code}
+comp' :: Ds ((a -> b) :* a) b
 comp' = comp &&& linear (join . (flip (.) *** (.)) . swap)
 \end{code}
 Then function compositions:
