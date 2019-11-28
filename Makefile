@@ -34,10 +34,10 @@ pdfs: $(pdfs)
 clean:
 	rm -f $(paper)*.{tex,pdf,aux,nav,snm,ptb,log,out,toc,bbl,blg,fdb_latexmk,fls}
 
-STASH=conal@conal.net:/home/conal/web/papers/$(paper)
+STASH=conal@conal.net:/home/conal/web/papers/higher-order-ad
 
 web: web-token
 
 web-token: $(paper).pdf
-	scp $? $(STASH)/ccc.pdf
+	scp $? $(STASH)/higher-order-ad.pdf
 	touch $@
