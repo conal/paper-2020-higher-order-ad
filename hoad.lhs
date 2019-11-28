@@ -11,7 +11,6 @@
 
 \author{Conal Elliott\\[0.5ex]conal@@conal.net}
 
-
 \usepackage{datetime}
 \usdate
 
@@ -144,9 +143,9 @@ In addition to these three theorems, we need a collection of facts about the der
 
 A few additional properties of differentiation will prove useful in extending \cite{Elliott-2018-ad-icfp} to higher-order functions and higher-order derivatives.
 
+%if False
 \subsectionl{Linearity and invertibility}
 
-%if False
 As is well-known,
 \begin{theorem}
 Differentiation itself (i.e., |der|) is linear.
@@ -160,7 +159,7 @@ Differentiation itself (i.e., |der|) is linear.
 One half of the |curry|/|uncurry| isomorphism involves functions of pair-valued domains.
 The notion of partial derivatives is helpful for differentiating such functions.\out{\notefoot{I'm leaning toward eliminating |derl| and |derr| in favor of their meanings.
 Whenever I use the names below, I then immediate inline them.}}\footnote{Recall that, on linear maps, |(f !!! g) (a,b) = f a + g b|, |inl a = (a,0)|, and |inr b = (0,b)|}
-\begin{theorem}[\provedIn{thm:deriv-pair-domain}]\thmLabel{deriv-pair-domain}
+\begin{lemma}[\provedIn{thm:deriv-pair-domain}]\thmLabel{deriv-pair-domain}
 Given a function |f :: a :* b -> c|, $$
 |der f (a,b) == derl f (a,b) !!! derr f (a,b)|
 $$ where |derl| and |derr| construct the (``first'' and ``second'', or ``left'' and ``right'') ``partial derivatives'' of |f| at |(a,b)|, defined as follows:
@@ -177,7 +176,7 @@ Equivalently,
 derl  f (a,b) = der f (a,b) . inl
 derr  f (a,b) = der f (a,b) . inr
 \end{code}
-\end{theorem}
+\end{lemma}
 Note also that |f . (a,) = curry f a| and |f . (,b) = curry' f b|, where
 \begin{code}
 curry   f a b = f (a,b)
@@ -246,10 +245,10 @@ We'll need another linear map operation, which is the indexed variant of |(&&&)|
 forkF :: (b -> a :-* c) -> (a :-* b -> c)
 forkF h = \ da b -> h b da
 \end{code}
-\begin{theorem}[\provedIn{thm:deriv-function-codomain}]\thmLabel{deriv-function-codomain}
+\begin{lemma}[\provedIn{thm:deriv-function-codomain}]\thmLabel{deriv-function-codomain}
 Given a function |g :: a -> b -> c|,
 $$|der g a = forkF (\ b -> der (at b . g) a)|.$$
-\end{theorem}
+\end{lemma}
 
 %% Curried functions differentiate as follows:
 \begin{corollary}[\provedIn{cor:deriv-curry}]\corLabel{deriv-curry}
@@ -498,17 +497,17 @@ ado = adh . wrapO
 unado :: D (O a) (O b) -> (a -> b)
 unado = unwrapO . unadh
 \end{code}
-\begin{theorem}[\provedIn{wrapO-iso}]\thmLabel{wrapO-iso}
+\begin{lemma}[\provedIn{wrapO-iso}]\thmLabel{wrapO-iso}
 |wrapO| and |unwrapO| form a linear isomorphism.
-\end{theorem}
-\begin{theorem}[\provedIn{ado-iso}]\thmLabel{ado-iso}
+\end{lemma}
+\begin{lemma}[\provedIn{ado-iso}]\thmLabel{ado-iso}
 |ado| and |unado| form a linear isomorphism.
-\end{theorem}
-\begin{theorem}[\provedIn{wrapO-cartesian}]\thmLabel{wrapO-cartesian}
+\end{lemma}
+\begin{lemma}[\provedIn{wrapO-cartesian}]\thmLabel{wrapO-cartesian}
 |wrapO| is a cartesian functor.
-\end{theorem}
+\end{lemma}
 
-\note{To do: reconsider theorems vs lemmas vs corollaries. I think more lemmas.}
+%% \note{To do: reconsider theorems vs lemmas vs corollaries. I think more lemmas.}
 
 The cartesian category operations already defined on |D| \citep{Elliott-2018-ad-icfp} are solutions to homomorphism equations saying that |adh| is a cartesian functor.
 Thanks to the simple, regular structure of |toO| and |unO|,
@@ -527,9 +526,9 @@ instance (HasO a, HasO b) => HasO (a -> b) where
 \end{code}
 
 A useful consequence:
-\begin{theorem}[\provedIn{wrapO-curry}]\thmLabel{wrapO-curry}
+\begin{lemma}[\provedIn{wrapO-curry}]\thmLabel{wrapO-curry}
 $$|wrapO (curry f) == adh . curry (wrapO f)|$$
-\end{theorem}
+\end{lemma}
 \begin{corollary}\corLabel{curry-wrapO}
 $$|curry (wrapO f) == unadh . wrapO (curry f)|$$
 \end{corollary}
@@ -539,12 +538,12 @@ Left-compose |unadh| with both sides of \propRef{wrapO-curry}; then simplify and
 
 Let's now try to solve the CCF equations for |ado|.
 This time begin with |eval|:
-\begin{theorem}[\provedIn{thm:ado-eval}] \thmLabel{ado-eval}
+\begin{lemma}[\provedIn{thm:ado-eval}] \thmLabel{ado-eval}
 With the following (effective) definition of |eval| on |D|, |eval == ado eval|:
 \begin{code}
 eval = D (\ (D h,a) -> let (b,f') = h a in (b, at a . unadh !!! f'))
 \end{code}
-\end{theorem}
+\end{lemma}
 For |uncurry|, use the standard definition |uncurry g = eval . first g|.
 
 %format fw = "\subo{f}"
@@ -560,13 +559,13 @@ Simplify the LHS:
 \end{code}
 Then the RHS:\notefoot{State, prove, and use a lemma about |adh (g . f) a| for linear |g| and another for linear |f|.
 Maybe also |ado (g . f) a| for linear |g| or |f|.}
-\begin{theorem}[\provedIn{ado-curry}]\thmLabel{ado-curry}~
+\begin{lemma}[\provedIn{ado-curry}]\thmLabel{ado-curry}~
 \begin{code}
 ado (curry f) ==  D  (\ a ->  (  D (\ b -> (fw (a,b), derr fw (a,b)))
                               ,  \da -> D (\ b -> (derl fw (a,b) da, at da . derr (derl fw) (a,b)))))
 \end{code}
 where |fw = wrapO f|.
-\end{theorem}
+\end{lemma}
 The RHS uses |fw (a,b)| and |der fw (a,b)| (via its components |derl fw (a,b)| and |derr fw (a,b)|), but it also uses a \emph{second} partial derivative |derr (derl fw) (a,b)|, which is not available from the |curry| argument |D (fw &&& der fw)|.
 
 \sectionl{Where Are We?}
