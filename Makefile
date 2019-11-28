@@ -34,6 +34,10 @@ pdfs: $(pdfs)
 clean:
 	rm -f $(paper)*.{tex,pdf,aux,nav,snm,ptb,log,out,toc,bbl,blg,fdb_latexmk,fls}
 
+# Handy, e.g., with "make push web"
+push:
+	git push
+
 STASH=conal@conal.net:/home/conal/web/papers/higher-order-ad
 
 web: web-token
