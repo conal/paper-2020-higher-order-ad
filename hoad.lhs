@@ -34,7 +34,7 @@ Conal Elliott
 \usepackage[round]{natbib}  % square
 \bibliographystyle{plainnat}
 
-\title{\tit \emph{\\[1.5ex] \Large (early, incomplete draft---comments invited\footnote{Latest version and repository location for questions, suggestions, bugs, etc: \url{http://conal.net/papers/higher-order-ad}.})}}
+\title{\tit \emph{\\[1.5ex] \Large (early, incomplete draft---comments invited\footnote{For the latest version of this document and the repository location for questions, suggestions, bugs, etc, see \url{http://conal.net/papers/higher-order-ad}.})}}
 
 \date{Draft of \today{} \currenttime}
 
@@ -1175,9 +1175,9 @@ ado (curry f) ==
 
 \subsection{\lemRef{comp-bilinear}}\proofLabel{comp-bilinear}
 
-To show that |comp = uncurry (.)| is bilinear, we can show that it is linear in each argument, which is to say |curry comp g = (g .)| and |curry' comp f = (. f)| are linear for all |g| and |f|.
+To show that |comp = uncurry (.)| is bilinear, we can show that it is linear in each argument, which is to say |curry comp g = (g . NOP)| and |curry' comp f = (NOP . f)| are linear for all |g| and |f|.
 
-First, |(NOP . f)| is linear for all functions |f| (not just linear):
+First, |(NOP . f)| is linear for \emph{any} function |f| (not just linear):
 \begin{code}
     (NOP . f) (g + g')
 ==  (g + g') . f                          -- left section definition
@@ -1187,15 +1187,16 @@ First, |(NOP . f)| is linear for all functions |f| (not just linear):
 ==  (g . f) + (g' . f)                    -- |(.)| on functions
 ==  (NOP . f) g + (NOP . f) g'            -- left section definition
 
-    s *. (NOP . f) g
-==  s *. (g . f)                          -- left section definition
+    (NOP . f) (s *. g)
+==  (s *. g) . f                          -- left section definition
+==  \ a -> (s *. g) (f a)                 -- |(.)| on functions
 ==  \ a -> s *. g (f a)                   -- scaling on functions
-==  \ a -> (s *. g) (f a                  -- scaling on functions
-==  (s *. g) . f                          -- |(.)| on functions
-==  (NOP . f) (s *. g)                    -- left section definition
+==  s *. (\ a -> g (f a))                 -- scaling on functions
+==  s *. (g . f)                          -- |(.)| on functions
+==  s *. (NOP . f) g                      -- left section definition
 \end{code}
 
-Second, |(g . NOP)| is linear for all linear functions |g|.
+Second, |(g . NOP)| is linear for any \emph{linear} functions |g|:
 \begin{code}
     (g . NOP) (f + f')
 ==  g . (f + f')                          -- right section definition
@@ -1206,18 +1207,13 @@ Second, |(g . NOP)| is linear for all linear functions |g|.
 ==  (g . f) + (g . f')                    -- |(.)| on functions
 ==  (g . NOP) f + (g . NOP) f'            -- right section definition
 
-    s *. (g . NOP) f
-==  s *. (g . f)                          -- right section definition
-==  \ a -> s *. g (f a)                   -- scaling on functions
-==  \ a -> g (s *. f a)                   -- linearity of |g|
-==  \ a -> g ((s *. f) a)                 -- scaling on functions
-==  g . (s *. f)                          -- |(.)| on functions
-==  (g . NOP) (s *. f)                    -- right section definition
-\end{code}
-
-
-\begin{code}
-    comp (
+    (g . NOP) (s *. f)
+==  g . (s *. f)                          -- right section definition
+==  \ a -> g ((s *. f) a)                 -- |(.)| on functions
+==  \ a -> g (s *. f a)                   -- scaling on functions
+==  \ a -> s *. g (f a)                   -- linearity of |g|
+==  s *. (g . f)                          -- scaling on functions
+==  s *. (g . NOP) f                      -- right section definition
 \end{code}
 
 \subsection{\lemRef{bilinear-props}}\proofLabel{bilinear-props}
@@ -1226,8 +1222,7 @@ Given any bilinear function |h|,
 
 \begin{enumerate}
 
-\item |curry h a| is linear for all linear functions |g|.
-
+\item |curry h a| is linear for all linear functions |g|:
 \begin{code}
     curry h a (b + b')
 ==  h (a,b + b')                -- |curry| on functions
@@ -1239,11 +1234,10 @@ Given any bilinear function |h|,
 ==  s *. h (a,b)                -- bilinearity of |h|
 \end{code}
 
-\item |curry' h b| is linear for all functions |b|.
+\item |curry' h b| is linear for all functions |b|:
 Proof similar to |curry h a|.
 
-\item |curry h| and |curry' h| are linear.
-
+\item |curry h| and |curry' h| are linear:
 \begin{code}
     curry h (a + a')
 ==  \ b -> curry h (a + a') b             -- $\eta$ expansion
@@ -1262,18 +1256,7 @@ Proof similar to |curry h a|.
 
 Similarly for |curry' h|.
 
-%if False
-\item |der comp (g,f) = (. f) !!! (g .)|.
-
-\begin{code}
-    der comp (g,f)
-==  comp . (,f) !!! comp . (g,)  -- \corRef{deriv-bilinear}
-==  (NOP . f) !!! (g . NOP)      -- |comp| and section definitions
-\end{code}
-%endif
-
-\item |der h| is linear.
-
+\item |der h| is linear:
 \begin{code}
     der h ((a,b) + (a',b'))
 ==  der h (a+a',b+b')                                         -- |(+)| on functions
@@ -1281,8 +1264,8 @@ Similarly for |curry' h|.
 ==  \ (da,db) -> h (da,b+b') + h (a+a',db)                    -- |(!!!)| on functions
 ==  \ (da,db) -> h (da,b) + h (da,b') + h (a,db) + h (a',db)  -- bilinearity of |h|
 ==  \ (da,db) -> h (da,b) + h (a,db) + h (da,b') + h (a',db)  -- commutativity of |(+)|
-==  (\ (da,db) -> h (da,b) + h (a,db)) +
-    (\ (da,db) -> h (da,b') + h (a',db))                      -- |(+)| on functions
+==  (\ (da,db) -> h (da,b   ) + h (a   ,db)) +
+    (\ (da,db) -> h (da,b'  ) + h (a'  ,db))                  -- |(+)| on functions
 ==  der h (a,b) + der h (a',b')                               -- \corRef{deriv-bilinear}
 \end{code}
 
