@@ -226,7 +226,7 @@ For cartesian closure, we'll need the derivative of another function with a pair
 eval :: (a -> b) :* a -> b
 eval (f,a) = f a  -- on functions
 \end{code}
-(Note that |eval| is neither linear nor bilinear, so \thmRef{deriv-linear} and \corRef{deriv-bilinear} are both inapplicable.)
+(Since |eval| is neither linear nor bilinear, \thmRef{deriv-linear} and \corRef{deriv-bilinear} are inapplicable.)
 We'll need one more linear map operation, which is curried, reverse function application:\footnote{Linearity of |at a| follows from the usual definition of addition and scaling on functions.}
 \begin{code}
 at :: a -> (a -> b) :-* b
@@ -299,7 +299,7 @@ unfork :: Cartesian k => (a `k` (c :* d)) -> (a `k` c) :* (a `k` d)
 unfork h = (exl . h, exr . h)
 \end{code}
 \begin{lemma}\lemLabel{fork-iso-linear}
-The pair of functions |fork| and |unfork| form a linear isomorphism.
+The pair of functions |fork| and |unfork| form an isomorphism in all cartesian categories and a linear isomorphism in the category of vector spaces and linear maps.\notefoot{To do: name this category early (say ``$\textbf{Vec}_{\!s}$'' for a semiring $s$) and refer to by name where needed.}
 \proofEx
 \end{lemma}
 
@@ -313,22 +313,22 @@ unjoin :: Cocartesian k => (a `k` (c :* d)) -> (a `k` c) :* (a `k` d)
 unjoin h = (h . inl, h . inr)
 \end{code}
 \begin{lemma}\lemLabel{join-iso-linear}
-The pair of functions |join| and |unjoin| form a linear isomorphism.
+The pair of functions |join| and |unjoin| form an isomorphism in all cocartesian categories and a linear isomorphism in the category of vector spaces and linear maps.
 \proofEx
 \end{lemma}
+These two isomorphism pairs were used by \cite{Elliott-2018-ad-icfp} to construct a correct-by-construction implementation of reverse-mode AD, by merely altering the representation of linear maps used in the simple, general AD algorithm.
+
 Another useful operation is the \emph{uncurried} version of the monoidal |(***)|:
 \begin{code}
 cross :: Monoidal k => (a `k` c) :* (b `k` d) -> ((a :* b) `k` (c :* d))
 cross = uncurry (***)
 \end{code}
 \begin{lemma}\lemLabel{cross-linear}
-The |cross| function is linear.
+In the category of vector spaces and linear maps, the |cross| function is linear.
 \proofEx
 \end{lemma}
 
-These two isomorphism pairs were used by \cite{Elliott-2018-ad-icfp} to construct a correct-by-construction implementation of reverse-mode AD, by merely altering the representation of linear maps used in the simple, general AD algorithm.
-
-Although |fork|/|unfork| form an isomorphism and hence preserve information, |unfork| can result in a loss of efficiency, due to computation that can be (and often is) in common to a function |f| and its derivative |der f|.
+Although |fork| and |unfork| form an isomorphism and hence preserve information, |unfork| can result in a loss of efficiency, due to computation that can be (and often is) in common to a function |f| and its derivative |der f|.
 Indeed, the definition of |unfork h| above shows that |h| gets replicated.
 It's unclear how to avoid this redundancy problem in practice with currying when |D| is used to represent computably differentiable functions.
 Personal experience with compiling to categories \cite{Elliott-2017-compiling-to-categories} suggests that most uses of |curry| generated during translation from the $\lambda$ calculus (e.g., Haskell) are in fact transformed away at compile time using various equational CCC laws.
@@ -604,7 +604,7 @@ comp = uncurry (.)
 \end{code}
 
 \begin{lemma}[\provedIn{comp-bilinear}]\lemLabel{comp-bilinear}
-|comp| is bilinear.
+On linear maps, |comp| is bilinear.
 \end{lemma}
 
 %% The bilinearity of |comp| gives it several useful properties:
@@ -665,7 +665,7 @@ These properties will help re-express \thmRefTwo{deriv-compose}{deriv-cross} and
   On linear maps, |der comp == join . (flip (.) *** (.)) . swap|.
 \end{enumerate}
 \end{lemma}
-\nc\lemRefPF[1]{\lemRef{deriv-pointfree}-\ref{deriv-pointfree-#1}}
+\nc\lemRefPF[1]{\lemRef{deriv-pointfree}\ref{deriv-pointfree-#1}}
 
 %% %format dern (n) f = f"^{("n")}"
 %format dern (n) = der"^{"n"}"
@@ -823,8 +823,8 @@ fork . (der f &&& der (der f)) :: a -> a :-* b :* (a :-* b)
 \note{Yet to come:
 \begin{itemize}
 \item Spell out the |Category| and |Cartesian| instances that result from solving the cartesian functor equations as in \secref{Higher-Order Derivatives}.
-\item Cartesian \emph{closure} (|curry| and |eval|) for |Ds|, exploiting higher-order derivatives.
-\item Variation |Ds'| of |Ds|, using |ders' f = f &&& der (ders' f)|.
+\item Cartesian \emph{closure} (|curry| and |eval|/|uncurry|) for |Ds|, exploiting higher-order derivatives.
+\item Variation of |ders|: |ders' f = f &&& der (ders' f)|.
 \end{itemize}
 }
 
@@ -832,7 +832,7 @@ fork . (der f &&& der (der f)) :: a -> a :-* b :* (a :-* b)
 \sectionl{Related Work}
 
 The most closely related work I'm aware of is by \cite{Vytiniotis-2019-differentiable-curry}, who also define an algorithm around the language of cartesian closed categories.
-There appear to be some significant shortcomings, however:
+There appear to be some significant shortcomings, however, at least when considered as an extension to \cite{Elliott-2018-ad-icfp}:
 \begin{itemize}
 \item
   Although the work is referred to as ``differentiable programming'', it appears to lack a specification and proof that match this claim, i.e., one defined by the mathematical operation of differentiation.
@@ -840,26 +840,27 @@ There appear to be some significant shortcomings, however:
   In contrast, the specification at the center of \cite{Elliott-2018-ad-icfp} (and the extensions described above) is just (Fréchet) differentiation itself, combined with the original function as needed by the chain rule, or rather the requirement that the function-with-derivative satisfies a standard collection of homomorphism properties.
   Correctness of the algorithm was defined as faithfulness to this simple specification, and the algorithm is systematically derived from this specification and hence is correct by construction.
 \item
-  Functions are already well-defined as a vector space, and thus linear maps (including derivatives) are as well, but the authors choose a different notion.
-  The authors write
+  Functions are already well-defined as a vector space, and thus linear maps (including derivatives) are as well, but the authors chose a different notion.
+  They write
   \begin{quotation} \noindent
   [...] what should be the tangent space of a function type?
   Perhaps surprisingly, a function type itself is not the right answer.
   We provide two possible implementations for function tangents and differentiable currying, and explain the tradeoffs.
   \end{quotation}
-There is no explanation, however, of what makes their answers ``right'' and the unsurprising answer wrong.
+  There is no explanation, however, of what makes their answers ``right'' and the unsurprising answer wrong.
+It is unclear what it could possibly mean for their answer to be right, since the usual notion of derivative of a function |f :: a -> b| between vector spaces has type |a -> a :-* b| for all vector spaces |a| and |b|, \emph{including function types}.
 \item
   The algorithm presented is limited to reverse mode rather than a general AD algorithm as in \cite{Elliott-2018-ad-icfp} and the work described above.
 \end{itemize}
 
-A second related paper is \cite{Brunel2019Backprop}.
+Another related paper is \cite{Brunel2019Backprop}.
 Referring to \cite{Elliott-2018-ad-icfp}, the authors write
 \begin{quotation} \noindent
 However, Elliot's approach is still restricted to first-order programs (i.e., computational graphs): as far as we understand, the functor D is cartesian but not cartesian closed, so the higher-order primitives ($\lambda$-abstraction and application) lack a satisfactory treatment. This is implicit in Sect. 4.4 of \cite{Elliott-2018-ad-icfp}, where the author states that he only uses biproduct categories: it is well-known that non-trivial cartesian closed biproduct categories do not exist.
 \end{quotation}
 The confusion here---which was mistakenly encouraged by \cite{Elliott-2018-ad-icfp}---is the idea that the category of differentiable functions itself is (or need be) a biproduct category.
-Rather, all that was needed is that the various representations \emph{linear maps} (derivatives) are biproduct categories.
-This requirement is easily satisfied by construction, since the various representations are all calculated from their denotation (linear functions, itself a biproduct category) via simple cocartesian functors.
+Rather, all that was needed is that the various representations of \emph{linear maps} (derivatives) are biproduct categories.
+This requirement is easily satisfied by construction, since these representations are all calculated from their denotation (linear functions, itself a biproduct category) via simple cocartesian functors.
 
 \bibliography{bib}
 
@@ -874,7 +875,7 @@ Because linear maps (derivatives) form a cocartesian category,\footnote{The coca
 \begin{code}
 der f (a,b) == der f (a,b) . inl !!! der f (a,b) . inr
 \end{code}
-Noting that |inl da = (da,0)| and |inr db = (0,db)|, we can see that the partial derivatives allow only one half of a pair to change.
+Noting that (for linear maps) |inl da = (da,0)| and |inr db = (0,db)|, we can see that the ``partial derivatives'' (|der f (a,b) . inl| and |der f (a,b) . inr|) allow only one half of a pair to change.
 
 Next, note that |der f (a,b) . inl = der (f . (,b)) a|, by the following equational reasoning:
 \begin{code}
