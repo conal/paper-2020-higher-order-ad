@@ -640,7 +640,7 @@ Function composition has the following properties:
 \end{lemma}
 %endif
 
-These properties will help re-express \thmRefTwo{deriv-compose}{deriv-cross} and related facts in a form more amenable to constructing higher derivatives.
+These properties will help re-express \thmRefTwo{deriv-compose}{deriv-cross} and related facts in a form more amenable to constructing higher derivatives:
 \begin{lemma}[\provedIn{deriv-pointfree}]\lemLabel{deriv-pointfree}~
 \begin{enumerate}
 \item \label{deriv-pointfree-compose}
@@ -831,7 +831,7 @@ fork . (der f &&& der (der f)) :: a -> a :-* b :* (a :-* b)
 
 \sectionl{Related Work}
 
-The most closely related work I'm aware of is by \cite{Vytiniotis-2019-differentiable-curry}, who also define an algorithm around the language of cartesian closed categories.
+The most closely related work I'm aware of is by \cite{Vytiniotis-2019-differentiable-curry}\footnote{I am in the middle of an in-depth conversation with authors.}, who also define an algorithm around the language of cartesian closed categories.
 There appear to be some significant shortcomings, however, at least when considered as an extension to \cite{Elliott-2018-ad-icfp}:
 \begin{itemize}
 \item
@@ -849,12 +849,13 @@ There appear to be some significant shortcomings, however, at least when conside
   \end{quotation}
   There is no explanation, however, of what makes their answers ``right'' and the unsurprising answer wrong.
 It is unclear what it could possibly mean for their answer to be right, since the usual notion of derivative of a function |f :: a -> b| between vector spaces has type |a -> a :-* b| for all vector spaces |a| and |b|, \emph{including function types}.
+This observation seems to contradict the claim that the tangent space for a function types is not a function type.
 \item
   The algorithm presented is limited to reverse mode rather than a general AD algorithm as in \cite{Elliott-2018-ad-icfp} and the work described above.
 \end{itemize}
 
 Another related paper is \cite{Brunel2019Backprop}.
-Referring to \cite{Elliott-2018-ad-icfp}, the authors write
+The authors write (in Section 1)
 \begin{quotation} \noindent
 However, Elliot's approach is still restricted to first-order programs (i.e., computational graphs): as far as we understand, the functor D is cartesian but not cartesian closed, so the higher-order primitives ($\lambda$-abstraction and application) lack a satisfactory treatment. This is implicit in Sect. 4.4 of \cite{Elliott-2018-ad-icfp}, where the author states that he only uses biproduct categories: it is well-known that non-trivial cartesian closed biproduct categories do not exist.
 \end{quotation}
