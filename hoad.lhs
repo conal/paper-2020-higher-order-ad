@@ -641,31 +641,32 @@ Function composition has the following properties:
 %endif
 
 These properties will help re-express \thmRefTwo{deriv-compose}{deriv-cross} and related facts in a form more amenable to constructing higher derivatives:
+\nc\lemLabelPF[1]{\label{deriv-pointfree-#1}}
+\nc\lemRefPF[1]{\lemRef{deriv-pointfree}\ref{deriv-pointfree-#1}}
 \begin{lemma}[\provedIn{deriv-pointfree}]\lemLabel{deriv-pointfree}~
 \begin{enumerate}
-\item \label{deriv-pointfree-compose}
+\item \lemLabelPF{compose}
   |der (g . f) == comp . (der g . f &&& der f)|.
 
-\item \label{deriv-pointfree-cross}
+\item \lemLabelPF{cross}
   |der (f *** g) == cross . (der f *** der g)|.
 
-\item \label{deriv-pointfree-fork}
+\item \lemLabelPF{fork}
   |der (f &&& g) == fork . (der f &&& der g)|.
 
-\item \label{deriv-pointfree-linear}
+\item \lemLabelPF{linear}
   For a \emph{linear} function |f|, |der f == const f|.
 
-\item \label{deriv-pointfree-pair-domain}
+\item \lemLabelPF{pair-domain}
   For any function |f :: a :* b -> c|, |der f == join . (derl f *** derr f)|.
 
-\item \label{deriv-pointfree-bilinear}
+\item \lemLabelPF{bilinear}
   For a \emph{bilinear} function |f :: a :* b -> c|, |der f == join . (curry' f *** curry f) . swap|.
 
-\item \label{deriv-pointfree-comp}
+\item \lemLabelPF{comp}
   On linear maps, |der comp == join . (flip (.) *** (.)) . swap|.
 \end{enumerate}
 \end{lemma}
-\nc\lemRefPF[1]{\lemRef{deriv-pointfree}\ref{deriv-pointfree-#1}}
 
 %% %format dern (n) f = f"^{("n")}"
 %format dern (n) = der"^{"n"}"
@@ -1276,7 +1277,8 @@ Similarly for scaling.
 \end{enumerate}
 
 \subsection{\lemRef{deriv-pointfree}}\proofLabel{deriv-pointfree}
-
+\begin{enumerate}
+\item Sequential composition:
 \begin{code}
     der (g . f)
 ==  \ a -> der (g . f) a                         -- $\eta$ expansion
@@ -1289,6 +1291,7 @@ Similarly for scaling.
 ==  comp . (der g . f &&& der f)                 -- |(&&&)| definition
 \end{code}
 
+\item Cross:
 \begin{code}
     der (f *** g)
 ==  \ (a,b) -> der (f *** g) (a,b)               -- $\eta$ expansion
@@ -1299,6 +1302,7 @@ Similarly for scaling.
 ==  cross . (der f *** der g)                    -- |(.)| on functions
 \end{code}
 
+\item Fork:
 \begin{code}
     der (f &&& g)
 ==  der ((f *** g) . dup)                     -- cartesian law
@@ -1311,7 +1315,7 @@ Similarly for scaling.
 ==  fork . (der f &&& der g)                  -- |fork| definition
 \end{code}
 
-For a linear function |f|,
+\item A linear function |f|,
 \begin{code}
     der f
 ==  \ a -> der f a  -- $\eta$ expansion
@@ -1319,7 +1323,7 @@ For a linear function |f|,
 ==  const f         -- |const| definition
 \end{code}
 
-For any function |f :: a :* b -> c|,
+\item Any function |f :: a :* b -> c|,
 \begin{code}
     der f
 ==  \ (a,b) -> der f (a,b)                    -- $\eta$ expansion
@@ -1327,7 +1331,7 @@ For any function |f :: a :* b -> c|,
 ==  join . (derl f &&& derr f)                -- |join| definition
 \end{code}
 
-For a \emph{bilinear} function |f :: a :* b -> c|,
+\item A \emph{bilinear} function |f :: a :* b -> c|,
 \begin{code}
     der f
 ==  \ (a,b) -> der f (a,b)                                 -- $\eta$ expansion
@@ -1339,11 +1343,13 @@ For a \emph{bilinear} function |f :: a :* b -> c|,
 ==  join . (curry' f *** curry f) . swap                   -- |(.)| on functions
 \end{code}
 
-For uncurried composition on linear maps,
+\item Uncurried composition on linear maps,
 \begin{code}
     der comp
 ==  join . (curry' comp *** curry comp) . swap  -- previous (|comp| is bilinear)
 ==  join . (flip (.) *** (.)) . swap            -- |comp| definition
 \end{code}
+
+\end{enumerate}
 
 \end{document}
