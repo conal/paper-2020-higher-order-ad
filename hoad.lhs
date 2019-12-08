@@ -1277,7 +1277,9 @@ Similarly for scaling.
 \end{enumerate}
 
 \subsection{\lemRef{deriv-pointfree}}\proofLabel{deriv-pointfree}
+
 \begin{enumerate}
+
 \item Sequential composition:
 \begin{code}
     der (g . f)
