@@ -749,13 +749,13 @@ Name |ders comp| for future use:
 comp' :: Ds ((a -> b) :* a) b
 comp' = comp &&& linear (join . (flip (.) *** (.)) . swap)
 \end{code}
-Then function compositions:
+Then sequential compositions:
 \begin{code}
     ders (g . f)
-==  g . f &&& ders (der (g . f))                                   -- |ders| definition
-==  g . f &&& ders (comp . (der g . f &&& der f))                  -- \lemRefPF{compose}
-==  g . f &&& ders comp . ders (der g) . ders f &&& ders (der f))  -- coinduction
-==  g . f &&& comp' . ders (der g) . ders f &&& ders (der f))      -- above
+==  g . f &&& ders (der (g . f))                                     -- |ders| definition
+==  g . f &&& ders (comp . (der g . f &&& der f))                    -- \lemRefPF{compose}
+==  g . f &&& ders comp . (ders (der g) . ders f &&& ders (der f)))  -- coinduction
+==  g . f &&& comp' . (ders (der g) . ders f &&& ders (der f)))      -- above
 \end{code}
 Note that all of the components here (|g|, |f| |ders (der g)|, |ders f|, and |ders (der f)|) are available in |ders g| and |ders f|, so we have a computable recipe for |(.)| on |Ds|.
 \note{Fill in the details.}
