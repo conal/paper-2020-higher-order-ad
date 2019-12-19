@@ -2,7 +2,7 @@
 
 %% While editing/previewing, use 12pt or 14pt and tiny margin.
 \documentclass[12pt,twoside]{article}  % fleqn,14pt
-\usepackage[margin=1in]{geometry}  % 0.12in, 0.9in
+\usepackage[margin=0.1in]{geometry}  % 0.12in, 0.9in
 
 %% \documentclass{article}
 %% \usepackage{fullpage}
@@ -71,7 +71,7 @@ The main new contributions are two senses of ``\emph{higher-order} automatic dif
 \end{itemize}
 The former has been addressed in a recent paper \citep{Vytiniotis-2019-differentiable-curry}, but in a way I find dissatisfying for a variety of reasons described in \secref{Related Work} and discussed at length with the authors.
 
-Begin with the category of computably differentiable functions from \cite[Section 4.1]{Elliott-2018-ad-icfp}:
+Begin with the category of computably differentiable functions from \citet[Section 4.1]{Elliott-2018-ad-icfp}:
 \begin{code}
 newtype D a b = D (a -> b :* (a :-* b))
 \end{code}
@@ -88,6 +88,7 @@ The whole specification of AD is then simply that |adh| is a homomorphism with r
 An example of such a homomorphism equation is |adh g . adh f == adh (g . f)|, in which the only unknown is the meaning of the LHS |(.)|, i.e., sequential composition in the category |D|.
 Solving the collection of such homomorphism equations yields correct-by-construction AD.
 
+%format gh = "\Varid{\hat{g}}"
 %format fh = "\Varid{\hat{f}}"
 The function |adh| is invertible, i.e., |unadh . adh == id|, where |unadh| simply drops the derivative:\footnote{This paper uses ``|exl|'' and ``|exr|'' to name left and right product projections (defined on cartesian categories), rather than Haskell's (function-only) ``|fst|'' and ``|snd|''.}
 \begin{code}
@@ -353,10 +354,10 @@ Simplify the LHS:
 Then the RHS:
 \begin{code}
     adh (uncurry g)
-==  D (uncurry g &&& der (uncurry g))                       -- |adh| definition
-==  D (\ (a,b) -> (uncurry g (a,b), der (uncurry g) (a,b))  -- |(&&&)| definition
-==  D (\ (a,b) -> (g a b, der (uncurry g) (a,b))            -- |uncurry| on functions
-==  D (\ (a,b) -> (g a b, at b . der g a !!! der (g a) b))  -- \corRef{deriv-uncurry}
+==  D (uncurry g &&& der (uncurry g))                        -- |adh| definition
+==  D (\ (a,b) -> (uncurry g (a,b), der (uncurry g) (a,b)))  -- |(&&&)| definition
+==  D (\ (a,b) -> (g a b, der (uncurry g) (a,b)))            -- |uncurry| on functions
+==  D (\ (a,b) -> (g a b, at b . der g a !!! der (g a) b))   -- \corRef{deriv-uncurry}
 \end{code}
 Now we have a problem with solving the defining homomorphism above.
 Although we can extract |g| and |der g| from |adh g|, we cannot extract |der (g a)|.
@@ -596,7 +597,7 @@ In other words, differentiation of higher-order functions requires all higher-or
 
 In order to construct higher-order derivatives, it will help to examine the linearity properties of our familiar categorical vocabulary, which turns out to be mostly linear with just a bit of bilinearity.
 As noted in \cite{Elliott-2018-ad-icfp}, the categorical operation |id|; the cartesian operations |exl|, |exr|, |dup|; and the cocartesian operations |inl|, |inr|, and |jam| are all linear.
-\lemRefTwo{fork-iso-linear}{join-iso-linear} have already noted that the functions |fork| and |join| (uncurried versions of |(&&&)| and |(!!!)| (\secref{Curry}) are linear (as well as isomorphisms).
+\lemRefTwo{fork-iso-linear}{join-iso-linear} have already noted that the functions |fork| and |join| (uncurried versions of |(&&&)| and |(!!!)| defined in \secref{Curry}) are linear (as well as isomorphisms).
 Next, let |comp| be uncurried composition:\notefoot{Maybe define |comp| only for linear maps.}
 \begin{code}
 comp :: Category k => (b `k` c) :* (a `k` b) -> (a `k` c)
@@ -737,12 +738,20 @@ exr  == linear exr
 \end{code}
 
 \noindent
-Next, uncurried linear map composition:
+Next, \emph{bilinear} functions |g|:
+\begin{code}
+    ders g
+==  g &&& ders (der g)                                   -- |ders| definition
+==  g &&& linear (der g)                                 -- derivative of bilinear is linear
+==  g &&& linear (join . (curry' g *** curry g) . swap)  -- \lemRefPF{bilinear}
+\end{code}
+
+\noindent
+Specialize to uncurried linear map composition:
 \begin{code}
     ders comp
-==  comp &&& ders (der comp)                            -- |ders| definition
-==  comp &&& linear (der comp)                          -- derivative of bilinear is linear
-==  comp &&& linear (join . (flip (.) *** (.)) . swap)  -- \lemRefPF{comp}
+==  comp &&& linear (join . (curry' comp *** curry comp) . swap)  -- above
+==  comp &&& linear (join . (flip (.) *** (.)) . swap)            -- |comp| definition
 \end{code}
 Name |ders comp| for future use:
 \begin{code}
@@ -752,13 +761,13 @@ comp' = comp &&& linear (join . (flip (.) *** (.)) . swap)
 Then sequential compositions:
 \begin{code}
     ders (g . f)
-==  g . f &&& ders (der (g . f))                                     -- |ders| definition
-==  g . f &&& ders (comp . (der g . f &&& der f))                    -- \lemRefPF{compose}
-==  g . f &&& ders comp . (ders (der g) . ders f &&& ders (der f)))  -- coinduction
-==  g . f &&& comp' . (ders (der g) . ders f &&& ders (der f)))      -- above
+==  g . f &&& ders (der (g . f))                                    -- |ders| definition
+==  g . f &&& ders (comp . (der g . f &&& der f))                   -- \lemRefPF{compose}
+==  g . f &&& ders comp . (ders (der g) . ders f &&& ders (der f))  -- coinduction
+==  g . f &&& comp' . (ders (der g) . ders f &&& ders (der f))      -- above
 \end{code}
-Note that all of the components here (|g|, |f| |ders (der g)|, |ders f|, and |ders (der f)|) are available in |ders g| and |ders f|, so we have a computable recipe for |(.)| on |Ds|.
-\note{Fill in the details.}
+Note that all of the components here (|g|, |f|, |ders (der g)|, |ders f|, and |ders (der f)|) are available in |ders g| and |ders f|, so we have a computable recipe for |(.)| on |Ds|.
+\note{To do: fill in the details.}
 
 Finally, |f &&& g|:
 \begin{code}
@@ -769,8 +778,57 @@ Finally, |f &&& g|:
 ==  (f &&& g) &&& linear fork . (ders (der f) &&& ders (der g))  -- |fork| linearity (\lemRef{fork-iso-linear})
 \end{code}
 Again, the components here (|f|, |g|, |ders (der f)|, and |ders (der g)|) are all available from |ders f| and |ders g|, so we have a computable recipe for |(&&&)| on |Ds|.
+\note{To do: fill in the details.}
 
 \workingHere
+
+\sectionl{Avoiding redundant computation}
+
+The |adh| functor was carefully chosen to enable elimination of redundant computation between a function and its derivative.
+The potential for redundancy is apparent in the chain rule (\thmRef{deriv-compose}):
+$$|der (g . f) a == der g (f a) . der f a|$$
+This theorem reveals that computation of |(g . f) a| and |der (g . f) a| at both involve computing |f a|.
+Since sequential composition is a very commonly used building block of computations, it is thus typical for functions and their derivatives to involve common work.
+%format ad0 = der QQ"_{\scriptscriptstyle 0}\!\!^+\!"
+This fact motivates the choice |adh f = f &&& der f| over |ad0 f = (f,der f)| \citep[Section 3.1]{Elliott-2018-ad-icfp}.
+While both options can give rise to compositional (functorial) AD, |ad0| precludes sharing of work, while |adh| enables such sharing, with just a bit of care:
+$$|D g . D f == D (\ a -> let { (b,f') = f a ; (c,g') = g b } in (c, g' . f'))|$$
+
+\nc\lemLabelCompFork[1]{\label{cross-fork-#1}}
+\nc\lemRefCompFork[1]{\lemRef{cross-fork}\ref{cross-fork-#1}}
+%format assocR = assoc"_{\!R}"
+We can calculate this definition in a categorical/pointfree form using \lemRefPF{compose}:\footnote{I'm dropping the |D| constructor for clarity, taking |adh f = f &&& der f|.}\footnote{The |assocR| operation in monoidal categories is defined for functions as |assocR ((a,b),c) = (a,(b,c))|.}
+\begin{code}
+    adh (g . f)
+==  g . f &&& der (g . f)                                     -- |adh| definition
+==  g . f &&& comp . (der g . f &&& der f)                    -- \lemRefPF{compose}
+==  second comp . (g . f &&& (der g . f &&& der f))           -- \lemRefCompFork{second} below
+==  second comp . assocR . ((g . f &&& der g . f) &&& der f)  -- \note{define |assocR|, and justify this step}
+==  second comp . assocR . ((g &&& der g) . f &&& der f)      -- \citet[Section 1.5.1]{Gibbons2002Calculating}.
+==  second comp . assocR . (adh g . f &&& der f)              -- |adh| definition
+==  second comp . assocR . first (adh g) . (f &&& der f)      -- \lemRefCompFork{first} below
+==  second comp . assocR . first (adh g) . adh f              -- |adh| definition
+\end{code}
+We can thus define
+\begin{code}
+D gh . D fh = D (second comp . assocR . first gh . fh)
+\end{code}
+with the consequence that |adh g . adh f == adh (g . f)| .
+As long as |D fh| and |D gh| are nonredundant, so is |D gh . D fh|.
+
+\begin{lemma}\lemLabel{cross-fork}
+The following properties hold for |(&&&)|:
+\begin{enumerate}
+\item \lemLabelCompFork{cross}
+  $|(h *** k) . (f &&& g) == h . f &&& k . g|$
+\item \lemLabelCompFork{first}
+  $|first h . (f &&& g) == h . f &&& g|$
+\item \lemLabelCompFork{second}
+  $|second k . (f &&& g) == f &&& k . g|$
+\end{enumerate}
+\end{lemma}
+\noindent
+Proof: See \citet[Section 1.5.1 and corollaries]{Gibbons2002Calculating}.
 
 %if False
 
@@ -823,6 +881,8 @@ fork . (der f &&& der (der f)) :: a -> a :-* b :* (a :-* b)
 
 \note{Yet to come:
 \begin{itemize}
+\item Avoid redundant computation in |Ds|.
+ Doing so is fairly easy in |D| (zeroth and first derivatives), but I don't yet see how in |Ds| (all derivatives).
 \item Spell out the |Category| and |Cartesian| instances that result from solving the cartesian functor equations as in \secref{Higher-Order Derivatives}.
 \item Cartesian \emph{closure} (|curry| and |eval|/|uncurry|) for |Ds|, exploiting higher-order derivatives.
 \item Variation of |ders|: |ders' f = f &&& der (ders' f)|.
