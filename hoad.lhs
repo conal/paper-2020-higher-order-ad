@@ -755,7 +755,7 @@ Specialize to uncurried linear map composition:
 \end{code}
 Name |ders comp| for future use:
 \begin{code}
-comp' :: Ds ((a -> b) :* a) b
+comp' :: Ds ((b :-* c) :* (a :-* b)) (a :-* c)
 comp' = comp &&& linear (join . (flip (.) *** (.)) . swap)
 \end{code}
 Then sequential compositions:
@@ -793,28 +793,28 @@ Since sequential composition is a very commonly used building block of computati
 This fact motivates the choice |adh f = f &&& der f| over |ad0 f = (f,der f)| \citep[Section 3.1]{Elliott-2018-ad-icfp}.
 While both options can give rise to compositional (functorial) AD, |ad0| precludes sharing of work, while |adh| enables such sharing, with just a bit of care:
 $$|D g . D f == D (\ a -> let { (b,f') = f a ; (c,g') = g b } in (c, g' . f'))|$$
-
 \nc\lemLabelCompFork[1]{\label{cross-fork-#1}}
 \nc\lemRefCompFork[1]{\lemRef{cross-fork}\ref{cross-fork-#1}}
 %format assocR = assoc"_{\!R}"
-We can calculate this definition in a categorical/pointfree form using \lemRefPF{compose}:\footnote{I'm dropping the |D| constructor for clarity, taking |adh f = f &&& der f|.}\footnote{The |assocR| operation in monoidal categories is defined for functions as |assocR ((a,b),c) = (a,(b,c))|.}
+We can calculate this definition in a categorical/pointfree form using \lemRefPF{compose}:\footnote{The |assocR| operation in monoidal categories is defined for functions as |assocR ((a,b),c) = (a,(b,c))|.}
 \begin{code}
     adh (g . f)
-==  g . f &&& der (g . f)                                     -- |adh| definition
-==  g . f &&& comp . (der g . f &&& der f)                    -- \lemRefPF{compose}
-==  second comp . (g . f &&& (der g . f &&& der f))           -- \lemRefCompFork{second} below
-==  second comp . assocR . ((g . f &&& der g . f) &&& der f)  -- \note{define |assocR|, and justify this step}
-==  second comp . assocR . ((g &&& der g) . f &&& der f)      -- \citet[Section 1.5.1]{Gibbons2002Calculating}.
-==  second comp . assocR . (adh g . f &&& der f)              -- |adh| definition
-==  second comp . assocR . first (adh g) . (f &&& der f)      -- \lemRefCompFork{first} below
-==  second comp . assocR . first (adh g) . adh f              -- |adh| definition
+==  D (g . f &&& der (g . f))                                     -- |adh| definition
+==  D (g . f &&& comp . (der g . f &&& der f))                    -- \lemRefPF{compose}
+==  D (second comp . (g . f &&& (der g . f &&& der f)))           -- \lemRefCompFork{second} below
+==  D (second comp . assocR . ((g . f &&& der g . f) &&& der f))  -- \note{justify this step}
+==  D (second comp . assocR . ((g &&& der g) . f &&& der f))      -- \citet[Section 1.5.1]{Gibbons2002Calculating}.
+==  D (second comp . assocR . (adh g . f &&& der f))              -- |adh| definition
+==  D (second comp . assocR . first (adh g) . (f &&& der f))      -- \lemRefCompFork{first} below
+==  D (second comp . assocR . first (adh g) . adh f)              -- |adh| definition
 \end{code}
 We can thus define
 \begin{code}
 D gh . D fh = D (second comp . assocR . first gh . fh)
 \end{code}
-with the consequence that |adh g . adh f == adh (g . f)| .
-As long as |D fh| and |D gh| are nonredundant, so is |D gh . D fh|.
+with the consequence that |adh g . adh f == adh (g . f)|.
+In this form, |fh| and |gh| each appear once, so as long as |D fh| and |D gh| are nonredundant, |D gh . D fh| will be nonredundant as well.
+Inlining the definitions of |comp| and of |second|, |assocR|, and |first| for functions and then simplifying yields the pointful definition above.
 
 \begin{lemma}\lemLabel{cross-fork}
 The following properties hold for |(&&&)|:
@@ -828,7 +828,8 @@ The following properties hold for |(&&&)|:
 \end{enumerate}
 \end{lemma}
 \noindent
-Proof: See \citet[Section 1.5.1 and corollaries]{Gibbons2002Calculating}.
+Proof: For \emph{a}, see \citet[Section 1.5.1]{Gibbons2002Calculating}.
+Then \emph{b} and \emph{c} follow as corollaries from the definitions |first h = h *** id| and |second k = id *** k|.
 
 %if False
 
