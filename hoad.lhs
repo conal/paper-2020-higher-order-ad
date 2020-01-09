@@ -2,7 +2,7 @@
 
 %% While editing/previewing, use 12pt or 14pt and tiny margin.
 \documentclass[12pt,twoside]{article}  % fleqn,14pt
-\usepackage[margin=0.1in]{geometry}  % 0.12in, 0.9in
+\usepackage[margin=0.9in]{geometry}  % 0.12in, 0.9in
 
 %% \documentclass{article}
 %% \usepackage{fullpage}
@@ -371,13 +371,13 @@ eval = uncurry id
 uncurry g  = eval . (g *** id)
            = eval . first g
 \end{code}
-Since we got stuck on |uncurry|, let's try |eval| as well to see if we learn anything new.
+Since we got stuck on |uncurry|, however, let's try |eval| as well to see if we learn anything new.
 
 The corresponding homomorphism equation has a particularly simple form:
 \begin{code}
 eval = adh eval
 \end{code}
-It might appear that we are done at the start, taking the equation to be a definition for |eval|.
+It might appear that we have succeeded at the start, taking the equation to be a definition for |eval|.
 Recall, however, that |adh| is noncomputable, being defined via |der| (differentiation itself).
 Simplifying the RHS,
 \begin{code}
@@ -401,7 +401,7 @@ In general, a functor has two aspects:
 \end{itemize}
 The functor |adh| defined (noncomputably) above implicitly chooses an \emph{identity object mapping}, as evident in its type signature |adh :: (a -> b) -> D a b|.
 The type of |adh| plus the requirement that it be a cartesian \emph{closed} functor implies that the object mapping aspect of |adh| is the identity.
-More generally, we can define an object mapping |O :: Type -> Type| for a new functor |ado|:\notefoot{Experiment with different notation for |O a|, e.g., ``$\bar{a}$''.}
+More generally, however, we can define an object mapping |O :: Type -> Type| for a new functor |ado|:\notefoot{Experiment with different notation for |O a|, e.g., ``$\bar{a}$''.}
 \begin{code}
 ado :: (a -> b) -> D (O a) (O b)
 \end{code}
@@ -429,14 +429,14 @@ The usual notion of cartesian products are working fine, so we'll continue to ch
 \out{The ability to choose |Exp D a b|, however, may solve the computability trouble we ran into with |uncurry| and |eval| in \secreftwo{Uncurry}{Eval}.}
 While |adh| being a closed cartesian functor (CCF) from |(->)| to |D| implies an noncomputable |eval| and |uncurry| (\secreftwo{Uncurry}{Eval}), our goal is to define |ExpOp D| and |ado| such that |ado| is a CCF with computable operations.
 
-Consider again the homomorphic specification for |curry| (part of the CCF definition): |eval = ado eval|.
-The RHS |eval| (on functions) has type |(a -> b) :* a -> b|, while the RHS |eval| (on |D|) has type
+Consider again the homomorphic specification for |eval| (part of the CCF definition): |eval = ado eval|.
+The RHS |eval| (on functions) has type |(a -> b) :* a -> b|, while the LHS |eval| (on |D|) has type
 \begin{code}
     D (O ((a -> b) :* a)) (O b)
 ==  D (O (a -> b) :* O a) (O b)
 ==  D ((Exp D (O a) (O b)) :* O a) (O b)
 \end{code}
-The difficulty with our attempt at |eval| in \secref{Eval} was that we were given a function |f|, but we also needed its derivative |der f|.
+The difficulty with our attempt at |eval| in \secref{Eval} was that we were given a (computable) function |f|, but we also needed its (noncomputable) derivative |der f|.
 Similarly, with |uncurry| in \secref{Uncurry}, we were given |g :: a -> b -> c|, and we needed not only |g a| but also |der (g a)|.
 In both cases the exponential object was a function, but we also needed its (computable) derivative.
 
@@ -451,7 +451,7 @@ O (a  ->  b) == Exp  D  (O a)  (O b)  == D (O a) (O b)
 %% \nc\toO{\Varid{obj}}
 %format toO = "\toO"
 %format unO = "\inv{\toO}"
-We will need to convert between |a| and |O a| , which we can do with a family of \emph{linear isomorphisms}\footnote{The implicit requirements for all |HasO| instances are thus that |toO . unO == id|, |unO . toO == id|, and |to| and |unO| are linear.} indexed by |a|:\notefoot{It may be more elegant to combine the functions |toO| and |unO| into a single \emph{isomorphism}.}
+We will need to convert between |a| and |O a|, which we can do with a family of \emph{linear isomorphisms}\footnote{The implicit requirements for all |HasO| instances are thus that |toO . unO == id|, |unO . toO == id|, and |to| and |unO| are linear.} indexed by |a|:\notefoot{It may be more elegant to combine the functions |toO| and |unO| into a single \emph{isomorphism}.}
 \begin{code}
 class HasO t where
   type O t
@@ -781,6 +781,8 @@ Again, the components here (|f|, |g|, |ders (der f)|, and |ders (der g)|) are al
 \note{To do: fill in the details.}
 
 \workingHere
+
+
 
 \sectionl{Avoiding redundant computation}
 
