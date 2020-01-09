@@ -794,21 +794,21 @@ Since sequential composition is a very commonly used building block of computati
 %format ad0 = der QQ"_{\scriptscriptstyle 0}\!\!^+\!"
 This fact motivates the choice |adh f = f &&& der f| over |ad0 f = (f,der f)| \citep[Section 3.1]{Elliott-2018-ad-icfp}.
 While both options can give rise to compositional (functorial) AD, |ad0| precludes sharing of work, while |adh| enables such sharing, with just a bit of care:
-$$|D g . D f == D (\ a -> let { (b,f') = f a ; (c,g') = g b } in (c, g' . f'))|$$
+$$|D gh . D fh == D (\ a -> let { (b,f') = fh a ; (c,g') = gh b } in (c, g' . f'))|$$
 \nc\lemLabelCompFork[1]{\label{cross-fork-#1}}
 \nc\lemRefCompFork[1]{\lemRef{cross-fork}\ref{cross-fork-#1}}
 %format assocR = assoc"_{\!R}"
 We can calculate this definition in a categorical/pointfree form using \lemRefPF{compose}:\footnote{The |assocR| operation in monoidal categories is defined for functions as |assocR ((a,b),c) = (a,(b,c))|.}
 \begin{code}
-    adh (g . f)
-==  D (g . f &&& der (g . f))                                     -- |adh| definition
-==  D (g . f &&& comp . (der g . f &&& der f))                    -- \lemRefPF{compose}
-==  D (second comp . (g . f &&& (der g . f &&& der f)))           -- \lemRefCompFork{second} below
-==  D (second comp . assocR . ((g . f &&& der g . f) &&& der f))  -- \note{justify this step}
-==  D (second comp . assocR . ((g &&& der g) . f &&& der f))      -- \citet[Section 1.5.1]{Gibbons2002Calculating}.
-==  D (second comp . assocR . (adh g . f &&& der f))              -- |adh| definition
-==  D (second comp . assocR . first (adh g) . (f &&& der f))      -- \lemRefCompFork{first} below
-==  D (second comp . assocR . first (adh g) . adh f)              -- |adh| definition
+    adh (gh . fh)
+==  D (gh . fh &&& der (gh . fh))                                      -- |adh| definition
+==  D (gh . fh &&& comp . (der gh . fh &&& der fh))                    -- \lemRefPF{compose}
+==  D (second comp . (gh . fh &&& (der gh . fh &&& der fh)))           -- \lemRefCompFork{second} below
+==  D (second comp . assocR . ((gh . fh &&& der gh . fh) &&& der fh))  -- \note{justify this step}
+==  D (second comp . assocR . ((gh &&& der gh) . fh &&& der fh))       -- \citet[Section 1.5.1]{Gibbons2002Calculating}.
+==  D (second comp . assocR . (adh gh . fh &&& der fh))                -- |adh| definition
+==  D (second comp . assocR . first (adh gh) . (fh &&& der fh))        -- \lemRefCompFork{first} below
+==  D (second comp . assocR . first (adh gh) . adh fh)                 -- |adh| definition
 \end{code}
 We can thus define
 \begin{code}
