@@ -2,7 +2,7 @@
 
 %% While editing/previewing, use 12pt or 14pt and tiny margin.
 \documentclass[12pt,twoside]{article}  % fleqn,14pt
-\usepackage[margin=0.9in]{geometry}  % 0.12in, 0.9in
+\usepackage[margin=0.12in]{geometry}  % 0.12in, 0.9in
 
 %% \documentclass{article}
 %% \usepackage{fullpage}
@@ -800,19 +800,20 @@ $$|D gh . D fh == D (\ a -> let { (b,f') = fh a ; (c,g') = gh b } in (c, g' . f'
 %format assocR = assoc"_{\!R}"
 We can calculate this definition in a categorical/pointfree form using \lemRefPF{compose}:\footnote{The |assocR| operation in monoidal categories is defined for functions as |assocR ((a,b),c) = (a,(b,c))|.}
 \begin{code}
-    adh (gh . fh)
-==  D (gh . fh &&& der (gh . fh))                                      -- |adh| definition
-==  D (gh . fh &&& comp . (der gh . fh &&& der fh))                    -- \lemRefPF{compose}
-==  D (second comp . (gh . fh &&& (der gh . fh &&& der fh)))           -- \lemRefCompFork{second} below
-==  D (second comp . assocR . ((gh . fh &&& der gh . fh) &&& der fh))  -- \note{justify this step}
-==  D (second comp . assocR . ((gh &&& der gh) . fh &&& der fh))       -- \citet[Section 1.5.1]{Gibbons2002Calculating}.
-==  D (second comp . assocR . (adh gh . fh &&& der fh))                -- |adh| definition
-==  D (second comp . assocR . first (adh gh) . (fh &&& der fh))        -- \lemRefCompFork{first} below
-==  D (second comp . assocR . first (adh gh) . adh fh)                 -- |adh| definition
+    adh (g . f)
+==  D (g . f &&& der (g . f))                                       -- |adh| definition
+==  D (g . f &&& comp . (der g . f &&& der f))                      -- \lemRefPF{compose}
+==  D (second comp . (g . f &&& (der g . f &&& der f)))             -- \lemRefCompFork{second} below
+==  D (second comp . assocR . ((g . f &&& der g . f) &&& der f))    -- \note{justify this step}
+==  D (second comp . assocR . ((g &&& der g) . f &&& der f))        -- \citet[Section 1.5.1]{Gibbons2002Calculating}.
+==  D (second comp . assocR . (unD (adh g) . f &&& der f))          -- |adh| definition
+==  D (second comp . assocR . first (unD (adh g)) . (f &&& der f))  -- \lemRefCompFork{first} below
+==  D (second comp . assocR . first (unD (adh g)) . unD (adh f))    -- |adh| definition
 \end{code}
 We can thus define
 \begin{code}
-D gh . D fh = D (second comp . assocR . first gh . fh)
+D gh . D fh  = D (second comp . assocR . first (unD (D gh)) . unD (D fh))
+             = D (second comp . assocR . first gh . fh)
 \end{code}
 with the consequence that |adh g . adh f == adh (g . f)|.
 In this form, |fh| and |gh| each appear once, so as long as |D fh| and |D gh| are nonredundant, |D gh . D fh| will be nonredundant as well.
@@ -879,6 +880,47 @@ fork . (der f &&& der (der f)) :: a -> a :-* b :* (a :-* b)
 \end{code}
 
 %endif
+
+\workingHere
+
+The calculation of |adh (g . f)| above is somewhat tedious, and it's unclear how to extend it to higher derivatives.
+Some of the complexity comes from routing |der f| (i.e., |exr . adh f|) around |adh g| to compose derivatives (|der g (f a) . der f a|).
+The motivation for this routing arises from an asymmetry in |D|, namely that it maps just a primal value to a primal \emph{and} derivative:
+%format prime = "^\prime"
+%format adhp = adh prime
+%% %format adhp = "\hat{\dot{"der"}}"
+\begin{code}
+adhp : (a -> b) -> (a -> b :* (a :-* b))
+adhp f = f &&& der f
+\end{code}
+%% %format adt = twiddle(der)
+%format adt = "\tilde{\der}"
+%format adtp = adt prime
+Suppose instead that we thread the primal/derivative pairs \emph{in} as well as out.\notefoot{To do: find a (non-effective) \emph{definition} for |adtp|.}\footnote{This formulation is similar to the use of dual numbers in forward-mode AD \needcite{}.}
+\begin{code}
+adtp : (a -> b) -> forall z. a :* (z :-* a) -> b :* (z :-* b)
+forall f q. SPC adtp f . adhp q == adhp (f . q)  -- specification
+\end{code}
+Moreover, |adtp| specializes to |adhp|:
+\begin{code}
+    adhp f
+==  adhp (f . id)
+==  adtp f . adhp id
+\end{code}
+where |adhp id == id &&& der id == \ z -> (z,id)|.
+
+Now consider sequential composition:
+\begin{code}
+    adtp (g . f) . adhp q
+==  adhp ((g . f) . q)          -- specification of |adtp|
+==  adhp (g . (f . q))          -- associativity of |(.)|
+==  adtp g . adhp (f . q)       -- specification of |adtp|
+==  adtp g . (adtp f . adhp q)  -- specification of |adtp|
+==  (adtp g . adtp f) . adhp q  -- associativity of |(.)|
+\end{code}
+A sufficient condition is |adtp (g . f) = adtp g . adtp f|.
+
+
 
 \sectionl{What's Next?}
 

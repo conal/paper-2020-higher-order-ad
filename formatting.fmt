@@ -54,6 +54,7 @@
 %format ad0 = der QQ"_{\scriptscriptstyle 0}\!\!^+\!"
 
 %format (hat(x)) = "\hat{"x"}"
+%format (twiddle(x)) = "\tilde{"x"}"
 
 %% Why doesn't the following definition work?
 %format adh = hat(der)
