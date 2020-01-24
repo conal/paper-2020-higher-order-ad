@@ -923,18 +923,30 @@ Now consider sequential composition:
 ==  adtp g . (adtp f . adhp q)  -- specification of |adtp|
 ==  (adtp g . adtp f) . adhp q  -- associativity of |(.)|
 \end{code}
-which holds if |adtp (g . f) == adtp g . adtp f|.
-\note{So what? If the |adtp| specification above holds for |g| and for |f|, and if |adtp (g . f) == adtp g . adtp f|, then the |adtp| specification also holds for |g . f|.}
-
-
+Equivalently,
+\begin{code}
+forall (q,z). adtp (g . f) (adhp q z) == (adtp g . adtp f) (adhp q z)
+\end{code}
+i.e.,
+\begin{code}
+adtp (g . f) . uncurry adhp == (adtp g . adtp f) . uncurry adhp
+\end{code}
+Since |uncurry adhp| is surjective, it follows that
+\begin{code}
+adtp (g . f) == adtp g . adtp f
+\end{code}
 
 Likewise, consider |id|:
 \begin{code}
     adtp id . adhp q
 ==  adhp (id . q)
 ==  adhp q
+==  id . adhp q
 \end{code}
-which holds if |adtp id == id|.
+Since this result also holds for all |q|,
+\begin{code}
+adtp id = id
+\end{code}
 
 \workingHere
 
