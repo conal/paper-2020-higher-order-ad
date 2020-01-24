@@ -6,6 +6,7 @@
 %format \ = "\lambda\, "
 
 %% hack: add missing space, e.g., before "{" in data type decl
+%format SP = "\,{}"
 %format SPC = "\:{}"
 %format SPACE = "\ {}"
 
