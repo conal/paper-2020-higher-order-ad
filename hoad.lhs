@@ -923,18 +923,23 @@ Now consider sequential composition:
 ==  adtp g . (adtp f . adhp q)  -- specification of |adtp|
 ==  (adtp g . adtp f) . adhp q  -- associativity of |(.)|
 \end{code}
-Equivalently,
+Hence |adtp (g . f) == adtp g . adtp f| by the following lemma.
+\begin{lemma}\lemLabel{uncurry-epi}
+For any |f :: a -> b -> c|, if |uncurry f| is surjective and for all |x : a|, |g . f x == g' . f x|, then |g == g'|.
+\end{lemma}
+\begin{proof}~
 \begin{code}
-forall (q,z). adtp (g . f) (adhp q z) == (adtp g . adtp f) (adhp q z)
+    g . uncurry f
+==  \ (x,y) -> g (uncurry f (x,y))
+==  uncurry (\ x y -> (g . f x) y)
+==  uncurry (\ x -> g . f x)
+==  uncurry (\ x -> g' . f x)
+==  uncurry (\ x y -> (g' . f x) y)
+==  \ (x,y) -> g' (uncurry f (x,y))
+==  g' . uncurry f
 \end{code}
-i.e.,
-\begin{code}
-adtp (g . f) . uncurry adhp == (adtp g . adtp f) . uncurry adhp
-\end{code}
-Since |uncurry adhp| is surjective, it follows that
-\begin{code}
-adtp (g . f) == adtp g . adtp f
-\end{code}
+Since |uncurry f| is surjective, |g == g'|.
+\end{proof}
 
 Likewise, consider |id|:
 \begin{code}
@@ -943,19 +948,9 @@ Likewise, consider |id|:
 ==  adhp q
 ==  id . adhp q
 \end{code}
-Since this result also holds for all |q|,
-\begin{code}
-adtp id = id
-\end{code}
+By \lemRef{uncurry-epi}, |adtp id = id|.
 
 \workingHere
-
-\note{Reverse the composition:}
-\begin{code}
-    adtp q . adhp id
-==  adhp (q . id)  -- |adtp| specification
-==  adhp q         -- |id| as identity
-\end{code}
 
 %format &&&& = "\mathbin{\blacktriangle}"
 Parallel composition:
@@ -967,18 +962,6 @@ Parallel composition:
 ==  adtp f . adhp q &&&& adtp g . adhp q  -- |adtp| specification
 ==  (adtp f &&&& adtp g) . adhp q         -- \note{To prove about |(&&&&)|}
 \end{code}
-
-\note{Try |(.)| again, this time specializing to `q = id`:}
-\begin{code}
-==  adtp (g . f) . adhp id
-==  adhp ((g . f) . id)
-==  adhp (g . (f . id))
-==  adtp g . adhp (f . id)
-==  adtp g . adtp f . adhp id
-\end{code}
-Question: is |adhp id| epi?
-No.
-Oh, well.
 
 \sectionl{What's Next?}
 
