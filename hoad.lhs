@@ -923,20 +923,24 @@ Now consider sequential composition:
 ==  adtp g . (adtp f . adhp q)  -- specification of |adtp|
 ==  (adtp g . adtp f) . adhp q  -- associativity of |(.)|
 \end{code}
-Hence |adtp (g . f) == adtp g . adtp f| by the following lemma.
+Hence |adtp (g . f) == adtp g . adtp f| by the following lemma.\notefoot{Move lemma and proof to the appendix.}
 \begin{lemma}\lemLabel{uncurry-epi}
-For any |f :: a -> b -> c|, if |uncurry f| is surjective and for all |x : a|, |g . f x == g' . f x|, then |g == g'|.
+For any |f :: a -> b -> c|, if |uncurry f| is surjective and |forall x :: a . SP g . f x == g' . f x|, then |g == g'|.
 \end{lemma}
 \begin{proof}~
 \begin{code}
     g . uncurry f
-==  \ (x,y) -> g (uncurry f (x,y))
-==  uncurry (\ x y -> (g . f x) y)
-==  uncurry (\ x -> g . f x)
-==  uncurry (\ x -> g' . f x)
-==  uncurry (\ x y -> (g' . f x) y)
-==  \ (x,y) -> g' (uncurry f (x,y))
-==  g' . uncurry f
+==  \ (x,y) -> g (uncurry f (x,y))   -- |eta| conversion
+==  \ (x,y) -> g (f x y)             -- |uncurry| on functions
+==  uncurry (\ x y -> g (f x y))     -- |uncurry| on functions
+==  uncurry (\ x y -> (g . f x) y)   -- |(.)| on functions
+==  uncurry (\ x -> g . f x)         -- |eta| conversion
+==  uncurry (\ x -> g' . f x)        -- assumption
+==  uncurry (\ x y -> (g' . f x) y)  -- |eta| conversion
+==  uncurry (\ x y -> g' (f x y))    -- |(.)| on functions    
+==  \ (x,y) -> g' (f x y)            -- |uncurry| on functions
+==  \ (x,y) -> g' (uncurry f (x,y))  -- |uncurry| on functions
+==  g' . uncurry f                   -- |eta| conversion
 \end{code}
 Since |uncurry f| is surjective, |g == g'|.
 \end{proof}
