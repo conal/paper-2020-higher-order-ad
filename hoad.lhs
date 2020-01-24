@@ -798,7 +798,7 @@ $$|D gh . D fh == D (\ a -> let { (b,f') = fh a ; (c,g') = gh b } in (c, g' . f'
 \nc\lemLabelCompFork[1]{\label{cross-fork-#1}}
 \nc\lemRefCompFork[1]{\lemRef{cross-fork}\ref{cross-fork-#1}}
 %format assocR = assoc"_{\!R}"
-We can calculate this definition in a categorical/pointfree form using \lemRefPF{compose}:\footnote{The |assocR| operation in monoidal categories is defined for functions as |assocR ((a,b),c) = (a,(b,c))|.}
+We can calculate this definition in a categorical/pointfree form using \lemRefPF{compose}:\notefoot{Define and use a variant of |adh| that omits |D|. Then introduce |D| in ``We can thus define ...''.}\footnote{The |assocR| operation in monoidal categories is defined for functions as |assocR ((a,b),c) = (a,(b,c))|.}
 \begin{code}
     adh (g . f)
 ==  D (g . f &&& der (g . f))                                       -- |adh| definition
@@ -896,18 +896,23 @@ adhp f = f &&& der f
 %% %format adt = twiddle(der)
 %format adt = "\tilde{\der}"
 %format adtp = adt prime
-Suppose instead that we thread the primal/derivative pairs \emph{in} as well as out.\notefoot{To do: find a (non-effective) \emph{definition} for |adtp|.}\footnote{This formulation is similar to the use of dual numbers in forward-mode AD \needcite{}.}
+Suppose instead that we thread the primal/derivative pairs \emph{in} as well as out.\notefoot{To do: find a (non-effective) \emph{definition} for |adtp|. Well, I know how to define |adtp| in this case:
 \begin{code}
-adtp : (a -> b) -> forall z. a :* (z :-* a) -> b :* (z :-* b)
-forall f q. SPC adtp f . adhp q == adhp (f . q)  -- specification
+adtp f (a,q') = (b, f' . q') where (b,f') = adhp f a
 \end{code}
-Moreover, |adtp| specializes to |adhp|:
+How to extend to higher derivatives?}\footnote{This formulation is similar to the use of dual numbers in forward-mode AD \needcite{}.}
+\begin{code}
+adtp : (a -> b) -> forall z. NOP a :* (z :-* a) -> b :* (z :-* b)
+forall f q. NOP adtp f . adhp q == adhp (f . q)  -- specification
+\end{code}
+Moreover, |adtp| suffices to compute |adhp|:
 \begin{code}
     adhp f
 ==  adhp (f . id)
 ==  adtp f . adhp id
+==  adtp f . (id &&& der id)
+==  adtp f . (\ z -> (z,id))
 \end{code}
-where |adhp id == id &&& der id == \ z -> (z,id)|.
 
 Now consider sequential composition:
 \begin{code}
@@ -918,9 +923,50 @@ Now consider sequential composition:
 ==  adtp g . (adtp f . adhp q)  -- specification of |adtp|
 ==  (adtp g . adtp f) . adhp q  -- associativity of |(.)|
 \end{code}
-A sufficient condition is |adtp (g . f) = adtp g . adtp f|.
+which holds if |adtp (g . f) == adtp g . adtp f|.
+\note{So what? If the |adtp| specification above holds for |g| and for |f|, and if |adtp (g . f) == adtp g . adtp f|, then the |adtp| specification also holds for |g . f|.}
 
 
+
+Likewise, consider |id|:
+\begin{code}
+    adtp id . adhp q
+==  adhp (id . q)
+==  adhp q
+\end{code}
+which holds if |adtp id == id|.
+
+\workingHere
+
+\note{Reverse the composition:}
+\begin{code}
+    adtp q . adhp id
+==  adhp (q . id)  -- |adtp| specification
+==  adhp q         -- |id| as identity
+\end{code}
+
+%format &&&& = "\mathbin{\blacktriangle}"
+Parallel composition:
+\begin{code}
+    adtp (f &&& g) . adhp q
+==  adhp ((f &&& g) . q)                  -- |adtp| specification
+==  adhp (f . q &&& g . q)                -- Cartesian law
+==  adhp (f . q) &&&& adhp (g . q)        -- \note{for suitable |(&&&&)|, probably as with |(&&&)| for |D|}
+==  adtp f . adhp q &&&& adtp g . adhp q  -- |adtp| specification
+==  (adtp f &&&& adtp g) . adhp q         -- \note{To prove about |(&&&&)|}
+\end{code}
+
+\note{Try |(.)| again, this time specializing to `q = id`:}
+\begin{code}
+==  adtp (g . f) . adhp id
+==  adhp ((g . f) . id)
+==  adhp (g . (f . id))
+==  adtp g . adhp (f . id)
+==  adtp g . adtp f . adhp id
+\end{code}
+Question: is |adhp id| epi?
+No.
+Oh, well.
 
 \sectionl{What's Next?}
 
